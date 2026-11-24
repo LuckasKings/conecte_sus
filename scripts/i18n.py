@@ -115,7 +115,8 @@ TEXTOS = {
 - **📊 Aba 1 (Epidemiologia):** Perfil das internações no Brasil por idade, sexo, raça/cor, meses e causas CID-10.
 - **🤖 Aba 2 (Modelos IA):** Desempenho dos algoritmos, calibração de probabilidades e escolha do LightGBM.
 - **🏥 Aba 3 (Gestão Clínica):** Simulador de admissão e painel de leitos com alertas preditivos ajustáveis.
-- **📖 Aba 4 (Dicionário):** Significado detalhado de cada variável do SUS e dos termos técnicos usados.
+- **📖 Aba 4 (Dicionário):** Catálogo auditado das **113 colunas oficiais do SIH/SUS** + derivadas e glossário.
+- **🧭 Aba 5 (Jornada):** Histórico criativo, decisões técnicas, correção de *leakage* e evolução V1 → V4.
 """,
         "sidebar_motor": "**⚙️ Motor Analítico:**",
         "sidebar_prod": "**🧠 Produção:**\n`LightGBM V4 (Calibração Isotônica)`",
@@ -138,7 +139,8 @@ TEXTOS = {
             "📊 1. Perfil Epidemiológico & Equidade",
             "🤖 2. Como a IA Funciona (Modelos & Métricas)",
             "🏥 3. Painel de Gestão Clínica & Leitos",
-            "📖 4. Dicionário de Dados & Glossário",
+            "📖 4. Dicionário SIH/SUS (113 Colunas)",
+            "🧭 5. Jornada, Decisões & Arquitetura",
         ],
         "epi_hdr": "### 📊 Panorama Epidemiológico das Internações Hospitalares",
         "epi_sub": "Explore quem utiliza os hospitais do SUS no Brasil em 2024, as principais causas de internação e diferenças entre regiões e perfis demográficos.",
@@ -252,14 +254,60 @@ TEXTOS = {
             "flag_obito": "⚠️ Risco Óbito",
         },
         "fmt_idade": "%.0f anos",
-        "dic_hdr": "### 📖 Dicionário de Dados & Glossário do Projeto",
-        "dic_sub": "Guia de referência rápida traduzindo as colunas dos dados públicos do SUS e os termos de Ciência de Dados para todos os públicos.",
-        "dic_search": "🔍 Pesquisar variável ou termo técnico:",
-        "dic_ph": "Ex.: ROC-AUC, n_aih, Brier, transferido...",
-        "dic_s1": "#### 🗂️ 1. Dicionário das Variáveis Hospitalares (SIH/SUS)",
+        "dic_hdr": "### 📖 Dicionário Completo do SIH/SUS (113 Colunas Oficiais + Derivadas) & Glossário",
+        "dic_sub": "Auditoria integral de cada campo da AIH Reduzida do DataSUS, deixando explícito o que alimenta a **IA**, o que fica apenas no **Perfil Epidemiológico** e o que foi **Descartado**.",
+        "dic_search": "🔍 Pesquisar coluna, bloco ou significado:",
+        "dic_ph": "Ex.: cobranca, diagsec, raca_cor, ROC-AUC, Brier...",
+        "dic_filter_lbl": "Filtrar por Uso no Projeto:",
+        "dic_filter_opts": [
+            ("all", "Todas as Colunas (125)"),
+            ("ia_epi", "✅ Usadas no Modelo IA + Epidemio"),
+            ("epi", "📊 Apenas Perfil Epidemiológico"),
+            ("alvo_painel", "🎯 Alvo / Painel Clínico"),
+            ("nao_leakage", "⛔ Não Usadas (Data Leakage / Pós-alta)"),
+            ("nao_admin", "⛔ Não Usadas (Admin / Nula / Redundante)"),
+        ],
+        "dic_s1": "#### 🗂️ 1. Catálogo Auditado de Todas as Variáveis (SIH/SUS + Derivadas)",
         "dic_s2": "#### 🧠 2. Glossário de Termos Técnicos (Ciência de Dados & Saúde)",
         "dic_empty1": "Nenhuma variável encontrada para esse filtro.",
         "dic_empty2": "Nenhum termo técnico encontrado para esse filtro.",
+        "dic_count": "Exibindo **{n}** variáveis do catálogo completo (`113` originais do SIH/SUS + `12` derivadas).",
+        "j_hdr": "### 🧭 Jornada do Projeto: Processo Criativo, Decisões & Arquitetura (V1 → V4)",
+        "j_sub": "Registro transparente de como um estudo exploratório no Acre evoluiu para uma plataforma nacional calibrada sobre **13.584.534 internações** — mostrando erros corrigidos, dilemas éticos e escolhas de engenharia.",
+        "j_v1_tit": "1️⃣ Fase V1 — Baseline no Acre & Descoberta de Armadilhas (56.459 casos)",
+        "j_v1_txt": """
+- **Ponto de partida:** Baixamos os 12 arquivos mensais `.dbc` do Acre (2024) e construímos o primeiro classificador para prever Longa Permanência (`>= 15 dias`, apenas `5,30%` dos casos — desbalanceamento de `17,88:1`).
+- **Erro crítico descoberto (#1 — Data Leakage):** A variável `cobranca` apareceu dominando o modelo (`85,29%` de acerto aparente nos códigos `21/22`). Ao investigar o significado no DataSUS, descobrimos que pedidos de prorrogação só são faturados **após** o paciente já ter ficado longo tempo internado — informação inexistente na entrada!
+- **Erro crítico descoberto (#2 — Dupla penalização no XGBoost):** Combinar `SMOTE` com `scale_pos_weight=18` no pipeline empurrou `85%` das previsões para a classe positiva (`45.237` alarmes falsos e apenas `19,77%` de acurácia). **Decisão:** eliminar o `SMOTE` e passar a usar ponderação nativa isolada.
+- **Auditoria de dados faltantes:** Descobrimos que comorbidades secundárias (`diagsec1` a `diagsec9`) têm **`89,65%` a `100%` de valores nulos**, inviabilizando índices como Charlson e motivando o catálogo auditado de todas as 113 colunas na Aba 4.
+""",
+        "j_v2_tit": "2️⃣ Fase V2 — Virada para Admissão Clínica & Matriz Dual-Triage",
+        "j_v2_txt": """
+- **Mudança de paradigma:** Decidimos prever exclusivamente com variáveis preenchidas **no ato da recepção/admissão**, removendo `cobranca` e outras 24 variáveis financeiras/pós-alta (`val_tot`, `dt_saida`, `dias_perm`, `proc_rea`).
+- **Segundo desfecho simultâneo (`Obito`):** Adicionamos a predição de mortalidade intra-hospitalar (`2,70%` no Acre), criando a **Matriz de Decisão 2x2** (*Zona Vermelha Crítica, Emergência Aguda, Cronicidade e Fluxo Rápido*).
+- **Engenharia de features clínicas e geográficas:**
+  - `especialidade_leito`: revelou que a Clínica Médica concentra **`78,9%` de todos os óbitos** (`7,40%` de mortalidade vs. `0,009%` na Obstetrícia).
+  - `transferido_intermun` (`munic_res != munic_mov`): mostrou que pacientes vindos do interior sofrem risco de óbito **`28%` maior** (`3,72%` vs. `2,91%`) por atrasos logísticos.
+  - `internacao_fim_de_semana`: captura fragilidade diagnóstica em sábados e domingos.
+""",
+        "j_v3_tit": "3️⃣ Fase V3 — Bioética em Saúde & Desacoplamento Sazonal",
+        "j_v3_txt": """
+- **Questionamento ético e crítico:** Ao analisar o gráfico de importância de variáveis do V2, notamos destaque para `raca_cor` e `mes_internacao`. Questionamos se fazia sentido usá-las na triagem médica.
+- **Decisão #1 — Remoção de `raca_cor` do modelo preditivo:** Cor da pele não é mecanismo biológico de gravidade, e mantê-la na IA poderia perpetuar viés discriminatório na prioridade de leitos de UTI. **Solução:** removemos da IA clínica e criamos uma camada dedicada de **Equidade em Saúde Pública** (Aba 1) para dar visibilidade às populações vulneráveis sem enviesar o atendimento.
+- **Decisão #2 — Remoção de `mes_internacao`:** Árvores de decisão superajustavam padrões específicos de meses de 2024 (*split bias* e risco de *data drift* em anos futuros). Mantivemos apenas na análise temporal da Aba 1.
+- **Prova de robustez (10-Fold CV Acre):** Sem essas duas variáveis, os modelos mantiveram excelente poder de separação (**LightGBM V3: `ROC-AUC 0,8949` em Óbito e `0,8263` em Longa**).
+""",
+        "j_v4_tit": "4️⃣ Fase V4 — Escala Brasil (13,58M), Amostragem, Calibração Isotônica & Nuvem",
+        "j_v4_txt": """
+- **Salto nacional (27 UFs / 324 arquivos `.dbc`):** Construímos um pipeline paralelo via FTP DataSUS + Arrow (`datasuspy`), comprimindo **~20 GB** brutos de `13.584.534` internações em apenas **`186,06 MB`** de Parquet particionado Hive (`ano/uf/mes`) consultados via **DuckDB**.
+- **Por que amostrar `1.500.000` internações no treino e `30.000` no painel da nuvem?**
+  - *Aba 1 (100% sem amostragem):* Geramos um **Cubo Agregado de `3,99 MB`** (`419.801` linhas pré-somadas) com **100% de paridade exata** das `13.584.534` internações, `520.884` óbitos e `839.972` longas permanências.
+  - *Treino V4 (`1,5M` = 900k treino / 300k calibração / 300k teste cego):* Com apenas 8 variáveis (~40 colunas codificadas), `900 mil` casos já saturam o aprendizado proporcional de todos os 27 estados sem estourar memória RAM.
+  - *Cockpit Cloud (`30.000` casos = `0,34 MB`):* Permite que o painel online gratuito no Streamlit Cloud exiba pacientes reais de todas as 27 UFs em milissegundos dentro do limite de RAM da nuvem.
+- **Calibração Isotônica & Limiar de Youden:** No V3, `scale_pos_weight` inflava escores (`Brier Score 0,12–0,16`). No V4, treinamos em *log-loss* nativo e aplicamos **Calibração Isotônica** nos `300k` de calibração, derrubando o **Brier Score para `0,0329` (Óbito) e `0,0480` (Longa)** — garantindo probabilidades reais e definindo alertas pelo **Limiar de Youden (`4,0%` / `6,4%`)** com barras deslizantes ajustáveis pelo hospital.
+- **Produto Final & Portfólio:** Adicionamos tradução instantânea PT/EN, filtro cascata Região → UF, Dicionário completo das 113 colunas SIH/SUS e publicação gratuita no Streamlit Cloud.
+""",
+        "j_evol_hdr": "#### 📊 Linha do Tempo Comparativa das Versões (V1 → V4)",
         "footer": "SUS Analytics Brasil 2024 • DuckDB + Parquet + LightGBM V4 Calibrado • Portfólio de Inteligência em Saúde",
     },
     "en": {
@@ -271,7 +319,8 @@ TEXTOS = {
 - **📊 Tab 1 (Epidemiology):** Hospitalization profile across Brazil by age, sex, race, months, and ICD-10 chapters.
 - **🤖 Tab 2 (AI Models):** Algorithm benchmarks, probability calibration, and why LightGBM was chosen.
 - **🏥 Tab 3 (Clinical Panel):** Admission simulator and ward cockpit with adjustable predictive risk alerts.
-- **📖 Tab 4 (Dictionary):** Detailed explanations of SUS dataset variables and technical terminology.
+- **📖 Tab 4 (Dictionary):** Audited catalog of all **113 official SIH/SUS columns** + derived fields & glossary.
+- **🧭 Tab 5 (Journey):** Creative timeline, technical decisions, leakage fixes, and V1 → V4 evolution.
 """,
         "sidebar_motor": "**⚙️ Analytics Engine:**",
         "sidebar_prod": "**🧠 Production Model:**\n`LightGBM V4 (Isotonic Calibration)`",
@@ -294,7 +343,8 @@ TEXTOS = {
             "📊 1. Epidemiology & Health Equity",
             "🤖 2. How the AI Works (Models & Metrics)",
             "🏥 3. Clinical Management & Ward Cockpit",
-            "📖 4. Data Dictionary & Glossary",
+            "📖 4. SIH/SUS Dictionary (113 Columns)",
+            "🧭 5. Journey, Decisions & Architecture",
         ],
         "epi_hdr": "### 📊 National Epidemiological Overview",
         "epi_sub": "Explore who uses Brazil's public hospital network (SUS) in 2024, leading causes of admission, and regional or demographic disparities.",
@@ -408,54 +458,85 @@ TEXTOS = {
             "flag_obito": "⚠️ Mortality Risk",
         },
         "fmt_idade": "%.0f yrs",
-        "dic_hdr": "### 📖 Data Dictionary & Project Glossary",
-        "dic_sub": "Quick reference guide explaining SUS public dataset fields and Data Science / Healthcare terms for all audiences.",
-        "dic_search": "🔍 Search variable or technical term:",
-        "dic_ph": "E.g.: ROC-AUC, n_aih, Brier, transfer...",
-        "dic_s1": "#### 🗂️ 1. Hospital Dataset Variables (SIH/SUS)",
+        "dic_hdr": "### 📖 Complete SIH/SUS Dictionary (113 Official Columns + Derived) & Glossary",
+        "dic_sub": "Full audit of every DATASUS hospital admission column, explicitly stating what powers the **AI Model**, what stays in the **Epidemiology Profile**, and what was **Excluded**.",
+        "dic_search": "🔍 Search column, domain or meaning:",
+        "dic_ph": "E.g.: cobranca, diagsec, raca_cor, ROC-AUC, Brier...",
+        "dic_filter_lbl": "Filter by Project Usage:",
+        "dic_filter_opts": [
+            ("all", "All Columns (125)"),
+            ("ia_epi", "✅ Used in AI Model + Epidemiology"),
+            ("epi", "📊 Epidemiology Profile Only"),
+            ("alvo_painel", "🎯 Target / Clinical Ward Panel"),
+            ("nao_leakage", "⛔ Not Used (Data Leakage / Post-Stay)"),
+            ("nao_admin", "⛔ Not Used (Admin / Sparse / Redundant)"),
+        ],
+        "dic_s1": "#### 🗂️ 1. Audited Catalog of All Variables (SIH/SUS + Derived)",
         "dic_s2": "#### 🧠 2. Technical Glossary (Data Science & Healthcare)",
-        "dic_empty1": "No variables match your search.",
-        "dic_empty2": "No technical terms match your search.",
+        "dic_empty1": "No variables match your filter.",
+        "dic_empty2": "No technical terms match your filter.",
+        "dic_count": "Showing **{n}** cataloged variables (`113` original SIH/SUS fields + `12` derived fields).",
+        "j_hdr": "### 🧭 Project Journey: Creative Process, Decisions & Architecture (V1 → V4)",
+        "j_sub": "Transparent engineering log showing how a single-state pilot evolved into a calibrated national platform across **13,584,534 hospitalizations** — including bugs fixed, ethical choices, and architectural trade-offs.",
+        "j_v1_tit": "1️⃣ Phase V1 — Acre Pilot & Uncovering Traps (56,459 admissions)",
+        "j_v1_txt": """
+- **Starting point:** Ingested 12 monthly `.dbc` files from Acre (2024) to predict Long Length of Stay (`>= 15 days`, only `5.30%` of cases — `17.88:1` class imbalance).
+- **Critical finding #1 (Data Leakage):** The billing column `cobranca` dominated initial models (`85.29%` apparent long-stay rate on codes `21/22`). Auditing DATASUS rules revealed those extension codes are only billed **after** a patient has already stayed long — impossible to know at admission!
+- **Critical finding #2 (XGBoost double-penalty collapse):** Combining `SMOTE` + `scale_pos_weight=18` pushed `85%` of predictions into the positive class (`45,237` false alarms, `19.77%` accuracy). **Decision:** drop SMOTE entirely and rely solely on native loss weighting.
+- **Missingness audit:** Secondary diagnoses (`diagsec1`–`diagsec9`) were missing in **`89.65%` to `100%`** of records, motivating a full 113-column audit (now searchable in Tab 4).
+""",
+        "j_v2_tit": "2️⃣ Phase V2 — Shift to Intake Triage & Dual-Outcome Matrix",
+        "j_v2_txt": """
+- **Paradigm shift:** Scoped strictly to variables known **at admission intake**, purging `cobranca` and 24 post-discharge/financial fields (`val_tot`, `dt_saida`, `dias_perm`, `proc_rea`).
+- **Dual-Triage Matrix:** Added in-hospital mortality (`Obito`, `2.70%` in Acre) alongside long stay to build the **2x2 Decision Matrix** (*Red Critical Zone, Acute Emergency, Chronicity/Retention, and Fast-Track Flow*).
+- **Clinical & geographic feature engineering:**
+  - `especialidade_leito`: revealed Internal Medicine concentrates **`78.9%` of all hospital deaths** (`7.40%` vs. `0.009%` in Obstetrics).
+  - `transferido_intermun` (`munic_res != munic_mov`): showed inter-municipal transfers carry **`+28%` higher mortality** (`3.72%` vs. `2.91%`) due to transit delays.
+  - `internacao_fim_de_semana`: captures weekend diagnostic/staffing constraints.
+""",
+        "j_v3_tit": "3️⃣ Phase V3 — Healthcare Bioethics & Temporal Decoupling",
+        "j_v3_txt": """
+- **Ethical & methodological question:** Feature importance plots highlighted `raca_cor` (race) and `mes_internacao` (month). Should these drive bedside triage decisions?
+- **Decision #1 — Remove `raca_cor` from AI:** Skin color is not a biological mechanism of acute severity; leaving it in bedside scoring risks encoding systemic inequities into ICU prioritization. **Solution:** decoupled race from predictive AI while preserving it in Tab 1 for **Health Equity Auditing**.
+- **Decision #2 — Remove `mes_internacao`:** Decision trees overfit calendar-specific patterns (`split bias` and future `data drift`). Kept exclusively for seasonality visualization in Tab 1.
+- **Validation (10-Fold Stratified CV):** Removing both improved ethical robustness while preserving strong discrimination (**LightGBM V3: `ROC-AUC 0.8949` Mortality, `0.8263` Long Stay**).
+""",
+        "j_v4_tit": "4️⃣ Phase V4 — National Scale (13.58M), Sampling, Isotonic Calibration & Cloud",
+        "j_v4_txt": """
+- **National ingestion (27 States / 324 `.dbc` files):** Built a parallel DataSUS FTP + Arrow pipeline (`datasuspy`), compressing **~20 GB** of raw `13,584,534` admissions down to **`186.06 MB`** of Hive-partitioned ZSTD Parquet queried via **DuckDB**.
+- **Why sample `1,500,000` for training and `30,000` for the cloud cockpit while keeping `100%` in Tab 1?**
+  - *Tab 1 (0% sampling):* Built a **`3.99 MB` pre-aggregated Cube** (`419,801` grouped rows) preserving **100% exact parity** across all `13,584,534` admissions, `520,884` deaths, and `839,972` long stays.
+  - *V4 Training (`1.5M` = 900k train / 300k calibration / 300k blind test):* With 8 intake features (~40 encoded columns), `900k` stratified rows saturate learning curves across all 27 states cleanly within workstation RAM.
+  - *Cloud Cockpit (`30,000` cases = `0.34 MB`):* Enables instant multi-state ward filtering inside free Streamlit Cloud memory limits.
+- **Isotonic Calibration & Youden Cutoffs:** Replacing extreme `scale_pos_weight` with native log-loss + **Isotonic Calibration** on `300k` holdout cases cut **Brier Score from `0.12–0.16` down to `0.0329` (Mortality) and `0.0480` (Long Stay)**, producing true clinical probabilities and **Youden Index cutoffs (`4.0%` / `6.4%`)** with hospital-adjustable sliders.
+- **Portfolio Product:** Added PT/EN bilingual switcher, cascading Region → State filters, full 113-column audit, and Streamlit Cloud deployment (`13.2 MiB` Git repo).
+""",
+        "j_evol_hdr": "#### 📊 Version Evolution Summary Table (V1 → V4)",
         "footer": "SUS Analytics Brazil 2024 • DuckDB + Parquet + Calibrated LightGBM V4 • Healthcare Intelligence Portfolio",
     },
 }
 
 
+from catalogo_sih import get_catalogo_completo_df
+
+
 def get_dicionario_df(lang: str) -> pd.DataFrame:
+    return get_catalogo_completo_df(lang)
+
+
+def get_evolucao_df(lang: str) -> pd.DataFrame:
     if lang == "en":
         return pd.DataFrame([
-            {"Variable": "n_aih", "Label": "AIH Number", "Description": "Official Inpatient Hospital Authorization ID. Displayed anonymized (#AIH-...) as patient identifier in the ward panel.", "Project Usage": "Ward Panel ID"},
-            {"Variable": "uf / regiao", "Label": "State / Region", "Description": "Brazilian Federal Unit (27 states) and macro-region of the admitting hospital.", "Project Usage": "Epidemiology Filters"},
-            {"Variable": "idade_anos", "Label": "Age at Admission", "Description": "Patient age in continuous years (including newborns expressed as fractions of a year).", "Project Usage": "AI Feature (Intake)"},
-            {"Variable": "sexo", "Label": "Biological Sex", "Description": "Sex recorded at hospital intake (1 = Male, 3 = Female).", "Project Usage": "AI Feature (Intake)"},
-            {"Variable": "diag_princ / capitulo_cid", "Label": "Diagnosis (ICD-10)", "Description": "Specific ICD-10 diagnosis code (e.g., J18 = Pneumonia) and its clinical chapter.", "Project Usage": "AI Feature (Chapter) & Panel"},
-            {"Variable": "especialidade_leito", "Label": "Ward Specialty", "Description": "Hospital bed specialty (Internal Medicine, Surgical, Obstetrics, Pediatrics, Psychiatry).", "Project Usage": "AI Feature (Intake)"},
-            {"Variable": "carater_internacao", "Label": "Admission Type", "Description": "Indicates whether admission was planned (Elective) or acute (Urgency/Emergency).", "Project Usage": "AI Feature (Intake)"},
-            {"Variable": "complexidade", "Label": "Complexity", "Description": "Technological complexity level required by the primary procedure (Medium or High).", "Project Usage": "AI Feature (Intake)"},
-            {"Variable": "transferido_intermun", "Label": "Inter-municipal Transfer", "Description": "Indicates (1 = Yes) whether the patient's home municipality differs from the hospital's municipality.", "Project Usage": "AI Feature (Intake)"},
-            {"Variable": "internacao_fim_de_semana", "Label": "Weekend Admission", "Description": "Indicates (1 = Yes) if hospital entry occurred on a Saturday or Sunday.", "Project Usage": "AI Feature (Intake)"},
-            {"Variable": "raca_cor_desc", "Label": "Race / Ethnicity", "Description": "Self-declared race/ethnicity. Preserved for health equity analysis and excluded from AI models to avoid algorithmic bias.", "Project Usage": "Epidemiology Only (Ethics)"},
-            {"Variable": "mes_internacao", "Label": "Admission Month", "Description": "Calendar month (1 to 12). Used for seasonality plots in Tab 1 and excluded from AI to avoid calendar drift.", "Project Usage": "Epidemiology Only"},
-            {"Variable": "qt_diarias / uti_mes_to", "Label": "Stay Days / ICU Days", "Description": "Total hospital days billed and Intensive Care Unit (ICU) bed days.", "Project Usage": "Target / Ward Display"},
-            {"Variable": "Longa_Permanencia", "Label": "Target: Long Stay", "Description": "Binary outcome indicating hospitalization lasting 15 days or more (1 = Yes, 0 = No).", "Project Usage": "Predictive Target 1"},
-            {"Variable": "Obito", "Label": "Target: Mortality", "Description": "Binary outcome indicating in-hospital death (1 = Yes, 0 = No).", "Project Usage": "Predictive Target 2"},
+            {"Version": "V1 (Baseline)", "Scope": "Acre (56,459)", "Targets": "Long Stay Only", "Features": "7 (incl. cobranca leakage)", "Key Milestone / Decision": "Detected `cobranca` post-intake leakage & fixed XGBoost SMOTE + weight collapse."},
+            {"Version": "V2 (Dual-Triage)", "Scope": "Acre (56,459)", "Targets": "Long Stay + Mortality", "Features": "10 (strict intake)", "Key Milestone / Decision": "Removed 24 financial/post-stay cols; created 2x2 Decision Matrix & transfer/ward features."},
+            {"Version": "V3 (Ethical AI)", "Scope": "Acre (56,459)", "Targets": "Long Stay + Mortality", "Features": "8 (ethical clinical)", "Key Milestone / Decision": "Removed `raca_cor` & `mes_internacao` from AI to prevent bias/drift; kept for equity tab."},
+            {"Version": "V4 (National Cloud)", "Scope": "Brazil 27 UFs (13.58M)", "Targets": "Long Stay + Mortality", "Features": "8 (calibrated LightGBM)", "Key Milestone / Decision": "DuckDB/Parquet lakehouse, 1.5M stratified cohort, Isotonic Calibration (Brier 0.033/0.048), PT/EN Cloud App."},
         ])
     return pd.DataFrame([
-        {"Variável": "n_aih", "Nome Amigável": "Número da AIH", "Significado": "Código oficial único da Autorização de Internação Hospitalar. Usado de forma anonimizada (#AIH-...) como identificador do paciente no painel.", "Uso no Projeto": "Identificador no Painel Clínico"},
-        {"Variável": "uf / regiao", "Nome Amigável": "Estado / Região", "Significado": "Unidade da Federação (27 estados) e macrorregião brasileira do hospital onde ocorreu a internação.", "Uso no Projeto": "Filtros Epidemiológicos"},
-        {"Variável": "idade_anos", "Nome Amigável": "Idade na Admissão", "Significado": "Idade do paciente convertida para anos contínuos (incluindo recém-nascidos em frações de ano).", "Uso no Projeto": "Feature da IA (Admissão)"},
-        {"Variável": "sexo", "Nome Amigável": "Sexo Biológico", "Significado": "Sexo registrado na admissão hospitalar (1 = Masculino, 3 = Feminino).", "Uso no Projeto": "Feature da IA (Admissão)"},
-        {"Variável": "diag_princ / capitulo_cid", "Nome Amigável": "Motivo (CID-10)", "Significado": "Código específico da Classificação Internacional de Doenças (ex.: J18 = Pneumonia) e seu grande capítulo médico.", "Uso no Projeto": "Feature da IA (Capítulo) & Painel"},
-        {"Variável": "especialidade_leito", "Nome Amigável": "Especialidade do Leito", "Significado": "Tipo de enfermaria ou ala de internação (Clínica Médica, Cirúrgica, Obstétrica, Pediátrica, Psiquiátrica).", "Uso no Projeto": "Feature da IA (Admissão)"},
-        {"Variável": "carater_internacao", "Nome Amigável": "Caráter da Entrada", "Significado": "Indica se o paciente entrou de forma programada (Eletiva) ou em situação aguda (Urgência/Emergência).", "Uso no Projeto": "Feature da IA (Admissão)"},
-        {"Variável": "complexidade", "Nome Amigável": "Complexidade", "Significado": "Nível de densidade tecnológica exigido pelo procedimento principal (Média ou Alta Complexidade).", "Uso no Projeto": "Feature da IA (Admissão)"},
-        {"Variável": "transferido_intermun", "Nome Amigável": "Transferência Intermunicipal", "Significado": "Indica (1 = Sim) quando o município de residência do paciente é diferente do município do hospital.", "Uso no Projeto": "Feature da IA (Admissão)"},
-        {"Variável": "internacao_fim_de_semana", "Nome Amigável": "Entrada no Fim de Semana", "Significado": "Indica (1 = Sim) se a internação ocorreu no sábado ou domingo.", "Uso no Projeto": "Feature da IA (Admissão)"},
-        {"Variável": "raca_cor_desc", "Nome Amigável": "Raça / Cor", "Significado": "Autodeclaração racial do paciente. Preservada na análise de equidade e removida da IA para evitar viés algorítmico.", "Uso no Projeto": "Apenas Epidemiologia (Ética)"},
-        {"Variável": "mes_internacao", "Nome Amigável": "Mês da Internação", "Significado": "Mês do calendário (1 a 12). Usado na sazonalidade da Aba 1 e excluído da IA para evitar dependência de calendário.", "Uso no Projeto": "Apenas Epidemiologia"},
-        {"Variável": "qt_diarias / uti_mes_to", "Nome Amigável": "Dias Internado / Diárias UTI", "Significado": "Quantidade total de dias de internação e diárias em leito de Terapia Intensiva.", "Uso no Projeto": "Alvo / Acompanhamento no Painel"},
-        {"Variável": "Longa_Permanencia", "Nome Amigável": "Alvo: Longa Permanência", "Significado": "Variável binária indicando se a internação durou 15 dias ou mais (1 = Sim, 0 = Não).", "Uso no Projeto": "Alvo Preditivo 1"},
-        {"Variável": "Obito", "Nome Amigável": "Alvo: Óbito Hospitalar", "Significado": "Variável binária indicando desfecho de óbito intra-hospitalar (1 = Sim, 0 = Não).", "Uso no Projeto": "Alvo Preditivo 2"},
+        {"Versão": "V1 (Baseline)", "Escopo": "Acre (56.459)", "Alvos": "Apenas Longa Perm.", "Features": "7 (com leakage cobranca)", "Decisão / Marco Principal": "Descoberta do vazamento em `cobranca` e correção do colapso SMOTE + peso no XGBoost."},
+        {"Versão": "V2 (Dual-Triage)", "Escopo": "Acre (56.459)", "Alvos": "Longa Perm. + Óbito", "Features": "10 (estritas de entrada)", "Decisão / Marco Principal": "Expurgo de 24 colunas financeiras/pós-alta; criação da Matriz 2x2 e flags geográficas/leito."},
+        {"Versão": "V3 (IA Ética)", "Escopo": "Acre (56.459)", "Alvos": "Longa Perm. + Óbito", "Features": "8 (clínicas e éticas)", "Decisão / Marco Principal": "Remoção de `raca_cor` e `mes_internacao` da IA clínica (mantidas só na Aba 1 de Equidade)."},
+        {"Versão": "V4 (Nacional Cloud)", "Escopo": "Brasil 27 UFs (13,58M)", "Alvos": "Longa Perm. + Óbito", "Features": "8 (LightGBM calibrado)", "Decisão / Marco Principal": "Lakehouse DuckDB/Parquet, coorte 1,5M, Calibração Isotônica (Brier 0,033/0,048), app PT/EN na nuvem."},
     ])
 
 

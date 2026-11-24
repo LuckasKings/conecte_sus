@@ -22,7 +22,7 @@ if os.path.join(BASE_DIR, "scripts") not in sys.path:
     sys.path.insert(0, os.path.join(BASE_DIR, "scripts"))
 
 import duckdb_service as ds
-from i18n import TEXTOS, get_dicionario_df, get_glossario_df, tr_series, tr_val
+from i18n import TEXTOS, get_dicionario_df, get_evolucao_df, get_glossario_df, tr_series, tr_val
 
 # ==========================================
 # 1. Configuração da Página e Estilo Visual
@@ -271,7 +271,7 @@ st.write("")
 # ==========================================
 # 4. Navegação por Abas
 # ==========================================
-tab_epi, tab_ml, tab_gestao, tab_dic = st.tabs(t["tabs"])
+tab_epi, tab_ml, tab_gestao, tab_dic, tab_jornada = st.tabs(t["tabs"])
 
 # ==============================================================================
 # ABA 1: INTELIGÊNCIA EPIDEMIOLÓGICA & EQUIDADE
@@ -617,45 +617,92 @@ with tab_gestao:
         )
 
 # ==============================================================================
-# ABA 4: DICIONÁRIO DE DADOS & GLOSSÁRIO
+# ABA 4: DICIONÁRIO COMPLETO SIH/SUS (113 COLUNAS) & GLOSSÁRIO
 # ==============================================================================
+def render_wrapped_table(df_in: pd.DataFrame, widths: list[str], badge_col: str = None, status_keys: list[str] = None):
+    badge_styles = {
+        "ia_epi": ("#dcfce7", "#166534", "#bbf7d0"),
+        "epi": ("#f3e8ff", "#6b21a8", "#e9d5ff"),
+        "alvo_painel": ("#fef3c7", "#92400e", "#fde68a"),
+        "nao_leakage": ("#fee2e2", "#991b1b", "#fecaca"),
+        "nao_admin": ("#f1f5f9", "#475569", "#cbd5e1"),
+    }
+    ths = "".join(
+        f"<th style='width:{w}; background:#f1f5f9; color:#1e3a8a; font-weight:700; padding:10px 12px; text-align:left; border-bottom:2px solid #cbd5e1; font-size:0.86rem;'>{_html.escape(str(c))}</th>"
+        for c, w in zip(df_in.columns, widths)
+    )
+    rows_html = ""
+    for row_i, (_, row) in enumerate(df_in.iterrows()):
+        tds = ""
+        s_key = status_keys[row_i] if status_keys is not None else None
+        for col_name, val in zip(df_in.columns, row.values):
+            esc_val = _html.escape(str(val))
+            if badge_col and col_name == badge_col and s_key in badge_styles:
+                bg, fg, bd = badge_styles[s_key]
+                cell_content = f"<span style='display:inline-block; background:{bg}; color:{fg}; border:1px solid {bd}; padding:3px 8px; border-radius:6px; font-weight:700; font-size:0.78rem;'>{esc_val}</span>"
+            else:
+                cell_content = esc_val
+            tds += f"<td style='padding:10px 12px; border-bottom:1px solid #e2e8f0; vertical-align:top; white-space:normal; word-wrap:break-word; line-height:1.45; font-size:0.86rem; color:#0f172a;'>{cell_content}</td>"
+        rows_html += f"<tr>{tds}</tr>"
+    table_html = (
+        "<div style='overflow-x:auto; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:1.2rem; background:#ffffff;'>"
+        f"<table style='width:100%; border-collapse:collapse; table-layout:fixed;'><thead><tr>{ths}</tr></thead><tbody>{rows_html}</tbody></table>"
+        "</div>"
+    )
+    st.markdown(table_html, unsafe_allow_html=True)
+
+
 with tab_dic:
     st.markdown(t["dic_hdr"])
     st.markdown(t["dic_sub"])
 
-    busca_dic = st.text_input(t["dic_search"], "", placeholder=t["dic_ph"])
+    df_dicionario = get_dicionario_df(idioma)
 
-    def render_wrapped_table(df_in: pd.DataFrame, widths: list[str]):
-        ths = "".join(
-            f"<th style='width:{w}; background:#f1f5f9; color:#1e3a8a; font-weight:700; padding:10px 12px; text-align:left; border-bottom:2px solid #cbd5e1; font-size:0.88rem;'>{_html.escape(str(c))}</th>"
-            for c, w in zip(df_in.columns, widths)
+    # Resumo quantitativo da auditoria de colunas
+    c_d1, c_d2, c_d3, c_d4 = st.columns(4)
+    n_ia = int((df_dicionario["_status_key"] == "ia_epi").sum())
+    n_epi = int((df_dicionario["_status_key"] == "epi").sum())
+    n_alvo = int((df_dicionario["_status_key"] == "alvo_painel").sum())
+    n_nao = int(df_dicionario["_status_key"].isin(["nao_leakage", "nao_admin"]).sum())
+    with c_d1:
+        st.metric("Total (113 SIH + 12 Deriv.)", len(df_dicionario))
+    with c_d2:
+        st.metric("✅ IA + Epidemio" if idioma == "pt" else "✅ AI + Epidemiology", n_ia)
+    with c_d3:
+        st.metric("📊 Epidemio / Alvo" if idioma == "pt" else "📊 Epidemio / Target", f"{n_epi} + {n_alvo}")
+    with c_d4:
+        st.metric("⛔ Não Usadas" if idioma == "pt" else "⛔ Not Used", n_nao)
+
+    col_d1, col_d2 = st.columns([2, 1])
+    with col_d1:
+        busca_dic = st.text_input(t["dic_search"], "", placeholder=t["dic_ph"])
+    with col_d2:
+        filtro_opts = t["dic_filter_opts"]
+        uso_sel = st.selectbox(
+            t["dic_filter_lbl"],
+            options=[k for k, _ in filtro_opts],
+            format_func=lambda k: dict(filtro_opts)[k],
+            index=0
         )
-        rows_html = ""
-        for _, row in df_in.iterrows():
-            tds = "".join(
-                f"<td style='padding:10px 12px; border-bottom:1px solid #e2e8f0; vertical-align:top; white-space:normal; word-wrap:break-word; line-height:1.45; font-size:0.88rem; color:#0f172a;'>{_html.escape(str(val))}</td>"
-                for val in row.values
-            )
-            rows_html += f"<tr>{tds}</tr>"
-        table_html = (
-            "<div style='overflow-x:auto; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:1.2rem; background:#ffffff;'>"
-            f"<table style='width:100%; border-collapse:collapse; table-layout:fixed;'><thead><tr>{ths}</tr></thead><tbody>{rows_html}</tbody></table>"
-            "</div>"
-        )
-        st.markdown(table_html, unsafe_allow_html=True)
 
     st.markdown(t["dic_s1"])
-    df_dicionario = get_dicionario_df(idioma)
+    df_dic_show = df_dicionario.copy()
+    if uso_sel != "all":
+        df_dic_show = df_dic_show[df_dic_show["_status_key"] == uso_sel]
     if busca_dic:
-        mask_d = df_dicionario.apply(lambda col: col.astype(str).str.contains(busca_dic, case=False, na=False)).any(axis=1)
-        df_dic_show = df_dicionario[mask_d]
-    else:
-        df_dic_show = df_dicionario
+        mask_d = df_dic_show.drop(columns=["_status_key"]).apply(
+            lambda col: col.astype(str).str.contains(busca_dic, case=False, na=False)
+        ).any(axis=1)
+        df_dic_show = df_dic_show[mask_d]
 
+    st.caption(t["dic_count"].format(n=len(df_dic_show)))
     if df_dic_show.empty:
         st.info(t["dic_empty1"])
     else:
-        render_wrapped_table(df_dic_show, ["18%", "18%", "46%", "18%"])
+        status_keys_list = df_dic_show["_status_key"].tolist()
+        df_dic_clean = df_dic_show.drop(columns=["_status_key"])
+        uso_col_name = "Uso no Projeto" if idioma == "pt" else "Usage Status"
+        render_wrapped_table(df_dic_clean, ["15%", "17%", "24%", "44%"], badge_col=uso_col_name, status_keys=status_keys_list)
 
     st.markdown(t["dic_s2"])
     df_glossario = get_glossario_df(idioma)
@@ -669,6 +716,37 @@ with tab_dic:
         st.info(t["dic_empty2"])
     else:
         render_wrapped_table(df_glo_show, ["20%", "18%", "62%"])
+
+# ==============================================================================
+# ABA 5: JORNADA, DECISÕES & ARQUITETURA DO PROJETO
+# ==============================================================================
+with tab_jornada:
+    st.markdown(t["j_hdr"])
+    st.markdown(t["j_sub"])
+
+    j1, j2 = st.columns(2)
+    with j1:
+        with st.container(border=True):
+            st.markdown(f"#### {t['j_v1_tit']}")
+            st.markdown(t["j_v1_txt"])
+    with j2:
+        with st.container(border=True):
+            st.markdown(f"#### {t['j_v2_tit']}")
+            st.markdown(t["j_v2_txt"])
+
+    j3, j4 = st.columns(2)
+    with j3:
+        with st.container(border=True):
+            st.markdown(f"#### {t['j_v3_tit']}")
+            st.markdown(t["j_v3_txt"])
+    with j4:
+        with st.container(border=True):
+            st.markdown(f"#### {t['j_v4_tit']}")
+            st.markdown(t["j_v4_txt"])
+
+    st.markdown(t["j_evol_hdr"])
+    df_evol = get_evolucao_df(idioma)
+    render_wrapped_table(df_evol, ["16%", "17%", "16%", "18%", "33%"])
 
 st.markdown("---")
 st.markdown(f"<p style='text-align: center; color: #94a3b8; font-size: 0.85rem;'>{t['footer']}</p>", unsafe_allow_html=True)

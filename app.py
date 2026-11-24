@@ -37,7 +37,7 @@ st.set_page_config(
 st.markdown("""
 <style>
     .block-container {
-        padding-top: 1.5rem;
+        padding-top: 3.75rem;
         padding-bottom: 2rem;
     }
     .main-title {
@@ -45,6 +45,8 @@ st.markdown("""
         font-weight: 800;
         color: #1e3a8a;
         letter-spacing: -0.02em;
+        line-height: 1.25;
+        padding-top: 0.2rem;
         margin-bottom: 0.15rem;
     }
     .sub-title {
@@ -70,10 +72,10 @@ st.markdown("""
     .metric-card.green { border-top-color: #059669; }
     .metric-card h3 {
         margin: 0;
-        font-size: 0.76rem;
+        font-size: 0.71rem;
         color: #64748b;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.03em;
         font-weight: 700;
     }
     .metric-card p {

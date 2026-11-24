@@ -234,9 +234,13 @@ with tab_epi:
 
     col_f1, col_f2, col_f3, col_f4, col_f5, col_f6 = st.columns(6)
     with col_f1:
-        reg_sel = st.selectbox(t["f_regiao"], ["Todas"] + filtros["regioes"], index=0, format_func=lambda x: tr_val(x, idioma))
+        reg_sel = st.selectbox(t["f_regiao"], ["Todas"] + filtros["regioes"], index=0, format_func=lambda x: tr_val(x, idioma), key="epi_regiao")
     with col_f2:
-        uf_sel = st.selectbox(t["f_uf"], ["Todas"] + filtros["ufs"], index=0, format_func=lambda x: tr_val(x, idioma))
+        ufs_da_regiao = filtros["ufs"] if reg_sel == "Todas" else filtros.get("ufs_por_regiao", {}).get(reg_sel, [])
+        opcoes_uf = ["Todas"] + ufs_da_regiao
+        if "epi_uf" in st.session_state and st.session_state["epi_uf"] not in opcoes_uf:
+            st.session_state["epi_uf"] = "Todas"
+        uf_sel = st.selectbox(t["f_uf"], opcoes_uf, index=0, format_func=lambda x: tr_val(x, idioma), key="epi_uf")
     with col_f3:
         raca_sel = st.selectbox(t["f_raca"], ["Todas"] + filtros["racas"], index=0, format_func=lambda x: tr_val(x, idioma))
     with col_f4:

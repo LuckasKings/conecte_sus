@@ -75,13 +75,18 @@ def _fonte_epidemiologia() -> str:
 
 def listar_filtros_disponiveis() -> dict:
     if not parquet_disponivel():
-        return {"regioes": [], "ufs": [], "racas": [], "especialidades": []}
+        return {"regioes": [], "ufs": [], "ufs_por_regiao": {}, "racas": [], "especialidades": []}
 
     fonte = _fonte_epidemiologia()
     con = _get_con()
+    df_reg_uf = con.execute(f"SELECT DISTINCT regiao, uf FROM {fonte} ORDER BY regiao, uf").df()
+    ufs_por_regiao = (
+        df_reg_uf.groupby("regiao")["uf"].apply(lambda s: sorted(s.dropna().tolist())).to_dict()
+    )
     return {
-        "regioes": con.execute(f"SELECT DISTINCT regiao FROM {fonte} ORDER BY regiao").df()["regiao"].dropna().tolist(),
-        "ufs": con.execute(f"SELECT DISTINCT uf FROM {fonte} ORDER BY uf").df()["uf"].dropna().tolist(),
+        "regioes": sorted(df_reg_uf["regiao"].dropna().unique().tolist()),
+        "ufs": sorted(df_reg_uf["uf"].dropna().unique().tolist()),
+        "ufs_por_regiao": ufs_por_regiao,
         "racas": con.execute(f"SELECT DISTINCT raca_cor_desc FROM {fonte} ORDER BY raca_cor_desc").df()["raca_cor_desc"].dropna().tolist(),
         "especialidades": con.execute(f"SELECT DISTINCT especialidade_leito FROM {fonte} ORDER BY especialidade_leito").df()["especialidade_leito"].dropna().tolist(),
     }

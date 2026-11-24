@@ -172,12 +172,12 @@ with st.sidebar:
     st.markdown("## 🏥 SUS Analytics 2024")
     st.caption("Projeto de Portfólio em Ciência de Dados & Saúde Pública")
     st.markdown("---")
-    st.markdown("**📌 Guia Rápido de Leitura:**")
+    st.markdown("**📌 Resumo das Abas:**")
     st.markdown("""
-    - **📊 Aba 1 (Epidemiologia):** Para gestores públicos e saúde coletiva — quem interna, onde e por quê.
-    - **🤖 Aba 2 (Modelos IA):** Para recrutadores técnicos — métricas, calibração e escolha do LightGBM.
-    - **🏥 Aba 3 (Gestão Clínica):** Para médicos e enfermeiros — painel de leitos com alertas ajustáveis.
-    - **📖 Aba 4 (Dicionário):** Para todos os públicos — significado de cada variável e termo técnico.
+    - **📊 Aba 1 (Epidemiologia):** Perfil das internações no Brasil por idade, sexo, raça/cor, meses e causas CID-10.
+    - **🤖 Aba 2 (Modelos IA):** Desempenho dos algoritmos, calibração de probabilidades e escolha do LightGBM.
+    - **🏥 Aba 3 (Gestão Clínica):** Simulador de admissão e painel de leitos com alertas preditivos ajustáveis.
+    - **📖 Aba 4 (Dicionário):** Significado detalhado de cada variável do SUS e dos termos técnicos usados.
     """)
     st.markdown("---")
     st.markdown(f"**⚙️ Motor Analítico:**\n`{ds.modo_execucao()}`")

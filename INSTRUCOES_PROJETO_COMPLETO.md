@@ -142,6 +142,7 @@ Para transformar o projeto em uma vitrine de alto impacto para recrutadores e ex
 | **Fase 4** | **Aba 4 (Dicionário), Layout (UI/UX) & Deploy Público** | Implementação da Aba 4 (Dicionário de Dados & Glossário), revisão visual/ergonômica do dashboard, publicação na nuvem, documentação do repositório e material de portfólio profissional. |
 
 > [!NOTE]
-> **Pendências Futuras Registradas (Fase 4):**
-> 1. **Aba 4 — Dicionário de Dados & Glossário:** Criar aba dedicada explicando variáveis do SUS e termos de Ciência de Dados/IA para públicos técnicos e não técnicos.
-> 2. **Layout do Dashboard (UI/UX):** Retomar o refinamento visual e ergonômico (hierarquia visual, responsividade, filtros avançados por UF/macrorregião, identidade visual hospitalar e polimento executivo para portfólio).
+> **Entregáveis Registrados para Encerramento (Fase 4 / Final):**
+> 1. **Aba 4 — Dicionário de Dados & Glossário:** *(Implementado no dashboard com busca em tempo real e quebra de linha).*
+> 2. **Layout do Dashboard (UI/UX):** *(Refinamento inicial aplicado; ajustes visuais finais podem ser retomados após feedback da publicação online).*
+> 3. **Documento Final Consolidado (Storytelling & Metodologia):** Ao final de todas as etapas e publicação, gerar documento completo reunindo todo o racional técnico e clínico — justificativas de amostragem (`1,5M` e `30k` vs. `13,58M`), evolução do V1 ao V4 Nacional, remoção ética de variáveis, calibração isotônica e passo a passo integral até o modelo em produção.

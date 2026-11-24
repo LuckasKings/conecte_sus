@@ -608,13 +608,36 @@ with tab_dic:
         {"Variável": "Obito", "Nome Amigável": "Alvo: Óbito Hospitalar", "Significado": "Variável binária indicando desfecho de óbito intra-hospitalar (1 = Sim, 0 = Não).", "Uso no Projeto": "Alvo Preditivo 2"},
     ])
 
+    def render_wrapped_table(df_in: pd.DataFrame, widths: list[str]):
+        import html as _html
+        ths = "".join(
+            f"<th style='width:{w}; background:#f1f5f9; color:#1e3a8a; font-weight:700; padding:10px 12px; text-align:left; border-bottom:2px solid #cbd5e1; font-size:0.88rem;'>{_html.escape(str(c))}</th>"
+            for c, w in zip(df_in.columns, widths)
+        )
+        rows_html = ""
+        for _, row in df_in.iterrows():
+            tds = "".join(
+                f"<td style='padding:10px 12px; border-bottom:1px solid #e2e8f0; vertical-align:top; white-space:normal; word-wrap:break-word; line-height:1.45; font-size:0.88rem; color:#0f172a;'>{_html.escape(str(val))}</td>"
+                for val in row.values
+            )
+            rows_html += f"<tr>{tds}</tr>"
+        table_html = (
+            "<div style='overflow-x:auto; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:1.2rem; background:#ffffff;'>"
+            f"<table style='width:100%; border-collapse:collapse; table-layout:fixed;'><thead><tr>{ths}</tr></thead><tbody>{rows_html}</tbody></table>"
+            "</div>"
+        )
+        st.markdown(table_html, unsafe_allow_html=True)
+
     if busca_dic:
         mask_d = df_dicionario.apply(lambda col: col.astype(str).str.contains(busca_dic, case=False, na=False)).any(axis=1)
         df_dic_show = df_dicionario[mask_d]
     else:
         df_dic_show = df_dicionario
 
-    st.dataframe(df_dic_show, use_container_width=True, hide_index=True)
+    if df_dic_show.empty:
+        st.info("Nenhuma variável encontrada para esse filtro.")
+    else:
+        render_wrapped_table(df_dic_show, ["18%", "18%", "46%", "18%"])
 
     st.markdown("#### 🧠 2. Glossário de Termos Técnicos (Ciência de Dados & Saúde)")
     df_glossario = pd.DataFrame([
@@ -637,7 +660,10 @@ with tab_dic:
     else:
         df_glo_show = df_glossario
 
-    st.dataframe(df_glo_show, use_container_width=True, hide_index=True)
+    if df_glo_show.empty:
+        st.info("Nenhum termo técnico encontrado para esse filtro.")
+    else:
+        render_wrapped_table(df_glo_show, ["20%", "18%", "62%"])
 
 st.markdown("---")
 st.markdown("<p style='text-align: center; color: #94a3b8; font-size: 0.85rem;'>SUS Analytics Brasil 2024 • DuckDB + Parquet + LightGBM V4 Calibrado • Portfólio de Inteligência em Saúde</p>", unsafe_allow_html=True)

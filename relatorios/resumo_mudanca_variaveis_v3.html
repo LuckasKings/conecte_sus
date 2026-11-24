@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evolução de Variáveis V3: IA de Admissão & Perfil Epidemiológico SUS Acre</title>
+    <style>
+        :root {
+            --primary: #005a9c;
+            --primary-dark: #003a66;
+            --secondary: #0088cc;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #c0392b;
+            --purple: #8e44ad;
+            --dark: #2c3e50;
+            --light: #f8f9fa;
+            --border: #e2e8f0;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f1f5f9;
+            color: var(--dark);
+            line-height: 1.6;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 32px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: var(--card-shadow);
+        }
+
+        header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            font-size: 15px;
+            opacity: 0.9;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: var(--card-shadow);
+            border-left: 5px solid var(--secondary);
+        }
+
+        .kpi-card.success { border-left-color: var(--success); }
+        .kpi-card.danger { border-left-color: var(--danger); }
+        .kpi-card.warning { border-left-color: var(--warning); }
+        .kpi-card.purple { border-left-color: var(--purple); }
+
+        .kpi-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: #64748b;
+            margin-bottom: 6px;
+        }
+
+        .kpi-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--dark);
+        }
+
+        .kpi-desc {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .section-card {
+            background: white;
+            border-radius: 12px;
+            padding: 28px;
+            margin-bottom: 24px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .section-title {
+            font-size: 19px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            font-size: 13.5px;
+        }
+
+        th, td {
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background-color: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-model { background-color: #dcfce7; color: #15803d; }
+        .badge-epidemio { background-color: #f3e8ff; color: #6b21a8; }
+        .badge-removed { background-color: #fee2e2; color: #b91c1c; }
+        .badge-target { background-color: #fef3c7; color: #b45309; }
+
+        .callout {
+            background-color: #eff6ff;
+            border-left: 4px solid var(--primary);
+            padding: 16px;
+            border-radius: 0 8px 8px 0;
+            margin: 16px 0;
+            font-size: 14px;
+        }
+
+        .callout-purple {
+            background-color: #faf5ff;
+            border-left-color: var(--purple);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .dashboard-card {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .dashboard-card h3 {
+            font-size: 15px;
+            color: var(--primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dashboard-card p {
+            font-size: 13px;
+            color: #475569;
+        }
+
+        .dashboard-card ul {
+            margin-left: 18px;
+            margin-top: 6px;
+            font-size: 12.5px;
+            color: #334155;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Dicionário & Relatório de Mudança de Variáveis (V3 Definitivo)</h1>
+        <p>Projeto Conecte SUS | Acre 2024 &mdash; Arquitetura Bipolar: IA Clínica de Admissão & Painel de Vigilância Epidemiológica</p>
+    </header>
+
+    <!-- KPIS -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-title">Coorte de Pacientes</div>
+            <div class="kpi-value">56.459</div>
+            <div class="kpi-desc">Internações válidas do Acre em 2024</div>
+        </div>
+        <div class="kpi-card warning">
+            <div class="kpi-title">Longa Permanência</div>
+            <div class="kpi-value">2.991 <span style="font-size: 14px;">(5,30%)</span></div>
+            <div class="kpi-desc">Estadias &ge; 15 dias (Recall: 77,9%)</div>
+        </div>
+        <div class="kpi-card danger">
+            <div class="kpi-title">Óbito Intra-hospitalar</div>
+            <div class="kpi-value">1.524 <span style="font-size: 14px;">(2,70%)</span></div>
+            <div class="kpi-desc">Desfecho fatal (ROC-AUC: 0,895)</div>
+        </div>
+        <div class="kpi-card success">
+            <div class="kpi-title">IA de Admissão (V3)</div>
+            <div class="kpi-value">8 Features</div>
+            <div class="kpi-desc">Clínicas, éticas e sem viés social</div>
+        </div>
+        <div class="kpi-card purple">
+            <div class="kpi-title">Base Epidemiológica</div>
+            <div class="kpi-value">13 Variáveis</div>
+            <div class="kpi-desc">Demografia, raça, sazonalidade e geografia</div>
+        </div>
+    </div>
+
+    <!-- SEÇÃO 1: EVOLUÇÃO DAS VARIÁVEIS -->
+    <div class="section-card">
+        <h2 class="section-title">1. Matriz de Rastreabilidade e Evolução: Baseline &rarr; V2 &rarr; V3</h2>
+        <p style="margin-bottom: 12px; font-size: 14px;">
+            Este quadro documenta a destinação precisa de cada variável nas 3 iterações do projeto, explicando por que determinadas colunas saíram do modelo preditivo e migraram para a vigilância epidemiológica:
+        </p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Variável</th>
+                    <th>Origem SIH</th>
+                    <th>Status no V3</th>
+                    <th>Destino Operacional</th>
+                    <th>Justificativa Técnica, Clínica e Bioética</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>idade_anos</strong></td>
+                    <td><code>idade</code> + <code>cod_idade</code></td>
+                    <td><span class="badge badge-model">Modelo V3</span></td>
+                    <td>Scorecard Admissão</td>
+                    <td>Principal preditor fisiológico. Reserva biológica e vulnerabilidade a complicações.</td>
+                </tr>
+                <tr>
+                    <td><strong>sexo</strong></td>
+                    <td><code>sexo</code></td>
+                    <td><span class="badge badge-model">Modelo V3</span></td>
+                    <td>Scorecard Admissão</td>
+                    <td>Homens apresentam o dobro da mortalidade e maior permanência (perfil de traumas/cardiovascular).</td>
+                </tr>
+                <tr>
+                    <td><strong>capitulo_cid</strong></td>
+                    <td><code>diag_princ</code></td>
+                    <td><span class="badge badge-model">Modelo V3</span></td>
+                    <td>Scorecard Admissão</td>
+                    <td>Diagnóstico de entrada. Neoplasias lideram óbito e Transtornos Mentais lideram longa permanência.</td>
+                </tr>
+                <tr>
+                    <td><strong>especialidade_leito</strong></td>
+                    <td><code>espec</code></td>
+                    <td><span class="badge badge-model">Modelo V3</span></td>
+                    <td>Scorecard Admissão</td>
+                    <td><strong>Preditivo crítico de óbito:</strong> Clínica Médica concentra 78,9% de todas as mortes do estado.</td>
+                </tr>
+                <tr>
+                    <td><strong>carater_internacao</strong></td>
+                    <td><code>car_int</code></td>
+                    <td><span class="badge badge-model">Modelo V3</span></td>
+                    <td>Scorecard Admissão</td>
+                    <td>Urgência/Emergência vs Eletiva programada. Sinaliza agudeza e risco iminente.</td>
+                </tr>
+                <tr>
+                    <td><strong>complexidade</strong></td>
+                    <td><code>complex</code></td>
+                    <td><span class="badge badge-model">Modelo V3</span></td>
+                    <td>Scorecard Admissão</td>
+                    <td>Alta complexidade dobra o tempo de permanência e eleva o risco de morte.</td>
+                </tr>
+                <tr>
+                    <td><strong>transferido_intermun</strong></td>
+                    <td><code>munic_res</code> &ne; <code>munic_mov</code></td>
+                    <td><span class="badge badge-model">Modelo V3</span></td>
+                    <td>Scorecard Admissão</td>
+                    <td>Vulnerabilidade de transporte fluvial/ambulância no Acre (+28% no risco de óbito).</td>
+                </tr>
+                <tr>
+                    <td><strong>internacao_fim_de_semana</strong></td>
+                    <td><code>dt_inter</code></td>
+                    <td><span class="badge badge-model">Modelo V3</span></td>
+                    <td>Scorecard Admissão</td>
+                    <td>Captura fragilidade de rotinas de suporte diagnóstico aos sábados e domingos.</td>
+                </tr>
+                <tr style="background-color: #faf5ff;">
+                    <td><strong>raca_cor_desc</strong></td>
+                    <td><code>raca_cor</code></td>
+                    <td><span class="badge badge-epidemio">Epidemiologia</span></td>
+                    <td>Dashboard Gestão</td>
+                    <td><strong>Decisão Bioética:</strong> Removida da IA clínica para evitar viés algorítmico na admissão (cor da pele não é mecanismo biológico). Mantida para monitoramento de equidade em saúde indígena e parda.</td>
+                </tr>
+                <tr style="background-color: #faf5ff;">
+                    <td><strong>mes_internacao</strong></td>
+                    <td><code>dt_inter</code> (mês)</td>
+                    <td><span class="badge badge-epidemio">Epidemiologia</span></td>
+                    <td>Dashboard Gestão</td>
+                    <td><strong>Remoção Técnica:</strong> Eliminada do modelo preditivo para evitar <em>split bias</em> de árvores e sobreajuste ao calendário de 2024. Mantida para análise de sazonalidade amazônica (cheias vs seca).</td>
+                </tr>
+                <tr style="background-color: #fee2e2;">
+                    <td><strong>cobranca</strong></td>
+                    <td><code>cobranca</code></td>
+                    <td><span class="badge badge-removed">Expurgada</span></td>
+                    <td>Descartada</td>
+                    <td><strong>Data Leakage:</strong> Códigos 21/22 são pedidos de prorrogação faturados após internação longa. Indisponíveis no acolhimento.</td>
+                </tr>
+                <tr style="background-color: #fef3c7;">
+                    <td><strong>Longa_Permanencia</strong></td>
+                    <td><code>qt_diarias >= 15</code></td>
+                    <td><span class="badge badge-target">Target 1</span></td>
+                    <td>Desfecho Clínico</td>
+                    <td>Permanência &ge; 15 dias (5,30% da coorte). ROC-AUC = 0,826.</td>
+                </tr>
+                <tr style="background-color: #fef3c7;">
+                    <td><strong>Obito</strong></td>
+                    <td><code>morte == 1</code></td>
+                    <td><span class="badge badge-target">Target 2</span></td>
+                    <td>Desfecho Clínico</td>
+                    <td>Óbito intra-hospitalar (2,70% da coorte). ROC-AUC = 0,895.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- SEÇÃO 2: ESPECIFICAÇÃO DO DASHBOARD EPIDEMIOLÓGICO -->
+    <div class="section-card">
+        <h2 class="section-title">2. Especificação do Futuro Painel / Dashboard Epidemiológico (Planejado)</h2>
+        <p style="font-size: 14px; margin-bottom: 12px;">
+            A base especializada <code>sih_perfil_epidemiologico_acre.csv</code> foi consolidada com 13 variáveis e servirá como motor de dados para o futuro painel de inteligência em saúde pública estadual, organizado em 5 eixos:
+        </p>
+
+        <div class="dashboard-grid">
+            <div class="dashboard-card">
+                <h3>1. Equidade & Saúde das Populações Vulneráveis</h3>
+                <p>Estratificação de internações e mortalidade proporcional por raça/cor:</p>
+                <ul>
+                    <li>Hospitalizações de populações indígenas e ribeirinhas no Juruá e Tarauacá.</li>
+                    <li>Auditoria de equidade e tempo de espera prévio.</li>
+                </ul>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>2. Sazonalidade Amazônica & Clima</h3>
+                <p>Monitoramento das curvas temporais de internação ao longo do ano:</p>
+                <ul>
+                    <li><strong>Inverno Amazônico (Jan-Abr):</strong> Cheias dos rios, alagamentos e picos de doenças infecciosas e respiratórias agudas.</li>
+                    <li><strong>Seca/Verão (Ago-Out):</strong> Período de fumaça/queimadas e agravos respiratórios em idosos e crianças.</li>
+                </ul>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>3. Geografia & Fluxos Intermunicipais</h3>
+                <p>Mapeamento de deslocamento de pacientes entre as 22 cidades:</p>
+                <ul>
+                    <li>Identificação da taxa de evasão do interior para Rio Branco e Cruzeiro do Sul.</li>
+                    <li>Análise de impacto do transporte fluvial e rodoviário na letalidade.</li>
+                </ul>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>4. Morbimortalidade & Carga de Doença</h3>
+                <p>Perfil nosológico por grupos CID-10:</p>
+                <ul>
+                    <li>Top 10 causas de morte intra-hospitalar no Acre.</li>
+                    <li>Proporção de internações psiquiátricas e obstétricas por polo regional.</li>
+                </ul>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>5. Eficiência e Ocupação Hospitalar</h3>
+                <p>Indicadores operacionais de rede:</p>
+                <ul>
+                    <li>Tempo Médio de Permanência (TMP) por hospital e especialidade.</li>
+                    <li>Giro de leitos e proporção de casos de urgência vs cirurgias eletivas.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- SEÇÃO 3: MÉTRICAS FINAIS DO MODELO CLÍNICO V3 -->
+    <div class="section-card">
+        <h2 class="section-title">3. Resultados Consolidados dos Modelos Clínicos V3 (10-Fold Stratified CV)</h2>
+        <p style="font-size: 14px; margin-bottom: 12px;">
+            Mesmo com a retirada de variáveis de ruído temporal e raça, os modelos clínicos mantiveram excelente capacidade de discriminação e ganharam poder de generalização:
+        </p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Desfecho</th>
+                    <th>Modelo</th>
+                    <th>ROC-AUC</th>
+                    <th>PR-AUC (Baseline)</th>
+                    <th>Sensibilidade (Recall)</th>
+                    <th>Especificidade</th>
+                    <th>Acurácia</th>
+                    <th>Brier Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Longa Permanência</strong></td>
+                    <td><strong>LightGBM V3</strong></td>
+                    <td><strong>0,8263</strong></td>
+                    <td>0,2294 (0,053)</td>
+                    <td><strong>77,93%</strong> (2.331 / 2.991)</td>
+                    <td>73,49%</td>
+                    <td>73,73%</td>
+                    <td>0,1630</td>
+                </tr>
+                <tr>
+                    <td><strong>Longa Permanência</strong></td>
+                    <td><strong>Regressão Logística V3</strong></td>
+                    <td>0,8095</td>
+                    <td>0,1941 (0,053)</td>
+                    <td>78,23% (2.340 / 2.991)</td>
+                    <td>71,10%</td>
+                    <td>71,48%</td>
+                    <td>0,1841</td>
+                </tr>
+                <tr style="background-color: #f0fdf4;">
+                    <td><strong>Óbito Intra-hospitalar</strong></td>
+                    <td><strong>LightGBM V3</strong></td>
+                    <td><strong>0,8949</strong></td>
+                    <td>0,1889 (0,027)</td>
+                    <td><strong>82,22%</strong> (1.253 / 1.524)</td>
+                    <td>81,47%</td>
+                    <td>81,49%</td>
+                    <td>0,1231</td>
+                </tr>
+                <tr style="background-color: #f0fdf4;">
+                    <td><strong>Óbito Intra-hospitalar</strong></td>
+                    <td><strong>Regressão Logística V3</strong></td>
+                    <td>0,8882</td>
+                    <td>0,1804 (0,027)</td>
+                    <td>83,01% (1.265 / 1.524)</td>
+                    <td>79,54%</td>
+                    <td>79,63%</td>
+                    <td>0,1454</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</body>
+</html>

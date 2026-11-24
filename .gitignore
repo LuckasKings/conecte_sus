@@ -21,8 +21,9 @@ modelos/*_v3.joblib
 modelos/modelo_admissao_longa_lightgbm.joblib
 modelos/modelo_admissao_obito_lightgbm.joblib
 
-# Sistema / IDE / Ferramentas locais
+# Sistema / IDE / Ferramentas locais / Documentos internos
 .agent/
+INSTRUCOES_PROJETO_COMPLETO.md
 .DS_Store
 Thumbs.db
 *.tmp

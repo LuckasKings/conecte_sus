@@ -1,0 +1,28 @@
+# Ambientes virtuais e caches Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# Dados brutos e arquivos volumosos (excedem limite GitHub)
+dados/*.dbc
+dados/*.csv
+dados/tmp_dbc/
+dados/parquet_nacional/
+
+# Modelos pesados/legados (mantemos apenas os modelos V4 LightGBM em produção + métricas)
+modelos/*random_forest*.joblib
+modelos/*xgboost*.joblib
+modelos/*logistic_regression*.joblib
+modelos/*_lr*.joblib
+modelos/*_v3.joblib
+modelos/modelo_admissao_longa_lightgbm.joblib
+modelos/modelo_admissao_obito_lightgbm.joblib
+
+# Sistema / IDE / Ferramentas locais
+.agent/
+.DS_Store
+Thumbs.db
+*.tmp

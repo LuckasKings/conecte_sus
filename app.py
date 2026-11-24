@@ -90,35 +90,44 @@ st.markdown("""
         font-size: 0.72rem;
         color: #64748b;
     }
-    div[data-baseweb="tab-list"] {
-        gap: 10px;
-        flex-wrap: wrap;
-        margin-bottom: 0.75rem;
+    [data-testid="stTabs"] [role="tablist"] {
+        gap: 12px !important;
+        flex-wrap: wrap !important;
+        overflow: visible !important;
+        padding: 6px 2px 10px 2px !important;
     }
-    div[data-baseweb="tab-highlight"],
-    div[data-baseweb="tab-border"] {
+    [data-testid="stTabs"] [role="tablist"]::after,
+    [data-testid="stTabs"] [data-testid="stTab"] .react-aria-SelectionIndicator {
         display: none !important;
     }
-    button[data-baseweb="tab"] {
-        background-color: #f1f5f9;
-        border: 1px solid #cbd5e1;
-        border-radius: 10px;
-        padding: 10px 18px;
-        color: #334155;
-        font-weight: 600;
-        transition: all 0.18s ease;
+    [data-testid="stTabs"] [data-testid="stTab"] {
+        height: auto !important;
+        padding: 11px 20px !important;
+        background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%) !important;
+        border: 1.5px solid #cbd5e1 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 2px 5px rgba(15, 23, 42, 0.05) !important;
+        color: #334155 !important;
+        font-weight: 600 !important;
+        transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
-    button[data-baseweb="tab"]:hover {
-        background-color: #e2e8f0;
-        border-color: #94a3b8;
-        color: #1e3a8a;
+    [data-testid="stTabs"] [data-testid="stTab"]:hover,
+    [data-testid="stTabs"] [data-testid="stTab"][data-hovered] {
+        background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%) !important;
+        border-color: #60a5fa !important;
+        color: #1e3a8a !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 5px 12px rgba(37, 99, 235, 0.14) !important;
     }
-    button[data-baseweb="tab"][aria-selected="true"] {
-        background-color: #1e3a8a !important;
+    [data-testid="stTabs"] [data-testid="stTab"][aria-selected="true"],
+    [data-testid="stTabs"] [data-testid="stTab"][data-selected] {
+        background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%) !important;
         border-color: #1e3a8a !important;
-        box-shadow: 0 4px 10px rgba(30, 58, 138, 0.25);
+        box-shadow: 0 6px 16px rgba(30, 58, 138, 0.30) !important;
+        transform: translateY(-1px) !important;
     }
-    button[data-baseweb="tab"][aria-selected="true"] * {
+    [data-testid="stTabs"] [data-testid="stTab"][aria-selected="true"] *,
+    [data-testid="stTabs"] [data-testid="stTab"][data-selected] * {
         color: #ffffff !important;
         font-weight: 700 !important;
     }

@@ -57,7 +57,11 @@ st.markdown("""
         border: 1px solid #e2e8f0;
         border-top: 4px solid #1e3a8a;
         border-radius: 10px;
-        padding: 15px 12px;
+        padding: 14px 12px;
+        min-height: 118px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
         text-align: center;
         box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04);
     }
@@ -115,8 +119,17 @@ def carregar_metricas_v4():
     return pd.DataFrame()
 
 
+UFS_POR_REGIAO_BR = {
+    "Centro-Oeste": ["DF", "GO", "MS", "MT"],
+    "Nordeste": ["AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"],
+    "Norte": ["AC", "AM", "AP", "PA", "RO", "RR", "TO"],
+    "Sudeste": ["ES", "MG", "RJ", "SP"],
+    "Sul": ["PR", "RS", "SC"],
+}
+
+
 @st.cache_data(ttl=300)
-def get_filtros():
+def get_filtros_v2():
     return ds.listar_filtros_disponiveis()
 
 
@@ -165,7 +178,7 @@ if not ds.parquet_disponivel():
     st.stop()
 
 modelo_longa, modelo_obito = carregar_modelos()
-filtros = get_filtros()
+filtros = get_filtros_v2()
 kpis_gerais = get_kpis("Todas", "Todas")
 
 
@@ -236,7 +249,14 @@ with tab_epi:
     with col_f1:
         reg_sel = st.selectbox(t["f_regiao"], ["Todas"] + filtros["regioes"], index=0, format_func=lambda x: tr_val(x, idioma), key="epi_regiao")
     with col_f2:
-        ufs_da_regiao = filtros["ufs"] if reg_sel == "Todas" else filtros.get("ufs_por_regiao", {}).get(reg_sel, [])
+        if reg_sel == "Todas":
+            ufs_da_regiao = filtros["ufs"]
+        else:
+            ufs_oficiais = UFS_POR_REGIAO_BR.get(reg_sel, [])
+            ufs_disponiveis = set(filtros["ufs"])
+            ufs_da_regiao = [u for u in ufs_oficiais if u in ufs_disponiveis]
+            if not ufs_da_regiao and "ufs_por_regiao" in filtros:
+                ufs_da_regiao = filtros["ufs_por_regiao"].get(reg_sel, [])
         opcoes_uf = ["Todas"] + ufs_da_regiao
         if "epi_uf" in st.session_state and st.session_state["epi_uf"] not in opcoes_uf:
             st.session_state["epi_uf"] = "Todas"

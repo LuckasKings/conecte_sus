@@ -91,12 +91,36 @@ st.markdown("""
         color: #64748b;
     }
     div[data-baseweb="tab-list"] {
-        gap: 8px;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 0.75rem;
+    }
+    div[data-baseweb="tab-highlight"],
+    div[data-baseweb="tab-border"] {
+        display: none !important;
     }
     button[data-baseweb="tab"] {
+        background-color: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        padding: 10px 18px;
+        color: #334155;
         font-weight: 600;
-        padding: 10px 16px;
-        border-radius: 8px 8px 0 0;
+        transition: all 0.18s ease;
+    }
+    button[data-baseweb="tab"]:hover {
+        background-color: #e2e8f0;
+        border-color: #94a3b8;
+        color: #1e3a8a;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        background-color: #1e3a8a !important;
+        border-color: #1e3a8a !important;
+        box-shadow: 0 4px 10px rgba(30, 58, 138, 0.25);
+    }
+    button[data-baseweb="tab"][aria-selected="true"] * {
+        color: #ffffff !important;
+        font-weight: 700 !important;
     }
 </style>
 """, unsafe_allow_html=True)

@@ -24,7 +24,7 @@ if os.path.join(BASE_DIR, "scripts") not in sys.path:
     sys.path.insert(0, os.path.join(BASE_DIR, "scripts"))
 
 import duckdb_service as ds
-from i18n import TEXTOS, get_dicionario_df, get_evolucao_df, get_glossario_df, get_regras_qualidade_df, get_tecnologias_df, tr_series, tr_val
+from i18n import TEXTOS, get_dicionario_df, get_evolucao_df, get_glossario_df, get_qualidade_variaveis_df, get_tecnologias_df, tr_series, tr_val
 
 # ==========================================
 # 1. Configuração da Página e Estilo Visual
@@ -223,11 +223,6 @@ def get_qualidade_uf(regiao):
 @st.cache_data(ttl=300)
 def get_qualidade_mes(regiao, uf):
     return ds.obter_volume_mensal_qualidade(regiao=regiao, uf=uf)
-
-
-@st.cache_data(ttl=300)
-def get_anomalia_uti(regiao, uf):
-    return ds.obter_exemplos_anomalia_uti(regiao=regiao, uf=uf, limite=25)
 
 
 if not ds.parquet_disponivel():
@@ -508,25 +503,28 @@ with tab_qual:
             unsafe_allow_html=True,
         )
     with dk3:
+        viol_dom = res_dq["bad_diarias"] + res_dq["bad_idade"] + res_dq["bad_cid"]
+        cor_dom = "#059669" if viol_dom == 0 else "#dc2626"
+        cls_dom = "green" if viol_dom == 0 else "red"
         st.markdown(
-            f'<div class="metric-card amber"><h3>{t["dq_kpi3_lbl"]}</h3>'
-            f'<p style="color:#d97706;">{fmt_dec(res_dq["pct_raca_nd"], 2)} / {fmt_dec(res_dq["pct_cid_ign"], 3)}</p>'
-            f'<small>{fmt_num(res_dq["qtd_raca_nd"], idioma)} • {t["dq_kpi3_sub"]}</small></div>',
+            f'<div class="metric-card {cls_dom}"><h3>{t["dq_kpi3_lbl"]}</h3>'
+            f'<p style="color:{cor_dom};">{fmt_num(viol_dom, idioma)}</p>'
+            f'<small>{res_dq["min_idade"]:.0f}–{res_dq["max_idade"]:.0f} • {res_dq["min_diarias"]}–{res_dq["max_diarias"]}d • {t["dq_kpi3_sub"]}</small></div>',
             unsafe_allow_html=True,
         )
     with dk4:
         st.markdown(
-            f'<div class="metric-card red"><h3>{t["dq_kpi4_lbl"]}</h3>'
-            f'<p style="color:#dc2626;">{fmt_dec(res_dq["pct_uti_gt_diarias"], 2)}</p>'
-            f'<small>{fmt_num(res_dq["uti_gt_diarias"], idioma)} / {fmt_num(res_dq["amostra_n"], idioma)} • {t["dq_kpi4_sub"]}</small></div>',
+            f'<div class="metric-card amber"><h3>{t["dq_kpi4_lbl"]}</h3>'
+            f'<p style="color:#d97706;">{fmt_dec(res_dq["pct_raca_nd"], 2)} / {fmt_dec(res_dq["pct_esp_outras"], 2)}</p>'
+            f'<small>CID Ign.: {fmt_dec(res_dq["pct_cid_ign"], 3)} • {t["dq_kpi4_sub"]}</small></div>',
             unsafe_allow_html=True,
         )
 
     st.write("")
     st.markdown(t["dq_contract_hdr"])
     st.caption(t["dq_contract_sub"])
-    df_contrato, dq_status_keys = get_regras_qualidade_df(res_dq, esperado_ufs, idioma)
-    render_wrapped_table(df_contrato, ["17%", "25%", "22%", "14%", "22%"], badge_col=t["dq_status_col"], status_keys=dq_status_keys)
+    df_contrato, dq_status_keys = get_qualidade_variaveis_df(res_dq, esperado_ufs, idioma)
+    render_wrapped_table(df_contrato, ["21%", "17%", "18%", "13%", "31%"], badge_col=t["dq_status_col"], status_keys=dq_status_keys)
 
     dq_g1, dq_g2 = st.columns(2)
     with dq_g1:
@@ -596,18 +594,7 @@ with tab_qual:
             },
         )
 
-    with st.expander(t["dq_exp_uti_tit"].format(n=fmt_num(res_dq["uti_gt_diarias"], idioma), pct=res_dq["pct_uti_gt_diarias"]), expanded=False):
-        st.markdown(t["dq_exp_uti_txt"])
-        df_anom = get_anomalia_uti(dq_reg, dq_uf)
-        if not df_anom.empty:
-            df_anom = df_anom.copy()
-            df_anom["n_aih"] = "#AIH-" + df_anom["n_aih"].astype(str).str[-8:]
-            df_anom["especialidade_leito"] = tr_series(df_anom["especialidade_leito"], idioma)
-            df_anom_show = df_anom.rename(columns=t["dq_uti_cols"])
-            st.dataframe(df_anom_show, use_container_width=True, hide_index=True)
-
-    with st.expander(t["dq_exp_null_tit"], expanded=False):
-        st.markdown(t["dq_exp_null_txt"])
+    st.warning(t["dq_other_note"])
 
 # ==============================================================================
 # ABA 3: COMO A IA FUNCIONA (MODELOS & MÉTRICAS)

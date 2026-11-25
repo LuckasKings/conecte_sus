@@ -381,15 +381,15 @@ def _fonte_registro_detalhado() -> tuple[str, str]:
 
 
 def obter_resumo_qualidade(regiao="Todas", uf="Todas") -> dict:
-    """Computa métricas de completude (13,58M via cubo) e integridade clínica (partições ou amostra 30k)."""
+    """Computa cobertura, completude e validade focadas nos dados do Perfil Epidemiológico e Treino da IA."""
     vazio = {
         "total": 0, "ufs_cobertas": 0, "meses_cobertos": 0, "particoes_uf_mes": 0,
         "qtd_raca_nd": 0, "pct_raca_nd": 0.0, "pct_sexo_outro": 0.0,
         "pct_cid_ign": 0.0, "pct_esp_outras": 0.0,
         "amostra_n": 0, "auditoria_fonte": "indisponivel", "null_ia_features": 0,
-        "bad_diarias": 0, "bad_idade": 0, "bad_cid": 0,
-        "uti_gt_diarias": 0, "pct_uti_gt_diarias": 0.0, "aihs_duplicadas": 0,
-        "min_idade": 0.0, "max_idade": 0.0, "max_diarias": 0,
+        "bad_diarias": 0, "bad_idade": 0, "bad_cid": 0, "bad_sexo": 0,
+        "null_carater": 0, "null_complex": 0, "null_transf": 0, "null_fds": 0,
+        "min_idade": 0.0, "max_idade": 0.0, "min_diarias": 0, "max_diarias": 0,
     }
     if not parquet_disponivel():
         return vazio
@@ -467,10 +467,14 @@ def obter_resumo_qualidade(regiao="Todas", uf="Todas") -> dict:
             CAST(COALESCE(SUM(CASE WHEN qt_diarias <= 0 OR qt_diarias IS NULL THEN 1 ELSE 0 END), 0) AS BIGINT) AS bad_diarias,
             CAST(COALESCE(SUM(CASE WHEN idade_anos < 0 OR idade_anos > 120 OR idade_anos IS NULL THEN 1 ELSE 0 END), 0) AS BIGINT) AS bad_idade,
             CAST(COALESCE(SUM(CASE WHEN diag_princ IS NULL OR TRIM(diag_princ) IN ('', 'None', 'nan') THEN 1 ELSE 0 END), 0) AS BIGINT) AS bad_cid,
-            CAST(COALESCE(SUM(CASE WHEN uti_mes_to > qt_diarias THEN 1 ELSE 0 END), 0) AS BIGINT) AS uti_gt_diarias,
-            CAST(GREATEST(COUNT(*) - COUNT(DISTINCT n_aih), 0) AS BIGINT) AS aihs_duplicadas,
+            CAST(COALESCE(SUM(CASE WHEN sexo NOT IN ('1', '3') OR sexo IS NULL THEN 1 ELSE 0 END), 0) AS BIGINT) AS bad_sexo,
+            CAST(COALESCE(SUM(CASE WHEN carater_internacao IS NULL OR TRIM(CAST(carater_internacao AS VARCHAR)) = '' THEN 1 ELSE 0 END), 0) AS BIGINT) AS null_carater,
+            CAST(COALESCE(SUM(CASE WHEN complexidade IS NULL OR TRIM(CAST(complexidade AS VARCHAR)) = '' THEN 1 ELSE 0 END), 0) AS BIGINT) AS null_complex,
+            CAST(COALESCE(SUM(CASE WHEN transferido_intermun IS NULL THEN 1 ELSE 0 END), 0) AS BIGINT) AS null_transf,
+            CAST(COALESCE(SUM(CASE WHEN internacao_fim_de_semana IS NULL THEN 1 ELSE 0 END), 0) AS BIGINT) AS null_fds,
             COALESCE(MIN(idade_anos), 0.0) AS min_idade,
             COALESCE(MAX(idade_anos), 0.0) AS max_idade,
+            COALESCE(MIN(qt_diarias), 0) AS min_diarias,
             COALESCE(MAX(qt_diarias), 0) AS max_diarias
         FROM {fonte_det}
         WHERE {det_where}
@@ -484,12 +488,15 @@ def obter_resumo_qualidade(regiao="Todas", uf="Todas") -> dict:
             "bad_diarias": int(r_d[2]),
             "bad_idade": int(r_d[3]),
             "bad_cid": int(r_d[4]),
-            "uti_gt_diarias": int(r_d[5]),
-            "pct_uti_gt_diarias": (int(r_d[5]) * 100.0 / n_det) if n_det > 0 else 0.0,
-            "aihs_duplicadas": int(r_d[6]),
-            "min_idade": float(r_d[7]),
-            "max_idade": float(r_d[8]),
-            "max_diarias": int(r_d[9]),
+            "bad_sexo": int(r_d[5]),
+            "null_carater": int(r_d[6]),
+            "null_complex": int(r_d[7]),
+            "null_transf": int(r_d[8]),
+            "null_fds": int(r_d[9]),
+            "min_idade": float(r_d[10]),
+            "max_idade": float(r_d[11]),
+            "min_diarias": int(r_d[12]),
+            "max_diarias": int(r_d[13]),
         })
     return res
 
@@ -567,36 +574,4 @@ def obter_volume_mensal_qualidade(regiao="Todas", uf="Todas") -> pd.DataFrame:
         GROUP BY mes_internacao
         ORDER BY mes_internacao
         """
-    return con.execute(query, params).df()
-
-
-def obter_exemplos_anomalia_uti(regiao="Todas", uf="Todas", limite=20) -> pd.DataFrame:
-    """Retorna registros reais onde diárias de UTI faturadas superam o total de diárias da AIH."""
-    fonte_det, _ = _fonte_registro_detalhado()
-    if not fonte_det:
-        return pd.DataFrame()
-    clauses = ["uti_mes_to > qt_diarias"]
-    params = []
-    if regiao and regiao != "Todas":
-        clauses.append("regiao = ?")
-        params.append(regiao)
-    if uf and uf != "Todas":
-        clauses.append("uf = ?")
-        params.append(uf)
-    where_sql = " AND ".join(clauses)
-    con = _get_con()
-    query = f"""
-    SELECT
-        n_aih,
-        uf,
-        especialidade_leito,
-        diag_princ,
-        qt_diarias,
-        uti_mes_to,
-        (uti_mes_to - qt_diarias) AS diferenca_dias
-    FROM {fonte_det}
-    WHERE {where_sql}
-    ORDER BY diferenca_dias DESC, uti_mes_to DESC
-    LIMIT {int(limite)}
-    """
     return con.execute(query, params).df()

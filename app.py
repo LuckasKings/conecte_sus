@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-🏥 SUS Analytics & Clinical Intelligence Platform (PT / EN)
+🏥 SUS Analytics & Clinical Intelligence Platform (PT / EN / ES)
 Aplicação Streamlit Multi-Abas Conectada ao Data Lake Parquet + DuckDB:
 - Aba 1: Perfil Epidemiológico & Equidade em Saúde (27 UFs / 13,58M internações)
-- Aba 2: Como a IA Funciona (Modelos V4 Calibrados & Escolha do LightGBM)
-- Aba 3: Painel de Gestão Clínica & Leitos (Simulador + Flags Calibradas)
-- Aba 4: Dicionário de Dados & Glossário
+- Aba 2: Qualidade dos Dados & Contrato de Integridade
+- Aba 3: Como a IA Funciona (Modelos V4 Calibrados, Benchmarks, Prós & Contras)
+- Aba 4: Painel de Gestão Clínica & Leitos (Simulador + Flags Calibradas)
+- Aba 5: Dicionário Completo SIH/SUS (113 Colunas + Derivadas) & Glossário
+- Aba 6: Jornada, Decisões, Arquitetura & Stack Tecnológica
 """
 
 import html as _html
@@ -22,7 +24,7 @@ if os.path.join(BASE_DIR, "scripts") not in sys.path:
     sys.path.insert(0, os.path.join(BASE_DIR, "scripts"))
 
 import duckdb_service as ds
-from i18n import TEXTOS, get_dicionario_df, get_evolucao_df, get_glossario_df, get_tecnologias_df, tr_series, tr_val
+from i18n import TEXTOS, get_dicionario_df, get_evolucao_df, get_glossario_df, get_regras_qualidade_df, get_tecnologias_df, tr_series, tr_val
 
 # ==========================================
 # 1. Configuração da Página e Estilo Visual
@@ -208,6 +210,26 @@ def get_amostra_cockpit(uf, espec, min_dias, busca):
     return ds.obter_amostra_cockpit(uf=uf, espec=espec, min_dias=min_dias, busca=busca, limite=300)
 
 
+@st.cache_data(ttl=300)
+def get_qualidade_resumo(regiao, uf):
+    return ds.obter_resumo_qualidade(regiao=regiao, uf=uf)
+
+
+@st.cache_data(ttl=300)
+def get_qualidade_uf(regiao):
+    return ds.obter_qualidade_por_uf(regiao=regiao)
+
+
+@st.cache_data(ttl=300)
+def get_qualidade_mes(regiao, uf):
+    return ds.obter_volume_mensal_qualidade(regiao=regiao, uf=uf)
+
+
+@st.cache_data(ttl=300)
+def get_anomalia_uti(regiao, uf):
+    return ds.obter_exemplos_anomalia_uti(regiao=regiao, uf=uf, limite=25)
+
+
 if not ds.parquet_disponivel():
     st.error("Nenhuma partição Parquet encontrada em `dados/`. Execute `scripts/gerar_camada_deploy.py` primeiro.")
     st.stop()
@@ -219,6 +241,43 @@ kpis_gerais = get_kpis("Todas", "Todas")
 
 def fmt_num(valor: int, lang: str) -> str:
     return f"{valor:,}" if lang == "en" else f"{valor:,}".replace(",", ".")
+
+
+def render_wrapped_table(df_in: pd.DataFrame, widths: list[str], badge_col: str = None, status_keys: list[str] = None):
+    badge_styles = {
+        "ia_epi": ("#dcfce7", "#166534", "#bbf7d0"),
+        "epi": ("#f3e8ff", "#6b21a8", "#e9d5ff"),
+        "alvo_painel": ("#fef3c7", "#92400e", "#fde68a"),
+        "nao_leakage": ("#fee2e2", "#991b1b", "#fecaca"),
+        "nao_admin": ("#f1f5f9", "#475569", "#cbd5e1"),
+        "dq_ok": ("#dcfce7", "#166534", "#bbf7d0"),
+        "dq_warn": ("#fef3c7", "#92400e", "#fde68a"),
+        "dq_info": ("#e0f2fe", "#075985", "#bae6fd"),
+        "dq_alert": ("#fee2e2", "#991b1b", "#fecaca"),
+    }
+    ths = "".join(
+        f"<th style='width:{w}; background:#f1f5f9; color:#1e3a8a; font-weight:700; padding:10px 12px; text-align:left; border-bottom:2px solid #cbd5e1; font-size:0.86rem;'>{_html.escape(str(c))}</th>"
+        for c, w in zip(df_in.columns, widths)
+    )
+    rows_html = ""
+    for row_i, (_, row) in enumerate(df_in.iterrows()):
+        tds = ""
+        s_key = status_keys[row_i] if status_keys is not None else None
+        for col_name, val in zip(df_in.columns, row.values):
+            esc_val = _html.escape(str(val))
+            if badge_col and col_name == badge_col and s_key in badge_styles:
+                bg, fg, bd = badge_styles[s_key]
+                cell_content = f"<span style='display:inline-block; background:{bg}; color:{fg}; border:1px solid {bd}; padding:3px 8px; border-radius:6px; font-weight:700; font-size:0.78rem;'>{esc_val}</span>"
+            else:
+                cell_content = esc_val
+            tds += f"<td style='padding:10px 12px; border-bottom:1px solid #e2e8f0; vertical-align:top; white-space:normal; word-wrap:break-word; line-height:1.45; font-size:0.86rem; color:#0f172a;'>{cell_content}</td>"
+        rows_html += f"<tr>{tds}</tr>"
+    table_html = (
+        "<div style='overflow-x:auto; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:1.2rem; background:#ffffff;'>"
+        f"<table style='width:100%; border-collapse:collapse; table-layout:fixed;'><thead><tr>{ths}</tr></thead><tbody>{rows_html}</tbody></table>"
+        "</div>"
+    )
+    st.markdown(table_html, unsafe_allow_html=True)
 
 
 # ==========================================
@@ -273,7 +332,7 @@ st.write("")
 # ==========================================
 # 4. Navegação por Abas
 # ==========================================
-tab_epi, tab_ml, tab_gestao, tab_dic, tab_jornada = st.tabs(t["tabs"])
+tab_epi, tab_qual, tab_ml, tab_gestao, tab_dic, tab_jornada = st.tabs(t["tabs"])
 
 # ==============================================================================
 # ABA 1: INTELIGÊNCIA EPIDEMIOLÓGICA & EQUIDADE
@@ -397,7 +456,161 @@ with tab_epi:
         )
 
 # ==============================================================================
-# ABA 2: COMO A IA FUNCIONA (MODELOS & MÉTRICAS)
+# ABA 2: QUALIDADE DOS DADOS & CONTRATO DE INTEGRIDADE
+# ==============================================================================
+with tab_qual:
+    st.markdown(t["dq_hdr"])
+    st.markdown(t["dq_sub"])
+
+    dq_f1, dq_f2, _ = st.columns([1.2, 1.2, 2.6])
+    with dq_f1:
+        dq_reg = st.selectbox(t["f_regiao"], ["Todas"] + filtros["regioes"], index=0, format_func=lambda x: tr_val(x, idioma), key="dq_regiao")
+    with dq_f2:
+        if dq_reg == "Todas":
+            dq_ufs_reg = filtros["ufs"]
+        else:
+            dq_ufs_of = UFS_POR_REGIAO_BR.get(dq_reg, [])
+            dq_ufs_disp = set(filtros["ufs"])
+            dq_ufs_reg = [u for u in dq_ufs_of if u in dq_ufs_disp] or filtros["ufs_por_regiao"].get(dq_reg, [])
+        dq_opcoes_uf = ["Todas"] + dq_ufs_reg
+        if "dq_uf" in st.session_state and st.session_state["dq_uf"] not in dq_opcoes_uf:
+            st.session_state["dq_uf"] = "Todas"
+        dq_uf = st.selectbox(t["f_uf"], dq_opcoes_uf, index=0, format_func=lambda x: tr_val(x, idioma), key="dq_uf")
+
+    res_dq = get_qualidade_resumo(dq_reg, dq_uf)
+    esperado_ufs = len(dq_ufs_reg) if dq_uf == "Todas" else 1
+    esperado_parts = esperado_ufs * 12
+
+    banner_key = "dq_banner_local" if res_dq["auditoria_fonte"] == "parquet" else "dq_banner_cloud"
+    st.info(t[banner_key].format(n=fmt_num(res_dq["total"], idioma), na=fmt_num(res_dq["amostra_n"], idioma)))
+
+    def fmt_dec(val: float, casas: int = 2) -> str:
+        s = f"{val:.{casas}f}%"
+        return s if idioma == "en" else s.replace(".", ",")
+
+    dk1, dk2, dk3, dk4 = st.columns(4)
+    with dk1:
+        cor_cov = "#059669" if res_dq["particoes_uf_mes"] >= esperado_parts else "#d97706"
+        st.markdown(
+            f'<div class="metric-card green"><h3>{t["dq_kpi1_lbl"]}</h3>'
+            f'<p style="color:{cor_cov};">{res_dq["particoes_uf_mes"]} / {esperado_parts}</p>'
+            f'<small>{res_dq["ufs_cobertas"]}/{esperado_ufs} UFs • {res_dq["meses_cobertos"]}/12 • {t["dq_kpi1_sub"]}</small></div>',
+            unsafe_allow_html=True,
+        )
+    with dk2:
+        pct_ok_ia = 100.0 if res_dq["amostra_n"] > 0 and res_dq["null_ia_features"] == 0 else (
+            ((res_dq["amostra_n"] - res_dq["null_ia_features"]) * 100.0 / res_dq["amostra_n"]) if res_dq["amostra_n"] > 0 else 0.0
+        )
+        st.markdown(
+            f'<div class="metric-card green"><h3>{t["dq_kpi2_lbl"]}</h3>'
+            f'<p style="color:#059669;">{fmt_dec(pct_ok_ia, 1)}</p>'
+            f'<small>{fmt_num(res_dq["null_ia_features"], idioma)} nulos • {t["dq_kpi2_sub"]}</small></div>',
+            unsafe_allow_html=True,
+        )
+    with dk3:
+        st.markdown(
+            f'<div class="metric-card amber"><h3>{t["dq_kpi3_lbl"]}</h3>'
+            f'<p style="color:#d97706;">{fmt_dec(res_dq["pct_raca_nd"], 2)} / {fmt_dec(res_dq["pct_cid_ign"], 3)}</p>'
+            f'<small>{fmt_num(res_dq["qtd_raca_nd"], idioma)} • {t["dq_kpi3_sub"]}</small></div>',
+            unsafe_allow_html=True,
+        )
+    with dk4:
+        st.markdown(
+            f'<div class="metric-card red"><h3>{t["dq_kpi4_lbl"]}</h3>'
+            f'<p style="color:#dc2626;">{fmt_dec(res_dq["pct_uti_gt_diarias"], 2)}</p>'
+            f'<small>{fmt_num(res_dq["uti_gt_diarias"], idioma)} / {fmt_num(res_dq["amostra_n"], idioma)} • {t["dq_kpi4_sub"]}</small></div>',
+            unsafe_allow_html=True,
+        )
+
+    st.write("")
+    st.markdown(t["dq_contract_hdr"])
+    st.caption(t["dq_contract_sub"])
+    df_contrato, dq_status_keys = get_regras_qualidade_df(res_dq, esperado_ufs, idioma)
+    render_wrapped_table(df_contrato, ["17%", "25%", "22%", "14%", "22%"], badge_col=t["dq_status_col"], status_keys=dq_status_keys)
+
+    dq_g1, dq_g2 = st.columns(2)
+    with dq_g1:
+        st.markdown(t["dq_c1_hdr"])
+        st.caption(t["dq_c1_cap"])
+        df_dq_mes = get_qualidade_mes(dq_reg, dq_uf)
+        if not df_dq_mes.empty:
+            fig_dq_mes = px.bar(
+                df_dq_mes,
+                x="mes_internacao",
+                y="internacoes",
+                text="ufs_ativas",
+                labels={"mes_internacao": t["dq_c1_x"], "internacoes": t["dq_c1_y"]},
+                template="plotly_white",
+            )
+            fig_dq_mes.update_traces(marker_color="#0f766e", texttemplate="%{text} UFs", textposition="outside")
+            fig_dq_mes.update_layout(height=340, xaxis=dict(dtick=1), margin=dict(l=20, r=20, t=30, b=20))
+            st.plotly_chart(fig_dq_mes, use_container_width=True)
+
+    with dq_g2:
+        st.markdown(t["dq_c2_hdr"])
+        st.caption(t["dq_c2_cap"])
+        df_dq_uf = get_qualidade_uf(dq_reg)
+        if not df_dq_uf.empty:
+            top_dq_uf = df_dq_uf.head(15).copy()
+            top_dq_uf_melt = top_dq_uf.melt(
+                id_vars=["uf"],
+                value_vars=["pct_esp_outras", "pct_raca_nd"],
+                var_name="indicador",
+                value_name="pct",
+            )
+            top_dq_uf_melt["indicador_disp"] = top_dq_uf_melt["indicador"].map({
+                "pct_esp_outras": t["dq_c2_opt1"],
+                "pct_raca_nd": t["dq_c2_opt2"],
+            })
+            fig_dq_uf = px.bar(
+                top_dq_uf_melt,
+                x="pct",
+                y="uf",
+                color="indicador_disp",
+                barmode="group",
+                orientation="h",
+                color_discrete_map={t["dq_c2_opt1"]: "#f59e0b", t["dq_c2_opt2"]: "#6366f1"},
+                labels={"pct": t["dq_c2_x"], "uf": t["dq_c2_y"], "indicador_disp": t["dq_c2_leg"]},
+                template="plotly_white",
+            )
+            fig_dq_uf.update_layout(height=340, margin=dict(l=20, r=20, t=20, b=20), legend=dict(orientation="h", yanchor="bottom", y=1.02))
+            st.plotly_chart(fig_dq_uf, use_container_width=True)
+
+    if len(filtros["ufs"]) > 1 and not df_dq_uf.empty:
+        st.markdown(t["dq_uf_tbl_hdr"])
+        df_dq_uf_disp = df_dq_uf.copy()
+        df_dq_uf_disp["regiao"] = tr_series(df_dq_uf_disp["regiao"], idioma)
+        dq_cols_map = t["dq_uf_cols"]
+        st.dataframe(
+            df_dq_uf_disp,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "uf": dq_cols_map["uf"],
+                "regiao": dq_cols_map["regiao"],
+                "internacoes": st.column_config.NumberColumn(dq_cols_map["internacoes"], format="%d"),
+                "meses_ativos": st.column_config.NumberColumn(dq_cols_map["meses_ativos"], format="%d / 12"),
+                "pct_raca_nd": st.column_config.NumberColumn(dq_cols_map["pct_raca_nd"], format="%.3f%%"),
+                "pct_cid_ign": st.column_config.NumberColumn(dq_cols_map["pct_cid_ign"], format="%.4f%%"),
+                "pct_esp_outras": st.column_config.NumberColumn(dq_cols_map["pct_esp_outras"], format="%.2f%%"),
+            },
+        )
+
+    with st.expander(t["dq_exp_uti_tit"].format(n=fmt_num(res_dq["uti_gt_diarias"], idioma), pct=res_dq["pct_uti_gt_diarias"]), expanded=False):
+        st.markdown(t["dq_exp_uti_txt"])
+        df_anom = get_anomalia_uti(dq_reg, dq_uf)
+        if not df_anom.empty:
+            df_anom = df_anom.copy()
+            df_anom["n_aih"] = "#AIH-" + df_anom["n_aih"].astype(str).str[-8:]
+            df_anom["especialidade_leito"] = tr_series(df_anom["especialidade_leito"], idioma)
+            df_anom_show = df_anom.rename(columns=t["dq_uti_cols"])
+            st.dataframe(df_anom_show, use_container_width=True, hide_index=True)
+
+    with st.expander(t["dq_exp_null_tit"], expanded=False):
+        st.markdown(t["dq_exp_null_txt"])
+
+# ==============================================================================
+# ABA 3: COMO A IA FUNCIONA (MODELOS & MÉTRICAS)
 # ==============================================================================
 with tab_ml:
     st.markdown(t["ml_hdr"])
@@ -454,7 +667,7 @@ with tab_ml:
             st.image(img_imp, caption=t["ml_img3"], use_container_width=True)
 
 # ==============================================================================
-# ABA 3: PAINEL DE GESTÃO CLÍNICA & LEITOS
+# ABA 4: PAINEL DE GESTÃO CLÍNICA & LEITOS
 # ==============================================================================
 with tab_gestao:
     st.markdown(t["cli_hdr"])
@@ -633,41 +846,8 @@ with tab_gestao:
         )
 
 # ==============================================================================
-# ABA 4: DICIONÁRIO COMPLETO SIH/SUS (113 COLUNAS) & GLOSSÁRIO
+# ABA 5: DICIONÁRIO COMPLETO SIH/SUS (113 COLUNAS) & GLOSSÁRIO
 # ==============================================================================
-def render_wrapped_table(df_in: pd.DataFrame, widths: list[str], badge_col: str = None, status_keys: list[str] = None):
-    badge_styles = {
-        "ia_epi": ("#dcfce7", "#166534", "#bbf7d0"),
-        "epi": ("#f3e8ff", "#6b21a8", "#e9d5ff"),
-        "alvo_painel": ("#fef3c7", "#92400e", "#fde68a"),
-        "nao_leakage": ("#fee2e2", "#991b1b", "#fecaca"),
-        "nao_admin": ("#f1f5f9", "#475569", "#cbd5e1"),
-    }
-    ths = "".join(
-        f"<th style='width:{w}; background:#f1f5f9; color:#1e3a8a; font-weight:700; padding:10px 12px; text-align:left; border-bottom:2px solid #cbd5e1; font-size:0.86rem;'>{_html.escape(str(c))}</th>"
-        for c, w in zip(df_in.columns, widths)
-    )
-    rows_html = ""
-    for row_i, (_, row) in enumerate(df_in.iterrows()):
-        tds = ""
-        s_key = status_keys[row_i] if status_keys is not None else None
-        for col_name, val in zip(df_in.columns, row.values):
-            esc_val = _html.escape(str(val))
-            if badge_col and col_name == badge_col and s_key in badge_styles:
-                bg, fg, bd = badge_styles[s_key]
-                cell_content = f"<span style='display:inline-block; background:{bg}; color:{fg}; border:1px solid {bd}; padding:3px 8px; border-radius:6px; font-weight:700; font-size:0.78rem;'>{esc_val}</span>"
-            else:
-                cell_content = esc_val
-            tds += f"<td style='padding:10px 12px; border-bottom:1px solid #e2e8f0; vertical-align:top; white-space:normal; word-wrap:break-word; line-height:1.45; font-size:0.86rem; color:#0f172a;'>{cell_content}</td>"
-        rows_html += f"<tr>{tds}</tr>"
-    table_html = (
-        "<div style='overflow-x:auto; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:1.2rem; background:#ffffff;'>"
-        f"<table style='width:100%; border-collapse:collapse; table-layout:fixed;'><thead><tr>{ths}</tr></thead><tbody>{rows_html}</tbody></table>"
-        "</div>"
-    )
-    st.markdown(table_html, unsafe_allow_html=True)
-
-
 with tab_dic:
     st.markdown(t["dic_hdr"])
     st.markdown(t["dic_sub"])
@@ -737,7 +917,7 @@ with tab_dic:
         render_wrapped_table(df_glo_show, ["20%", "18%", "62%"])
 
 # ==============================================================================
-# ABA 5: JORNADA, DECISÕES & ARQUITETURA DO PROJETO
+# ABA 6: JORNADA, DECISÕES & ARQUITETURA DO PROJETO
 # ==============================================================================
 with tab_jornada:
     st.markdown(t["j_hdr"])

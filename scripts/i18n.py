@@ -174,10 +174,11 @@ TEXTOS = {
         "sidebar_resumo_hdr": "**📌 Resumo das Abas:**",
         "sidebar_resumo_body": """
 - **📊 Aba 1 (Epidemiologia):** Perfil das internações no Brasil por idade, sexo, raça/cor, meses e causas CID-10.
-- **🤖 Aba 2 (Modelos IA):** Desempenho dos algoritmos, calibração de probabilidades e escolha do LightGBM.
-- **🏥 Aba 3 (Gestão Clínica):** Simulador de admissão e painel de leitos com alertas preditivos ajustáveis.
-- **📖 Aba 4 (Dicionário):** Catálogo auditado das **113 colunas oficiais do SIH/SUS** + derivadas e glossário.
-- **🧭 Aba 5 (Jornada):** Histórico criativo, decisões técnicas, correção de *leakage* e evolução V1 → V4.
+- **🛡️ Aba 2 (Qualidade):** Auditoria de completude (27 UFs × 12 meses), subnotificação e regras de integridade clínica.
+- **🤖 Aba 3 (Modelos IA):** Desempenho dos algoritmos, prós/contras, calibração e escolha do LightGBM.
+- **🏥 Aba 4 (Gestão Clínica):** Simulador de admissão e painel de leitos com alertas preditivos ajustáveis.
+- **📖 Aba 5 (Dicionário):** Catálogo auditado das **113 colunas oficiais do SIH/SUS** + derivadas e glossário.
+- **🧭 Aba 6 (Jornada):** Histórico criativo, decisões técnicas, stack usada e evolução V1 → V4.
 """,
         "sidebar_motor": "**⚙️ Motor Analítico:**",
         "sidebar_prod": "**🧠 Produção:**\n`LightGBM V4 (Calibração Isotônica)`",
@@ -198,10 +199,11 @@ TEXTOS = {
         "kpi5_sub": "Óbito / Longa Perm. (V4)",
         "tabs": [
             "📊 1. Perfil Epidemiológico & Equidade",
-            "🤖 2. Como a IA Funciona (Modelos & Métricas)",
-            "🏥 3. Painel de Gestão Clínica & Leitos",
-            "📖 4. Dicionário SIH/SUS (113 Colunas)",
-            "🧭 5. Jornada, Decisões & Arquitetura",
+            "🛡️ 2. Qualidade dos Dados & Integridade",
+            "🤖 3. Como a IA Funciona (Modelos & Métricas)",
+            "🏥 4. Painel de Gestão Clínica & Leitos",
+            "📖 5. Dicionário SIH/SUS (113 Colunas)",
+            "🧭 6. Jornada, Decisões & Arquitetura",
         ],
         "epi_hdr": "### 📊 Panorama Epidemiológico das Internações Hospitalares",
         "epi_sub": "Explore quem utiliza os hospitais do SUS no Brasil em 2024, as principais causas de internação e diferenças entre regiões e perfis demográficos.",
@@ -241,6 +243,59 @@ TEXTOS = {
         "col_ob_pct": "Taxa Óbito (%)",
         "col_lg_pct": "Longa Perm. (%)",
         "col_med_d": "Média Diárias",
+        "dq_hdr": "### 🛡️ Auditoria de Qualidade dos Dados & Contrato de Integridade (SIH/SUS)",
+        "dq_sub": "Monitoramento automático de **cobertura espaço-temporal, completude, validade clínica e consistência de faturamento** executado via SQL/DuckDB antes da modelagem preditiva.",
+        "dq_banner_local": "🔎 **Auditoria Integral Local:** Cobertura e preenchimento demográfico calculados sobre **100% das {n} internações** no Cubo; regras de domínio e consistência clínica verificadas registro a registro nos Parquets locais (`{na}` linhas).",
+        "dq_banner_cloud": "🔎 **Auditoria Híbrida (Nuvem):** Cobertura, volumes e subnotificação demográfica medidos sobre **100% das {n} internações** via Cubo; regras linha a linha (`idade`, `qt_diarias`, `uti_mes_to`, nulos da IA) auditadas sobre a amostra estratificada nacional (`{na}` casos das 27 UFs).",
+        "dq_kpi1_lbl": "Cobertura UF × Mês",
+        "dq_kpi1_sub": "Partições Ativas (2024)",
+        "dq_kpi2_lbl": "Completude IA (8 Features)",
+        "dq_kpi2_sub": "Zero Nulos na Admissão",
+        "dq_kpi3_lbl": "Subnotificação Raça / CID",
+        "dq_kpi3_sub": "Nao Declarada / Ignorado",
+        "dq_kpi4_lbl": "UTI > Total de Diárias",
+        "dq_kpi4_sub": "Anomalia Faturada (Amostra)",
+        "dq_contract_hdr": "#### 📋 Checklist Automatizado de Contrato de Dados (Data Quality Framework)",
+        "dq_contract_sub": "Cada regra abaixo testa ao vivo os dados carregados no DuckDB segundo 4 dimensões de qualidade (Cobertura, Completude, Validade e Consistência):",
+        "dq_status_col": "Status",
+        "dq_c1_hdr": "#### Estabilidade Mensal de Envio (Volume & UFs Ativas)",
+        "dq_c1_cap": "Verifica se algum mês de 2024 sofreu quebra ou falha de envio nos arquivos `.dbc` do DataSUS.",
+        "dq_c1_x": "Mês (2024)",
+        "dq_c1_y": "Internações Recebidas",
+        "dq_c2_hdr": "#### Subnotificação & Categorias Inespecíficas por UF",
+        "dq_c2_cap": "Compara os estados com maior taxa de especialidade `Outras` ou `Raça/Cor Não Declarada` (%), indicando diferenças de preenchimento hospitalar.",
+        "dq_c2_x": "Percentual (%)",
+        "dq_c2_y": "UF",
+        "dq_c2_leg": "Indicador",
+        "dq_c2_opt1": "Espec. Outras (%)",
+        "dq_c2_opt2": "Raça Não Declarada (%)",
+        "dq_uf_tbl_hdr": "#### 🗺️ Diagnóstico de Completude por Unidade da Federação",
+        "dq_uf_cols": {
+            "uf": "UF",
+            "regiao": "Região",
+            "internacoes": "Internações",
+            "meses_ativos": "Meses Ativos",
+            "pct_raca_nd": "Raça Não Decl. (%)",
+            "pct_cid_ign": "CID Ignorado (%)",
+            "pct_esp_outras": "Espec. Outras (%)",
+        },
+        "dq_exp_uti_tit": "🔍 **Descoberta Real do SIH/SUS: Casos onde `uti_mes_to > qt_diarias` ({n} ocorrências / {pct:.2f}%)**",
+        "dq_exp_uti_txt": "No SIH/SUS, é possível encontrar AIHs onde o número faturado de diárias de UTI (`uti_mes_to`) supera `qt_diarias` (por reapresentações, continuações ou inconsistências contábeis na origem). Identificar essa anomalia na Auditoria de Qualidade comprova por que campos de faturamento pós-entrada **não devem** alimentar modelos de admissão nem substituir `qt_diarias` como alvo.",
+        "dq_uti_cols": {
+            "n_aih": "ID Anonimizado (AIH)",
+            "uf": "UF",
+            "especialidade_leito": "Especialidade",
+            "diag_princ": "CID-10",
+            "qt_diarias": "Diárias Totais",
+            "uti_mes_to": "Diárias UTI",
+            "diferenca_dias": "Excesso UTI (d)",
+        },
+        "dq_exp_null_tit": "🧹 **Auditoria Histórica de Nulidade & Anti-Leakage do Schema Original (113 Colunas)**",
+        "dq_exp_null_txt": """
+- **Diagnósticos Secundários (`diagsec1` a `diagsec9` e `tpdisec1`–`9`):** apresentaram **`89,65%` a `100%` de nulos** na auditoria do piloto completo, inviabilizando escores automáticos de comorbidade (Charlson/Elixhauser) em produção e motivando a transparência da Aba 5.
+- **Campos Constantes ou Redundantes (`ano_cmpt`, `uf_zi`, `dt_inter` bruta):** removidos ou convertidos em atributos estruturais (`mes_internacao`, `internacao_fim_de_semana`) e chaves de particionamento Hive.
+- **Expurgo Anti-Leakage (`34` colunas pós-alta):** campos como `cobranca`, `val_tot`, `dt_saida`, `proc_rea` e `uti_mes_*` existem nos arquivos brutos do DataSUS, mas só surgem após a admissão — bloqueados contratualmente antes de treinar a IA (Aba 3).
+""",
         "ml_hdr": "### 🤖 Como a Inteligência Artificial Funciona & Escolha do Modelo (V4 Nacional)",
         "ml_intro": """No momento em que o paciente entra no hospital, dois modelos preditivos operam juntos usando apenas **8 informações da admissão** (idade, sexo, motivo CID-10, especialidade do leito, caráter urgência/eletivo, complexidade, se veio transferido de outro município e se entrou no fim de semana):
 1. **Modelo de Longa Permanência (≥ 15 dias):** estima a chance de o paciente precisar de internação prolongada, apoiando o giro de leitos e o serviço social.
@@ -368,7 +423,7 @@ TEXTOS = {
 - **Ponto de partida:** Baixamos os 12 arquivos mensais `.dbc` do Acre (2024) e construímos o primeiro classificador para prever Longa Permanência (`>= 15 dias`, apenas `5,30%` dos casos — desbalanceamento de `17,88:1`).
 - **Erro crítico descoberto (#1 — Data Leakage):** A variável `cobranca` apareceu dominando o modelo (`85,29%` de acerto aparente nos códigos `21/22`). Ao investigar o significado no DataSUS, descobrimos que pedidos de prorrogação só são faturados **após** o paciente já ter ficado longo tempo internado — informação inexistente na entrada!
 - **Erro crítico descoberto (#2 — Dupla penalização no XGBoost):** Combinar `SMOTE` com `scale_pos_weight=18` no pipeline empurrou `85%` das previsões para a classe positiva (`45.237` alarmes falsos e apenas `19,77%` de acurácia). **Decisão:** eliminar o `SMOTE` e passar a usar ponderação nativa isolada.
-- **Auditoria de dados faltantes:** Descobrimos que comorbidades secundárias (`diagsec1` a `diagsec9`) têm **`89,65%` a `100%` de valores nulos**, inviabilizando índices como Charlson e motivando o catálogo auditado de todas as 113 colunas na Aba 4.
+- **Auditoria de dados faltantes:** Descobrimos que comorbidades secundárias (`diagsec1` a `diagsec9`) têm **`89,65%` a `100%` de valores nulos**, inviabilizando índices como Charlson e motivando o catálogo auditado de todas as 113 colunas na Aba 5.
 """,
         "j_v2_tit": "2️⃣ Fase V2 — Virada para Admissão Clínica & Matriz Dual-Triage",
         "j_v2_txt": """
@@ -408,10 +463,11 @@ TEXTOS = {
         "sidebar_resumo_hdr": "**📌 Tabs Overview:**",
         "sidebar_resumo_body": """
 - **📊 Tab 1 (Epidemiology):** Hospitalization profile across Brazil by age, sex, race, months, and ICD-10 chapters.
-- **🤖 Tab 2 (AI Models):** Algorithm benchmarks, probability calibration, and why LightGBM was chosen.
-- **🏥 Tab 3 (Clinical Panel):** Admission simulator and ward cockpit with adjustable predictive risk alerts.
-- **📖 Tab 4 (Dictionary):** Audited catalog of all **113 official SIH/SUS columns** + derived fields & glossary.
-- **🧭 Tab 5 (Journey):** Creative timeline, technical decisions, leakage fixes, and V1 → V4 evolution.
+- **🛡️ Tab 2 (Data Quality):** Completeness audit (27 States × 12 months), underreporting, and clinical integrity rules.
+- **🤖 Tab 3 (AI Models):** Algorithm benchmarks, pros/cons, calibration, and why LightGBM was chosen.
+- **🏥 Tab 4 (Clinical Panel):** Admission simulator and ward cockpit with adjustable predictive risk alerts.
+- **📖 Tab 5 (Dictionary):** Audited catalog of all **113 official SIH/SUS columns** + derived fields & glossary.
+- **🧭 Tab 6 (Journey):** Creative timeline, technical decisions, tech stack, and V1 → V4 evolution.
 """,
         "sidebar_motor": "**⚙️ Analytics Engine:**",
         "sidebar_prod": "**🧠 Production Model:**\n`LightGBM V4 (Isotonic Calibration)`",
@@ -432,10 +488,11 @@ TEXTOS = {
         "kpi5_sub": "Mortality / Long Stay (V4)",
         "tabs": [
             "📊 1. Epidemiology & Health Equity",
-            "🤖 2. How the AI Works (Models & Metrics)",
-            "🏥 3. Clinical Management & Ward Cockpit",
-            "📖 4. SIH/SUS Dictionary (113 Columns)",
-            "🧭 5. Journey, Decisions & Architecture",
+            "🛡️ 2. Data Quality & Integrity",
+            "🤖 3. How the AI Works (Models & Metrics)",
+            "🏥 4. Clinical Management & Ward Cockpit",
+            "📖 5. SIH/SUS Dictionary (113 Columns)",
+            "🧭 6. Journey, Decisions & Architecture",
         ],
         "epi_hdr": "### 📊 National Epidemiological Overview",
         "epi_sub": "Explore who uses Brazil's public hospital network (SUS) in 2024, leading causes of admission, and regional or demographic disparities.",
@@ -475,6 +532,59 @@ TEXTOS = {
         "col_ob_pct": "Mortality (%)",
         "col_lg_pct": "Long Stay (%)",
         "col_med_d": "Avg. Days",
+        "dq_hdr": "### 🛡️ Data Quality Audit & Integrity Contract (SIH/SUS)",
+        "dq_sub": "Automated monitoring of **spatio-temporal coverage, completeness, clinical validity, and billing consistency** executed via SQL/DuckDB prior to predictive modeling.",
+        "dq_banner_local": "🔎 **Full Local Audit:** Coverage and demographic completeness computed across **100% of {n} admissions** in the Cube; domain validity and clinical consistency audited row-by-row across local Parquet partitions (`{na}` rows).",
+        "dq_banner_cloud": "🔎 **Hybrid Audit (Cloud):** Coverage, volumes, and demographic underreporting measured over **100% of {n} admissions** via Cube; row-level domain checks (`idade`, `qt_diarias`, `uti_mes_to`, AI nulls) audited on the national stratified sample (`{na}` cases across 27 States).",
+        "dq_kpi1_lbl": "State × Month Coverage",
+        "dq_kpi1_sub": "Active Partitions (2024)",
+        "dq_kpi2_lbl": "AI Completeness (8 Features)",
+        "dq_kpi2_sub": "Zero Intake Nulls",
+        "dq_kpi3_lbl": "Race / ICD Underreporting",
+        "dq_kpi3_sub": "Not Declared / Unknown",
+        "dq_kpi4_lbl": "ICU > Total Stay Days",
+        "dq_kpi4_sub": "Billed Anomaly (Sample)",
+        "dq_contract_hdr": "#### 📋 Automated Data Contract Checklist (Data Quality Framework)",
+        "dq_contract_sub": "Each expectation below validates live DuckDB tables across 4 data quality dimensions (Coverage, Completeness, Validity, Consistency):",
+        "dq_status_col": "Status",
+        "dq_c1_hdr": "#### Monthly Ingestion Stability (Volume & Active States)",
+        "dq_c1_cap": "Checks whether any 2024 month suffered submission drops or missing `.dbc` state files from DATASUS.",
+        "dq_c1_x": "Month (2024)",
+        "dq_c1_y": "Admissions Ingested",
+        "dq_c2_hdr": "#### Underreporting & Unspecified Labels by State",
+        "dq_c2_cap": "Compares states with the highest share of `Other` ward specialty or `Not Declared` race/ethnicity (%), exposing hospital reporting gaps.",
+        "dq_c2_x": "Share (%)",
+        "dq_c2_y": "State (UF)",
+        "dq_c2_leg": "Metric",
+        "dq_c2_opt1": "Other Specialty (%)",
+        "dq_c2_opt2": "Race Not Declared (%)",
+        "dq_uf_tbl_hdr": "#### 🗺️ Completeness Breakdown by State (UF)",
+        "dq_uf_cols": {
+            "uf": "State",
+            "regiao": "Region",
+            "internacoes": "Admissions",
+            "meses_ativos": "Active Months",
+            "pct_raca_nd": "Race Not Decl. (%)",
+            "pct_cid_ign": "Unknown ICD (%)",
+            "pct_esp_outras": "Other Spec. (%)",
+        },
+        "dq_exp_uti_tit": "🔍 **Real SIH/SUS Discovery: Cases where `uti_mes_to > qt_diarias` ({n} cases / {pct:.2f}%)**",
+        "dq_exp_uti_txt": "In official SIH/SUS records, billed ICU days (`uti_mes_to`) can exceed total stay days (`qt_diarias`) due to continuation AIHs, multi-month rollovers, or source billing anomalies. Surfacing this early explains why post-admission billing fields **must not** enter intake models or replace `qt_diarias` as the stay target.",
+        "dq_uti_cols": {
+            "n_aih": "Anonymized ID (AIH)",
+            "uf": "State",
+            "especialidade_leito": "Specialty",
+            "diag_princ": "ICD-10",
+            "qt_diarias": "Total Stay Days",
+            "uti_mes_to": "Billed ICU Days",
+            "diferenca_dias": "ICU Excess (d)",
+        },
+        "dq_exp_null_tit": "🧹 **Historical Raw Schema Missingness & Anti-Leakage Audit (113 Columns)**",
+        "dq_exp_null_txt": """
+- **Secondary Diagnoses (`diagsec1`–`diagsec9` & `tpdisec1`–`9`):** exhibited **`89.65%` to `100%` missing values** during the full pilot audit, making automated comorbidity indices (Charlson/Elixhauser) unreliable and documented transparently in Tab 5.
+- **Constant or Redundant Fields (`ano_cmpt`, `uf_zi`, raw `dt_inter`):** pruned or transformed into structural features (`mes_internacao`, `internacao_fim_de_semana`) and Hive partition keys.
+- **Anti-Leakage Guardrail (`34` post-stay columns):** billing/outcome fields (`cobranca`, `val_tot`, `dt_saida`, `proc_rea`, `uti_mes_*`) exist in raw DATASUS dumps only after stay closure — blocked before AI model training (Tab 3).
+""",
         "ml_hdr": "### 🤖 How the AI Works & Model Selection (V4 National)",
         "ml_intro": """At the exact moment of hospital admission, two predictive models run simultaneously using only **8 intake variables** (age, sex, ICD-10 chapter, ward specialty, admission urgency, complexity level, inter-municipal transfer, and weekend admission):
 1. **Long Length of Stay Model (≥ 15 days):** estimates the probability of prolonged hospitalization to guide bed turnover and social work early on.
@@ -602,7 +712,7 @@ TEXTOS = {
 - **Starting point:** Ingested 12 monthly `.dbc` files from Acre (2024) to predict Long Length of Stay (`>= 15 days`, only `5.30%` of cases — `17.88:1` class imbalance).
 - **Critical finding #1 (Data Leakage):** The billing column `cobranca` dominated initial models (`85.29%` apparent long-stay rate on codes `21/22`). Auditing DATASUS rules revealed those extension codes are only billed **after** a patient has already stayed long — impossible to know at admission!
 - **Critical finding #2 (XGBoost double-penalty collapse):** Combining `SMOTE` + `scale_pos_weight=18` pushed `85%` of predictions into the positive class (`45,237` false alarms, `19.77%` accuracy). **Decision:** drop SMOTE entirely and rely solely on native loss weighting.
-- **Missingness audit:** Secondary diagnoses (`diagsec1`–`diagsec9`) were missing in **`89.65%` to `100%`** of records, motivating a full 113-column audit (now searchable in Tab 4).
+- **Missingness audit:** Secondary diagnoses (`diagsec1`–`diagsec9`) were missing in **`89.65%` to `100%`** of records, motivating a full 113-column audit (now searchable in Tab 5).
 """,
         "j_v2_tit": "2️⃣ Phase V2 — Shift to Intake Triage & Dual-Outcome Matrix",
         "j_v2_txt": """
@@ -642,10 +752,11 @@ TEXTOS = {
         "sidebar_resumo_hdr": "**📌 Resumen de Pestañas:**",
         "sidebar_resumo_body": """
 - **📊 Pestaña 1 (Epidemiología):** Perfil hospitalario en Brasil por edad, sexo, raza/color, meses y causas CIE-10.
-- **🤖 Pestaña 2 (Modelos IA):** Desempeño de algoritmos, calibración de probabilidades y elección de LightGBM.
-- **🏥 Pestaña 3 (Gestión Clínica):** Simulador de ingreso y panel de camas con alertas predictivas ajustables.
-- **📖 Pestaña 4 (Diccionario):** Catálogo auditado de las **113 columnas oficiales del SIH/SUS** + derivadas y glosario.
-- **🧭 Pestaña 5 (Trayectoria):** Historial creativo, decisiones técnicas, corrección de *leakage* y evolución V1 → V4.
+- **🛡️ Pestaña 2 (Calidad):** Auditoría de completitud (27 Estados × 12 meses), subregistro y reglas de integridad clínica.
+- **🤖 Pestaña 3 (Modelos IA):** Desempeño de algoritmos, pros/contras, calibración y elección de LightGBM.
+- **🏥 Pestaña 4 (Gestión Clínica):** Simulador de ingreso y panel de camas con alertas predictivas ajustables.
+- **📖 Pestaña 5 (Diccionario):** Catálogo auditado de las **113 columnas oficiales del SIH/SUS** + derivadas y glosario.
+- **🧭 Pestaña 6 (Trayectoria):** Historial creativo, decisiones técnicas, stack usada y evolución V1 → V4.
 """,
         "sidebar_motor": "**⚙️ Motor Analítico:**",
         "sidebar_prod": "**🧠 Producción:**\n`LightGBM V4 (Calibración Isotónica)`",
@@ -666,10 +777,11 @@ TEXTOS = {
         "kpi5_sub": "Óbito / Larga Est. (V4)",
         "tabs": [
             "📊 1. Epidemiología y Equidad",
-            "🤖 2. Cómo Funciona la IA (Modelos)",
-            "🏥 3. Gestión Clínica y Camas",
-            "📖 4. Diccionario SIH/SUS (113 Cols)",
-            "🧭 5. Trayectoria, Decisiones y Diseño",
+            "🛡️ 2. Calidad de Datos e Integridad",
+            "🤖 3. Cómo Funciona la IA (Modelos)",
+            "🏥 4. Gestión Clínica y Camas",
+            "📖 5. Diccionario SIH/SUS (113 Cols)",
+            "🧭 6. Trayectoria, Decisiones y Diseño",
         ],
         "epi_hdr": "### 📊 Panorama Epidemiológico de los Ingresos Hospitalarios",
         "epi_sub": "Explore quién utiliza los hospitales públicos de Brasil (SUS) en 2024, las principales causas de ingreso y las brechas regionales o demográficas.",
@@ -709,6 +821,59 @@ TEXTOS = {
         "col_ob_pct": "Mortalidad (%)",
         "col_lg_pct": "Larga Est. (%)",
         "col_med_d": "Prom. Días",
+        "dq_hdr": "### 🛡️ Auditoría de Calidad de Datos y Contrato de Integridad (SIH/SUS)",
+        "dq_sub": "Monitoreo automatizado de **cobertura espacio-temporal, completitud, validez clínica y consistencia de facturación** ejecutado mediante SQL/DuckDB antes del modelado predictivo.",
+        "dq_banner_local": "🔎 **Auditoría Integral Local:** Cobertura y completitud demográfica calculadas sobre el **100% de {n} ingresos** en el Cubo; reglas de dominio e integridad verificadas fila por fila en los Parquets locales (`{na}` filas).",
+        "dq_banner_cloud": "🔎 **Auditoría Híbrida (Nube):** Cobertura, volúmenes y subregistro demográfico medidos sobre el **100% de {n} ingresos** mediante Cubo; reglas fila a fila (`idade`, `qt_diarias`, `uti_mes_to`, nulos de la IA) auditadas en la muestra estratificada (`{na}` casos de 27 Estados).",
+        "dq_kpi1_lbl": "Cobertura Estado × Mes",
+        "dq_kpi1_sub": "Particiones Activas (2024)",
+        "dq_kpi2_lbl": "Completitud IA (8 Features)",
+        "dq_kpi2_sub": "Cero Nulos al Ingreso",
+        "dq_kpi3_lbl": "Subregistro Raza / CIE",
+        "dq_kpi3_sub": "No Declarada / Ignorado",
+        "dq_kpi4_lbl": "UCI > Días Totales",
+        "dq_kpi4_sub": "Anomalía Facturada (Muestra)",
+        "dq_contract_hdr": "#### 📋 Lista de Verificación del Contrato de Datos (Data Quality Framework)",
+        "dq_contract_sub": "Cada regla valida en vivo las tablas cargadas en DuckDB en 4 dimensiones (Cobertura, Completitud, Validez y Consistencia):",
+        "dq_status_col": "Estado",
+        "dq_c1_hdr": "#### Estabilidad Mensual de Envío (Volumen y Estados Activos)",
+        "dq_c1_cap": "Verifica si algún mes de 2024 sufrió caídas anómalas o pérdida de archivos `.dbc` en DATASUS.",
+        "dq_c1_x": "Mes (2024)",
+        "dq_c1_y": "Ingresos Recibidos",
+        "dq_c2_hdr": "#### Subregistro y Categorías Inespecíficas por Estado",
+        "dq_c2_cap": "Compara los estados con mayor porcentaje de especialidad `Otras` o `Raza/Color No Declarada` (%), revelando brechas de registro.",
+        "dq_c2_x": "Porcentaje (%)",
+        "dq_c2_y": "Estado (UF)",
+        "dq_c2_leg": "Indicador",
+        "dq_c2_opt1": "Espec. Otras (%)",
+        "dq_c2_opt2": "Raza No Declarada (%)",
+        "dq_uf_tbl_hdr": "#### 🗺️ Diagnóstico de Completitud por Estado (UF)",
+        "dq_uf_cols": {
+            "uf": "Estado",
+            "regiao": "Región",
+            "internacoes": "Ingresos",
+            "meses_ativos": "Meses Activos",
+            "pct_raca_nd": "Raza No Decl. (%)",
+            "pct_cid_ign": "CIE Ignorado (%)",
+            "pct_esp_outras": "Espec. Otras (%)",
+        },
+        "dq_exp_uti_tit": "🔍 **Hallazgo Real del SIH/SUS: Casos donde `uti_mes_to > qt_diarias` ({n} casos / {pct:.2f}%)**",
+        "dq_exp_uti_txt": "En los registros oficiales del SIH/SUS, las estancias de UCI facturadas (`uti_mes_to`) pueden superar `qt_diarias` por AIHs de continuación, traslados entre competencias o inconsistencias en origen. Detectar esto en Calidad de Datos demuestra por qué variables post-ingreso **no deben** usarse para predecir admisión ni reemplazar `qt_diarias`.",
+        "dq_uti_cols": {
+            "n_aih": "ID Anonimizado (AIH)",
+            "uf": "Estado",
+            "especialidade_leito": "Especialidad",
+            "diag_princ": "CIE-10",
+            "qt_diarias": "Días Totales",
+            "uti_mes_to": "Días UCI Facturados",
+            "diferenca_dias": "Exceso UCI (d)",
+        },
+        "dq_exp_null_tit": "🧹 **Auditoría Histórica de Nulos y Anti-Leakage del Esquema Original (113 Columnas)**",
+        "dq_exp_null_txt": """
+- **Diagnósticos Secundarios (`diagsec1`–`diagsec9` y `tpdisec1`–`9`):** presentaron **`89,65%` a `100%` de nulos** en el piloto completo, impidiendo usar índices automáticos de comorbilidad (Charlson/Elixhauser) en producción y quedando documentados en la Pestaña 5.
+- **Campos Constantes o Redundantes (`ano_cmpt`, `uf_zi`, `dt_inter` cruda):** removidos o transformados en variables estructurales (`mes_internacao`, `internacao_fim_de_semana`) y claves de partición Hive.
+- **Guardrail Anti-Leakage (`34` columnas post-alta):** campos como `cobranca`, `val_tot`, `dt_saida`, `proc_rea` y `uti_mes_*` solo existen tras el cierre de la estancia — bloqueados antes de entrenar la IA (Pestaña 3).
+""",
         "ml_hdr": "### 🤖 Cómo Funciona la IA y Elección del Modelo (V4 Nacional)",
         "ml_intro": """Al momento del ingreso hospitalario, dos modelos predictivos operan en paralelo usando solo **8 datos de admisión** (edad, sexo, capítulo CIE-10, especialidad, carácter urgencia/electivo, complejidad, traslado intermunicipal y entrada en fin de semana):
 1. **Modelo de Larga Estancia (≥ 15 días):** estima la probabilidad de hospitalización prolongada para apoyar el giro de camas y trabajo social.
@@ -836,7 +1001,7 @@ TEXTOS = {
 - **Punto de partida:** Descargamos los 12 archivos mensuales `.dbc` de Acre (2024) para predecir Larga Estancia (`>= 15 días`, solo `5,30%` de los casos — desbalance de `17,88:1`).
 - **Hallazgo crítico #1 (*Data Leakage*):** La variable `cobranca` dominaba los modelos (`85,29%` aparente en códigos `21/22`). Al auditar las reglas de DATASUS descubrimos que esas prórrogas se facturan **después** de que el paciente ya tuvo estancia larga — ¡imposible saberlo al ingreso!
 - **Hallazgo crítico #2 (Colapso por doble penalización en XGBoost):** Combinar `SMOTE` + `scale_pos_weight=18` empujó el `85%` de predicciones a positivo (`45.237` falsas alarmas, `19,77%` de exactitud). **Decisión:** eliminar `SMOTE` y usar solo ponderación nativa.
-- **Auditoría de nulos:** Los diagnósticos secundarios (`diagsec1`–`9`) tenían **`89,65%` a `100%`** de ausentes, motivando la auditoría de las 113 columnas en la Pestaña 4.
+- **Auditoría de nulos:** Los diagnósticos secundarios (`diagsec1`–`9`) tenían **`89,65%` a `100%`** de ausentes, motivando la auditoría de las 113 columnas en la Pestaña 5.
 """,
         "j_v2_tit": "2️⃣ Fase V2 — Enfoque al Ingreso Clínico y Matriz Dual-Triage",
         "j_v2_txt": """
@@ -967,6 +1132,101 @@ def get_tecnologias_df(lang: str) -> pd.DataFrame:
     key = lang if lang in ("pt", "en", "es") else "pt"
     rows = [{cols[0]: name, cols[1]: role[key], cols[2]: what[key], cols[3]: why[key]} for name, role, what, why in _TECH_STACK]
     return pd.DataFrame(rows)
+
+
+def _fmt_int_lang(v: int, lang: str) -> str:
+    return f"{v:,}" if lang == "en" else f"{v:,}".replace(",", ".")
+
+
+def _fmt_pct_lang(v: float, casas: int, lang: str) -> str:
+    s = f"{v:.{casas}f}%"
+    return s if lang == "en" else s.replace(".", ",")
+
+
+def get_regras_qualidade_df(res_dq: dict, esperado_ufs: int, lang: str) -> tuple[pd.DataFrame, list[str]]:
+    """Gera tabela auditável de Contrato de Dados (PT/EN/ES) a partir das checagens DuckDB ao vivo."""
+    k = lang if lang in ("pt", "en", "es") else "pt"
+    cols_map = {
+        "pt": ("Dimensão", "Regra de Contrato / Expectativa", "Resultado Medido", "Status", "Impacto na Engenharia"),
+        "en": ("Dimension", "Contract Rule / Expectation", "Measured Result", "Status", "Engineering Impact"),
+        "es": ("Dimensión", "Regla de Contrato / Expectativa", "Resultado Medido", "Estado", "Impacto en Ingeniería"),
+    }[k]
+
+    esperado_parts = esperado_ufs * 12
+    cov_ok = res_dq["particoes_uf_mes"] >= esperado_parts and expected_positive(res_dq["particoes_uf_mes"])
+    ia_ok = res_dq["amostra_n"] > 0 and res_dq["null_ia_features"] == 0
+    viol = res_dq["bad_diarias"] + res_dq["bad_idade"] + res_dq["bad_cid"]
+    dom_ok = res_dq["amostra_n"] > 0 and viol == 0
+    dem_ok = res_dq["pct_raca_nd"] < 1.0 and res_dq["pct_cid_ign"] < 1.0
+    uti_ok = res_dq["uti_gt_diarias"] == 0
+    aih_ok = res_dq["aihs_duplicadas"] == 0
+
+    lbl_ok = {"pt": "APROVADO", "en": "PASS", "es": "APROBADO"}[k]
+    lbl_warn = {"pt": "ATENÇÃO", "en": "WATCH", "es": "ATENCIÓN"}[k]
+    lbl_alert = {"pt": "ANOMALIA SIH", "en": "SIH ANOMALY", "es": "ANOMALÍA SIH"}[k]
+    lbl_info = {"pt": "INFORMATIVO", "en": "INFO", "es": "INFORMATIVO"}[k]
+
+    regras = [
+        (
+            {"pt": "Cobertura", "en": "Coverage", "es": "Cobertura"}[k],
+            {"pt": "Todas as UFs × 12 meses ativos no ano (sem lacunas de envio FTP)", "en": "All States × 12 active months present (no FTP gaps)", "es": "Todos los Estados × 12 meses activos (sin brechas FTP)"}[k],
+            f"{res_dq['particoes_uf_mes']} / {esperado_parts} ({res_dq['ufs_cobertas']}/{esperado_ufs} UFs)",
+            lbl_ok if cov_ok else lbl_alert,
+            "dq_ok" if cov_ok else "dq_alert",
+            {"pt": "Garante equilíbrio nacional na Aba 1 e evita viés regional.", "en": "Ensures balanced national denominator in Tab 1.", "es": "Garantiza equilibrio nacional sin sesgo regional."}[k],
+        ),
+        (
+            {"pt": "Completude (IA)", "en": "Completeness (AI)", "es": "Completitud (IA)"}[k],
+            {"pt": "Zero nulos nas 8 variáveis de entrada do modelo preditivo", "en": "Zero missing values across the 8 intake AI features", "es": "Cero nulos en las 8 variables de entrada de la IA"}[k],
+            f"{_fmt_int_lang(res_dq['null_ia_features'], k)} / {_fmt_int_lang(res_dq['amostra_n'], k)}",
+            lbl_ok if ia_ok else lbl_alert,
+            "dq_ok" if ia_ok else "dq_alert",
+            {"pt": "Mantém o LightGBM V4 operante na nuvem sem imputação frágil.", "en": "Keeps LightGBM V4 reliable in production without fragile imputation.", "es": "Mantiene LightGBM V4 estable en producción sin imputación frágil."}[k],
+        ),
+        (
+            {"pt": "Validade Clínica", "en": "Clinical Validity", "es": "Validez Clínica"}[k],
+            {"pt": "qt_diarias > 0, idade_anos em [0, 120] e diag_princ não vazio", "en": "qt_diarias > 0, idade_anos in [0, 120], non-empty diag_princ", "es": "qt_diarias > 0, idade_anos en [0, 120] y diag_princ válido"}[k],
+            f"{_fmt_int_lang(viol, k)} ({res_dq['min_idade']:.0f}–{res_dq['max_idade']:.0f}, max {res_dq['max_diarias']}d)",
+            lbl_ok if dom_ok else lbl_alert,
+            "dq_ok" if dom_ok else "dq_alert",
+            {"pt": "ETL filtra diárias inválidas/negativas antes de gerar o alvo.", "en": "ETL purges invalid stays before generating clinical targets.", "es": "ETL filtra estancias inválidas antes de generar los objetivos."}[k],
+        ),
+        (
+            {"pt": "Completude Demog.", "en": "Demog. Completeness", "es": "Completitud Demog."}[k],
+            {"pt": "Subnotificação de raça/cor (Nao_Declarada) e CID Ignorado < 1%", "en": "Not-declared race and unknown ICD share < 1%", "es": "Raza no declarada y CIE ignorado < 1%"}[k],
+            f"{_fmt_pct_lang(res_dq['pct_raca_nd'], 2, k)} / {_fmt_pct_lang(res_dq['pct_cid_ign'], 3, k)}",
+            lbl_ok if dem_ok else lbl_warn,
+            "dq_ok" if dem_ok else "dq_warn",
+            {"pt": "Monitora falhas de preenchimento por estado para equidade (Aba 1).", "en": "Tracks hospital reporting gaps by state for Tab 1 equity audits.", "es": "Monitorea subregistro por estado para auditoría de equidad."}[k],
+        ),
+        (
+            {"pt": "Consistência", "en": "Consistency", "es": "Consistencia"}[k],
+            {"pt": "Diárias de UTI faturadas <= Diárias totais (uti_mes_to <= qt_diarias)", "en": "Billed ICU days <= Total hospital days (uti_mes_to <= qt_diarias)", "es": "Días UCI facturados <= Días totales (uti_mes_to <= qt_diarias)"}[k],
+            f"{_fmt_int_lang(res_dq['uti_gt_diarias'], k)} ({_fmt_pct_lang(res_dq['pct_uti_gt_diarias'], 2, k)})",
+            lbl_ok if uti_ok else lbl_alert,
+            "dq_ok" if uti_ok else "dq_alert",
+            {"pt": "Anomalia real de faturamento: reforça bloqueio de campos UTI pós-alta na IA.", "en": "Real SIH billing quirk: justifies blocking ICU fields from intake AI.", "es": "Anomalía real de facturación: justifica excluir UCI post-alta de la IA."}[k],
+        ),
+        (
+            {"pt": "Unicidade", "en": "Uniqueness", "es": "Unicidad"}[k],
+            {"pt": "Chave n_aih na amostra/partição (AIHs de longa perm. podem repetir mês a mês)", "en": "Unique n_aih key (long-stay AIHs can repeat across billing months)", "es": "Clave n_aih (las AIH de larga estancia pueden repetirse por mes)"}[k],
+            f"{_fmt_int_lang(res_dq['aihs_duplicadas'], k)} " + {"pt": "repetidas", "en": "repeated", "es": "repetidas"}[k],
+            lbl_ok if aih_ok else lbl_info,
+            "dq_ok" if aih_ok else "dq_info",
+            {"pt": "Esperado no SIH/SUS (AIH tipo 5 / continuação); útil ao consolidar novos anos.", "en": "Expected in SIH/SUS continuation billing; key check for multi-year merges.", "es": "Esperado en SIH/SUS por prórrogas; clave al integrar nuevos años."}[k],
+        ),
+    ]
+
+    rows = [
+        {cols_map[0]: dim, cols_map[1]: regra, cols_map[2]: medido, cols_map[3]: status_lbl, cols_map[4]: impacto}
+        for dim, regra, medido, status_lbl, _, impacto in regras
+    ]
+    status_keys = [r[4] for r in regras]
+    return pd.DataFrame(rows), status_keys
+
+
+def expected_positive(v: int) -> bool:
+    return v > 0
 
 
 def get_glossario_df(lang: str) -> pd.DataFrame:

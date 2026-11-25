@@ -369,3 +369,234 @@ def obter_amostra_cockpit(uf="Todas", espec="Todos", min_dias=0, busca="", limit
     USING SAMPLE {int(limite)} ROWS (reservoir, 42)
     """
     return con.execute(query, params).df()
+
+
+def _fonte_registro_detalhado() -> tuple[str, str]:
+    if parquet_bruto_disponivel():
+        return f"read_parquet('{PARQUET_GLOB}', hive_partitioning=true)", "parquet"
+    if AMOSTRA_PATH.exists():
+        amostra_str = str(AMOSTRA_PATH).replace("\\", "/")
+        return f"read_parquet('{amostra_str}')", "amostra"
+    return "", "indisponivel"
+
+
+def obter_resumo_qualidade(regiao="Todas", uf="Todas") -> dict:
+    """Computa métricas de completude (13,58M via cubo) e integridade clínica (partições ou amostra 30k)."""
+    vazio = {
+        "total": 0, "ufs_cobertas": 0, "meses_cobertos": 0, "particoes_uf_mes": 0,
+        "qtd_raca_nd": 0, "pct_raca_nd": 0.0, "pct_sexo_outro": 0.0,
+        "pct_cid_ign": 0.0, "pct_esp_outras": 0.0,
+        "amostra_n": 0, "auditoria_fonte": "indisponivel", "null_ia_features": 0,
+        "bad_diarias": 0, "bad_idade": 0, "bad_cid": 0,
+        "uti_gt_diarias": 0, "pct_uti_gt_diarias": 0.0, "aihs_duplicadas": 0,
+        "min_idade": 0.0, "max_idade": 0.0, "max_diarias": 0,
+    }
+    if not parquet_disponivel():
+        return vazio
+
+    con = _get_con()
+    where_sql, params = _build_where(regiao=regiao, uf=uf, mes_range=None)
+
+    if CUBO_PATH.exists():
+        cubo_str = str(CUBO_PATH).replace("\\", "/")
+        q_cubo = f"""
+        SELECT
+            CAST(COALESCE(SUM(internacoes), 0) AS BIGINT) AS total,
+            COUNT(DISTINCT uf) AS ufs_cobertas,
+            COUNT(DISTINCT mes_internacao) AS meses_cobertos,
+            COUNT(DISTINCT uf || '-' || CAST(mes_internacao AS VARCHAR)) AS particoes_uf_mes,
+            CAST(COALESCE(SUM(CASE WHEN raca_cor_desc = 'Nao_Declarada' THEN internacoes ELSE 0 END), 0) AS BIGINT) AS qtd_raca_nd,
+            COALESCE(SUM(CASE WHEN raca_cor_desc = 'Nao_Declarada' THEN internacoes ELSE 0 END) * 100.0 / NULLIF(SUM(internacoes), 0), 0.0) AS pct_raca_nd,
+            COALESCE(SUM(CASE WHEN sexo NOT IN ('1', '3') THEN internacoes ELSE 0 END) * 100.0 / NULLIF(SUM(internacoes), 0), 0.0) AS pct_sexo_outro,
+            COALESCE(SUM(CASE WHEN capitulo_cid = 'Ignorado' THEN internacoes ELSE 0 END) * 100.0 / NULLIF(SUM(internacoes), 0), 0.0) AS pct_cid_ign,
+            COALESCE(SUM(CASE WHEN especialidade_leito = 'Outras' THEN internacoes ELSE 0 END) * 100.0 / NULLIF(SUM(internacoes), 0), 0.0) AS pct_esp_outras
+        FROM read_parquet('{cubo_str}')
+        WHERE {where_sql}
+        """
+    else:
+        q_cubo = f"""
+        SELECT
+            COUNT(*) AS total,
+            COUNT(DISTINCT uf) AS ufs_cobertas,
+            COUNT(DISTINCT mes_internacao) AS meses_cobertos,
+            COUNT(DISTINCT uf || '-' || CAST(mes_internacao AS VARCHAR)) AS particoes_uf_mes,
+            SUM(CASE WHEN raca_cor_desc = 'Nao_Declarada' THEN 1 ELSE 0 END) AS qtd_raca_nd,
+            COALESCE(AVG(CASE WHEN raca_cor_desc = 'Nao_Declarada' THEN 100.0 ELSE 0.0 END), 0.0) AS pct_raca_nd,
+            COALESCE(AVG(CASE WHEN sexo NOT IN ('1', '3') THEN 100.0 ELSE 0.0 END), 0.0) AS pct_sexo_outro,
+            COALESCE(AVG(CASE WHEN capitulo_cid = 'Ignorado' THEN 100.0 ELSE 0.0 END), 0.0) AS pct_cid_ign,
+            COALESCE(AVG(CASE WHEN especialidade_leito = 'Outras' THEN 100.0 ELSE 0.0 END), 0.0) AS pct_esp_outras
+        FROM read_parquet('{PARQUET_GLOB}', hive_partitioning=true)
+        WHERE {where_sql}
+        """
+    r_c = con.execute(q_cubo, params).fetchone()
+
+    res = dict(vazio)
+    res.update({
+        "total": int(r_c[0]),
+        "ufs_cobertas": int(r_c[1]),
+        "meses_cobertos": int(r_c[2]),
+        "particoes_uf_mes": int(r_c[3]),
+        "qtd_raca_nd": int(r_c[4]),
+        "pct_raca_nd": float(r_c[5]),
+        "pct_sexo_outro": float(r_c[6]),
+        "pct_cid_ign": float(r_c[7]),
+        "pct_esp_outras": float(r_c[8]),
+    })
+
+    fonte_det, modo_det = _fonte_registro_detalhado()
+    if fonte_det:
+        det_clauses = ["1=1"]
+        det_params = []
+        if regiao and regiao != "Todas":
+            det_clauses.append("regiao = ?")
+            det_params.append(regiao)
+        if uf and uf != "Todas":
+            det_clauses.append("uf = ?")
+            det_params.append(uf)
+        det_where = " AND ".join(det_clauses)
+        q_det = f"""
+        SELECT
+            COUNT(*) AS amostra_n,
+            CAST(COALESCE(SUM(
+                CASE WHEN idade_anos IS NULL OR sexo IS NULL OR capitulo_cid IS NULL
+                          OR especialidade_leito IS NULL OR carater_internacao IS NULL
+                          OR complexidade IS NULL OR transferido_intermun IS NULL
+                          OR internacao_fim_de_semana IS NULL
+                     THEN 1 ELSE 0 END
+            ), 0) AS BIGINT) AS null_ia_features,
+            CAST(COALESCE(SUM(CASE WHEN qt_diarias <= 0 OR qt_diarias IS NULL THEN 1 ELSE 0 END), 0) AS BIGINT) AS bad_diarias,
+            CAST(COALESCE(SUM(CASE WHEN idade_anos < 0 OR idade_anos > 120 OR idade_anos IS NULL THEN 1 ELSE 0 END), 0) AS BIGINT) AS bad_idade,
+            CAST(COALESCE(SUM(CASE WHEN diag_princ IS NULL OR TRIM(diag_princ) IN ('', 'None', 'nan') THEN 1 ELSE 0 END), 0) AS BIGINT) AS bad_cid,
+            CAST(COALESCE(SUM(CASE WHEN uti_mes_to > qt_diarias THEN 1 ELSE 0 END), 0) AS BIGINT) AS uti_gt_diarias,
+            CAST(GREATEST(COUNT(*) - COUNT(DISTINCT n_aih), 0) AS BIGINT) AS aihs_duplicadas,
+            COALESCE(MIN(idade_anos), 0.0) AS min_idade,
+            COALESCE(MAX(idade_anos), 0.0) AS max_idade,
+            COALESCE(MAX(qt_diarias), 0) AS max_diarias
+        FROM {fonte_det}
+        WHERE {det_where}
+        """
+        r_d = con.execute(q_det, det_params).fetchone()
+        n_det = int(r_d[0])
+        res.update({
+            "amostra_n": n_det,
+            "auditoria_fonte": modo_det,
+            "null_ia_features": int(r_d[1]),
+            "bad_diarias": int(r_d[2]),
+            "bad_idade": int(r_d[3]),
+            "bad_cid": int(r_d[4]),
+            "uti_gt_diarias": int(r_d[5]),
+            "pct_uti_gt_diarias": (int(r_d[5]) * 100.0 / n_det) if n_det > 0 else 0.0,
+            "aihs_duplicadas": int(r_d[6]),
+            "min_idade": float(r_d[7]),
+            "max_idade": float(r_d[8]),
+            "max_diarias": int(r_d[9]),
+        })
+    return res
+
+
+def obter_qualidade_por_uf(regiao="Todas") -> pd.DataFrame:
+    """Ranking por UF de completude e categorias ignoradas/não declaradas."""
+    if not parquet_disponivel():
+        return pd.DataFrame()
+    where_sql, params = _build_where(regiao=regiao, mes_range=None)
+    con = _get_con()
+    if CUBO_PATH.exists():
+        cubo_str = str(CUBO_PATH).replace("\\", "/")
+        query = f"""
+        SELECT
+            uf,
+            regiao,
+            CAST(SUM(internacoes) AS BIGINT) AS internacoes,
+            COUNT(DISTINCT mes_internacao) AS meses_ativos,
+            ROUND(SUM(CASE WHEN raca_cor_desc = 'Nao_Declarada' THEN internacoes ELSE 0 END) * 100.0 / NULLIF(SUM(internacoes), 0), 3) AS pct_raca_nd,
+            ROUND(SUM(CASE WHEN capitulo_cid = 'Ignorado' THEN internacoes ELSE 0 END) * 100.0 / NULLIF(SUM(internacoes), 0), 4) AS pct_cid_ign,
+            ROUND(SUM(CASE WHEN especialidade_leito = 'Outras' THEN internacoes ELSE 0 END) * 100.0 / NULLIF(SUM(internacoes), 0), 2) AS pct_esp_outras
+        FROM read_parquet('{cubo_str}')
+        WHERE {where_sql}
+        GROUP BY uf, regiao
+        ORDER BY pct_raca_nd DESC, pct_esp_outras DESC, internacoes DESC
+        """
+    else:
+        query = f"""
+        SELECT
+            uf,
+            regiao,
+            COUNT(*) AS internacoes,
+            COUNT(DISTINCT mes_internacao) AS meses_ativos,
+            ROUND(AVG(CASE WHEN raca_cor_desc = 'Nao_Declarada' THEN 100.0 ELSE 0.0 END), 3) AS pct_raca_nd,
+            ROUND(AVG(CASE WHEN capitulo_cid = 'Ignorado' THEN 100.0 ELSE 0.0 END), 4) AS pct_cid_ign,
+            ROUND(AVG(CASE WHEN especialidade_leito = 'Outras' THEN 100.0 ELSE 0.0 END), 2) AS pct_esp_outras
+        FROM read_parquet('{PARQUET_GLOB}', hive_partitioning=true)
+        WHERE {where_sql}
+        GROUP BY uf, regiao
+        ORDER BY pct_raca_nd DESC, pct_esp_outras DESC, internacoes DESC
+        """
+    return con.execute(query, params).df()
+
+
+def obter_volume_mensal_qualidade(regiao="Todas", uf="Todas") -> pd.DataFrame:
+    """Estabilidade mensal de volume, UFs ativas e taxas de campos ignorados/outros."""
+    if not parquet_disponivel():
+        return pd.DataFrame()
+    where_sql, params = _build_where(regiao=regiao, uf=uf, mes_range=None)
+    con = _get_con()
+    if CUBO_PATH.exists():
+        cubo_str = str(CUBO_PATH).replace("\\", "/")
+        query = f"""
+        SELECT
+            mes_internacao,
+            COUNT(DISTINCT uf) AS ufs_ativas,
+            CAST(SUM(internacoes) AS BIGINT) AS internacoes,
+            ROUND(SUM(CASE WHEN raca_cor_desc = 'Nao_Declarada' THEN internacoes ELSE 0 END) * 100.0 / NULLIF(SUM(internacoes), 0), 3) AS pct_raca_nd,
+            ROUND(SUM(CASE WHEN especialidade_leito = 'Outras' THEN internacoes ELSE 0 END) * 100.0 / NULLIF(SUM(internacoes), 0), 2) AS pct_esp_outras
+        FROM read_parquet('{cubo_str}')
+        WHERE {where_sql}
+        GROUP BY mes_internacao
+        ORDER BY mes_internacao
+        """
+    else:
+        query = f"""
+        SELECT
+            mes_internacao,
+            COUNT(DISTINCT uf) AS ufs_ativas,
+            COUNT(*) AS internacoes,
+            ROUND(AVG(CASE WHEN raca_cor_desc = 'Nao_Declarada' THEN 100.0 ELSE 0.0 END), 3) AS pct_raca_nd,
+            ROUND(AVG(CASE WHEN especialidade_leito = 'Outras' THEN 100.0 ELSE 0.0 END), 2) AS pct_esp_outras
+        FROM read_parquet('{PARQUET_GLOB}', hive_partitioning=true)
+        WHERE {where_sql}
+        GROUP BY mes_internacao
+        ORDER BY mes_internacao
+        """
+    return con.execute(query, params).df()
+
+
+def obter_exemplos_anomalia_uti(regiao="Todas", uf="Todas", limite=20) -> pd.DataFrame:
+    """Retorna registros reais onde diárias de UTI faturadas superam o total de diárias da AIH."""
+    fonte_det, _ = _fonte_registro_detalhado()
+    if not fonte_det:
+        return pd.DataFrame()
+    clauses = ["uti_mes_to > qt_diarias"]
+    params = []
+    if regiao and regiao != "Todas":
+        clauses.append("regiao = ?")
+        params.append(regiao)
+    if uf and uf != "Todas":
+        clauses.append("uf = ?")
+        params.append(uf)
+    where_sql = " AND ".join(clauses)
+    con = _get_con()
+    query = f"""
+    SELECT
+        n_aih,
+        uf,
+        especialidade_leito,
+        diag_princ,
+        qt_diarias,
+        uti_mes_to,
+        (uti_mes_to - qt_diarias) AS diferenca_dias
+    FROM {fonte_det}
+    WHERE {where_sql}
+    ORDER BY diferenca_dias DESC, uti_mes_to DESC
+    LIMIT {int(limite)}
+    """
+    return con.execute(query, params).df()

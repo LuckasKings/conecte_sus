@@ -36,12 +36,13 @@ Hospitais públicos e operadoras enfrentam diariamente dois desafios críticos n
           │                                     │
           └──────────────────┬──────────────────┘
                              ▼
-            [ Dashboard Interativo Streamlit (5 Abas • PT/EN/ES) ]
+            [ Dashboard Interativo Streamlit (6 Abas • PT/EN/ES) ]
              1. Perfil Epidemiológico & Equidade
-             2. Como a IA Funciona (Modelos & Métricas)
-             3. Painel de Gestão Clínica & Leitos (Flags)
-             4. Dicionário Completo SIH/SUS (113 Colunas)
-             5. Jornada, Decisões & Arquitetura (V1 a V4)
+             2. Qualidade dos Dados & Integridade
+             3. Como a IA Funciona (Modelos & Métricas)
+             4. Painel de Gestão Clínica & Leitos (Flags)
+             5. Dicionário Completo SIH/SUS (113 Colunas)
+             6. Jornada, Decisões & Arquitetura (V1 a V4)
 ```
 
 ---

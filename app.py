@@ -562,18 +562,23 @@ with tab_qual:
                 f'<small>{lote.get("data_execucao_local", "-")}</small></div>',
                 unsafe_allow_html=True,
             )
+        lbl_q = {
+            "pt": ("part.", "CID Ign.", "Outras"),
+            "en": ("part.", "ICD Ign.", "Other"),
+            "es": ("part.", "CIE Ign.", "Otras"),
+        }[idioma]
         with lk3:
             st.markdown(
                 f'<div class="metric-card amber"><h3>{t["dq_load_k3"]}</h3>'
                 f'<p style="color:#d97706;">{fmt_num(int(lote.get("registros_descartados_filtro", 0)), idioma)} / {fmt_num(int(lote.get("registros_deduplicados", 0)), idioma)}</p>'
-                f'<small>{fmt_num(int(tb.get("total_particoes", 0)), idioma)} part. • {fmt_num(int(tb.get("total_registros", 0)), idioma)} total</small></div>',
+                f'<small>{fmt_num(int(tb.get("total_particoes", 0)), idioma)} {lbl_q[0]} • {fmt_num(int(tb.get("total_registros", 0)), idioma)} total</small></div>',
                 unsafe_allow_html=True,
             )
         with lk4:
             st.markdown(
                 f'<div class="metric-card"><h3>{t["dq_load_k4"]}</h3>'
                 f'<p style="color:#0f172a;">{fmt_dec(float(ql.get("pct_raca_nd", 0.0)), 2)}</p>'
-                f'<small>CID Ign.: {fmt_dec(float(ql.get("pct_cid_ign", 0.0)), 3)} • Outras: {fmt_dec(float(ql.get("pct_esp_outras", 0.0)), 2)}</small></div>',
+                f'<small>{lbl_q[1]}: {fmt_dec(float(ql.get("pct_cid_ign", 0.0)), 3)} • {lbl_q[2]}: {fmt_dec(float(ql.get("pct_esp_outras", 0.0)), 2)}</small></div>',
                 unsafe_allow_html=True,
             )
         st.write("")
@@ -846,13 +851,23 @@ with tab_ml:
                     f'<small>{fmt_num(nr_ac, idioma)} / {fmt_num(nr_meta, idioma)}</small></div>',
                     unsafe_allow_html=True,
                 )
+            pol_status_map = {
+                "MONITORANDO_ESTAVEL": {"pt": "Monitorando (Estável)", "en": "Monitoring (Stable)", "es": "Monitoreando (Estable)"},
+                "AGUARDANDO_COOLDOWN": {"pt": "Aguardando Cooldown", "en": "Awaiting Cooldown", "es": "Esperando Cooldown"},
+                "DISPARADO_VOLUME": {"pt": "Retreino por Volume", "en": "Retrain Triggered (Volume)", "es": "Reentreno (Volumen)"},
+                "DISPARADO_DRIFT": {"pt": "Retreino por Drift", "en": "Retrain Triggered (Drift)", "es": "Reentreno (Drift)"},
+                "DISPARADO_MANUAL": {"pt": "Retreino Manual", "en": "Manual Retrain", "es": "Reentreno Manual"},
+                "AGUARDANDO_DADOS": {"pt": "Aguardando Dados", "en": "Awaiting Data", "es": "Esperando Datos"},
+            }
+            dec_raw = pol_est.get("decisao_politica", "-")
+            dec_disp = pol_status_map.get(dec_raw, {}).get(idioma, dec_raw)
             with pc3:
                 dias_ac = int(pol_est.get("dias_desde_retreino", 0))
                 dias_meta = int(pol_est.get("meta_dias", politica_cfg.get("min_dias_entre_retreinos", 30)))
                 st.markdown(
                     f'<div class="metric-card amber"><h3>{t["ml_pol_k3"]}</h3>'
                     f'<p style="color:#d97706;">{dias_ac}d / {dias_meta}d</p>'
-                    f'<small>{pol_est.get("decisao_politica", "-")}</small></div>',
+                    f'<small>{dec_disp}</small></div>',
                     unsafe_allow_html=True,
                 )
             with pc4:
@@ -860,7 +875,11 @@ with tab_ml:
                 tele_m = pol_est.get("telemetria_monitorada", {})
                 cor_dr = "#dc2626" if drift_on else "#059669"
                 cls_dr = "red" if drift_on else "green"
-                st_dr = "ALERTA" if drift_on else "OK"
+                st_dr = (
+                    {"pt": "ALERTA DE DRIFT", "en": "DRIFT ALERT", "es": "ALERTA DRIFT"}[idioma]
+                    if drift_on
+                    else {"pt": "ESTÁVEL (OK)", "en": "STABLE (OK)", "es": "ESTABLE (OK)"}[idioma]
+                )
                 sub_dr = (
                     f"{tele_m.get('janela_monitorada', '-')} • ROC {tele_m.get('roc_obito', 0):.3f}/{tele_m.get('roc_longa', 0):.3f}"
                     if tele_m.get("amostra_n")
@@ -1180,7 +1199,8 @@ with tab_dic:
     n_alvo = int((df_dicionario["_status_key"] == "alvo_painel").sum())
     n_nao = int(df_dicionario["_status_key"].isin(["nao_leakage", "nao_admin"]).sum())
     with c_d1:
-        st.metric("Total (113 SIH + 14 Deriv.)", len(df_dicionario))
+        lbl_tot = {"pt": "Total (113 SIH + 14 Deriv.)", "en": "Total (113 SIH + 14 Derived)", "es": "Total (113 SIH + 14 Deriv.)"}[idioma]
+        st.metric(lbl_tot, len(df_dicionario))
     with c_d2:
         lbl_ia = {"pt": "✅ IA + Epidemio", "en": "✅ AI + Epidemiology", "es": "✅ IA + Epidemiología"}[idioma]
         st.metric(lbl_ia, n_ia)
@@ -1262,9 +1282,15 @@ with tab_jornada:
             st.markdown(f"#### {t['j_v4_tit']}")
             st.markdown(t["j_v4_txt"])
 
-    with st.container(border=True):
-        st.markdown(f"#### {t['j_v5_tit']}")
-        st.markdown(t["j_v5_txt"])
+    j5, j6 = st.columns(2)
+    with j5:
+        with st.container(border=True):
+            st.markdown(f"#### {t['j_v5_tit']}")
+            st.markdown(t["j_v5_txt"])
+    with j6:
+        with st.container(border=True):
+            st.markdown(f"#### {t['j_v6_tit']}")
+            st.markdown(t["j_v6_txt"])
 
     st.markdown(t["j_evol_hdr"])
     df_evol = get_evolucao_df(idioma)

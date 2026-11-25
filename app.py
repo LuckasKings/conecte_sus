@@ -7,7 +7,7 @@ Aplicação Streamlit Multi-Abas Conectada ao Data Lake Parquet + DuckDB:
 - Aba 3: Como a IA Funciona (Modelos V6 Contínuo Calibrados com CID3 Híbrido + Governança Champion/Challenger)
 - Aba 4: Painel de Gestão Clínica & Leitos (Simulador CID3 + Flags Calibradas)
 - Aba 5: Dicionário Completo SIH/SUS (113 Colunas + 14 Derivadas) & Glossário
-- Aba 6: Jornada, Decisões, Arquitetura & Stack Tecnológica
+- Aba 6: Jornada, Decisões, Arquitetura (V1 → V6 Contínuo) & Stack Tecnológica (10 Camadas)
 """
 
 import html as _html
@@ -25,7 +25,7 @@ if os.path.join(BASE_DIR, "scripts") not in sys.path:
     sys.path.insert(0, os.path.join(BASE_DIR, "scripts"))
 
 import duckdb_service as ds
-from i18n import TEXTOS, get_dicionario_df, get_evolucao_df, get_glossario_df, get_qualidade_variaveis_df, get_tecnologias_df, tr_series, tr_val
+from i18n import TEXTOS, get_dicionario_df, get_evolucao_df, get_glossario_df, get_qualidade_variaveis_df, get_tecnologias_df, tr_janela_mlops, tr_mlops_motivo, tr_series, tr_val
 
 # ==========================================
 # 1. Configuração da Página e Estilo Visual
@@ -360,7 +360,8 @@ kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
 with kpi1:
     st.markdown(f'<div class="metric-card"><h3>{t["kpi1_lbl"]}</h3><p>{fmt_num(kpis_gerais["total"], idioma)}</p><small>{t["kpi1_sub"]}</small></div>', unsafe_allow_html=True)
 with kpi2:
-    st.markdown(f'<div class="metric-card"><h3>{t["kpi2_lbl"]}</h3><p style="color:#1e3a8a;">{kpis_gerais["total_ufs"]} / 27 UFs</p><small>{t["kpi2_sub"]}</small></div>', unsafe_allow_html=True)
+    suf_uf = {"pt": "UFs", "en": "States", "es": "Estados"}[idioma]
+    st.markdown(f'<div class="metric-card"><h3>{t["kpi2_lbl"]}</h3><p style="color:#1e3a8a;">{kpis_gerais["total_ufs"]} / 27 {suf_uf}</p><small>{t["kpi2_sub"]}</small></div>', unsafe_allow_html=True)
 with kpi3:
     ob_str = f"{kpis_gerais['taxa_obito']:.2f}%" if idioma == "en" else f"{kpis_gerais['taxa_obito']:.2f}%".replace(".", ",")
     st.markdown(f'<div class="metric-card red"><h3>{t["kpi3_lbl"]}</h3><p style="color:#dc2626;">{ob_str}</p><small>{t["kpi3_sub"]}</small></div>', unsafe_allow_html=True)
@@ -520,7 +521,7 @@ with tab_epi:
                         "ano": st.column_config.NumberColumn(t["p_cols"]["ano"], format="%d"),
                         "meses_ativos": st.column_config.NumberColumn(t["dq_uf_cols"]["meses_ativos"], format="%d"),
                         "internacoes": st.column_config.NumberColumn(t["col_int"], format="%d"),
-                        "obitos": st.column_config.NumberColumn(t["match_tokens"]["obito"], format="%d"),
+                        "obitos": st.column_config.NumberColumn(t["col_ob_cnt"], format="%d"),
                         "taxa_mortalidade": st.column_config.NumberColumn(t["col_ob_pct"], format="%.2f%%"),
                         "taxa_longa": st.column_config.NumberColumn(t["col_lg_pct"], format="%.2f%%"),
                     },
@@ -621,7 +622,7 @@ with tab_qual:
                     "cid_ign": float(ql_h.get("pct_cid_ign", 0.0)),
                     "esp_outras": float(ql_h.get("pct_esp_outras", 0.0)),
                     "bad_sexo": int(ql_h.get("bad_sexo_pos_filtro", 0)),
-                    "origem": item.get("origem", "-"),
+                    "origem": tr_val(item.get("origem", "-"), idioma),
                 })
             cols_h = t["dq_hist_cols"]
             df_hist = pd.DataFrame(linhas_hist).rename(columns=cols_h)
@@ -689,10 +690,11 @@ with tab_qual:
         pct_ok_ia = 100.0 if res_dq["amostra_n"] > 0 and res_dq["null_ia_features"] == 0 else (
             ((res_dq["amostra_n"] - res_dq["null_ia_features"]) * 100.0 / res_dq["amostra_n"]) if res_dq["amostra_n"] > 0 else 0.0
         )
+        lbl_nulls = {"pt": "nulos", "en": "nulls", "es": "nulos"}[idioma]
         st.markdown(
             f'<div class="metric-card green"><h3>{t["dq_kpi2_lbl"]}</h3>'
             f'<p style="color:#059669;">{fmt_dec(pct_ok_ia, 1)}</p>'
-            f'<small>{fmt_num(res_dq["null_ia_features"], idioma)} nulos • {t["dq_kpi2_sub"]}</small></div>',
+            f'<small>{fmt_num(res_dq["null_ia_features"], idioma)} {lbl_nulls} • {t["dq_kpi2_sub"]}</small></div>',
             unsafe_allow_html=True,
         )
     with dk3:
@@ -706,10 +708,11 @@ with tab_qual:
             unsafe_allow_html=True,
         )
     with dk4:
+        lbl_cid_ign = {"pt": "CID Ign.", "en": "ICD Ign.", "es": "CIE Ign."}[idioma]
         st.markdown(
             f'<div class="metric-card amber"><h3>{t["dq_kpi4_lbl"]}</h3>'
             f'<p style="color:#d97706;">{fmt_dec(res_dq["pct_raca_nd"], 2)} / {fmt_dec(res_dq["pct_esp_outras"], 2)}</p>'
-            f'<small>CID Ign.: {fmt_dec(res_dq["pct_cid_ign"], 3)} • {t["dq_kpi4_sub"]}</small></div>',
+            f'<small>{lbl_cid_ign}: {fmt_dec(res_dq["pct_cid_ign"], 3)} • {t["dq_kpi4_sub"]}</small></div>',
             unsafe_allow_html=True,
         )
 
@@ -763,11 +766,15 @@ with tab_ml:
         cols_sel = ["Modelo", "ROC_AUC", "PR_AUC", "Brier_Calibrado", "Limiar_Otimo_Pct", "Sensibilidade_Pct", "Especificidade_Pct"]
         with col_m1:
             st.markdown(t["ml_ob_sub"])
-            df_ob_m = df_m_v5[df_m_v5["Desfecho"] == "Óbito Intra-hospitalar"][cols_sel].rename(columns=t["ml_cols"])
+            df_ob_m = df_m_v5[df_m_v5["Desfecho"] == "Óbito Intra-hospitalar"][cols_sel].copy()
+            df_ob_m["Modelo"] = tr_series(df_ob_m["Modelo"], idioma)
+            df_ob_m = df_ob_m.rename(columns=t["ml_cols"])
             st.dataframe(df_ob_m, use_container_width=True, hide_index=True)
         with col_m2:
             st.markdown(t["ml_lg_sub"])
-            df_lg_m = df_m_v5[df_m_v5["Desfecho"] == "Longa Permanência"][cols_sel].rename(columns=t["ml_cols"])
+            df_lg_m = df_m_v5[df_m_v5["Desfecho"] == "Longa Permanência"][cols_sel].copy()
+            df_lg_m["Modelo"] = tr_series(df_lg_m["Modelo"], idioma)
+            df_lg_m = df_lg_m.rename(columns=t["ml_cols"])
             st.dataframe(df_lg_m, use_container_width=True, hide_index=True)
 
     st.markdown("---")
@@ -811,10 +818,10 @@ with tab_ml:
             "es": ("Champion Activo:", "Base Entreno", "Estrategia:", "Prueba Ciega Temporal:", "casos", "Decisión:", "Champion (Actual/Previo)", "Challenger (Reentrenado)"),
         }[idioma]
         resumo_mlops = (
-            f"**{lbl_ops[0]}** `{champ_info.get('versao', 'V6 Contínuo')}` *({lbl_ops[1]} `{champ_info.get('base_treino', '-')}` • {champ_info.get('atualizado_em', '-')})* | "
-            f"**{lbl_ops[2]}** `{ult_av.get('estrategia', '-')}` | "
-            f"**{lbl_ops[3]}** `{ult_av.get('janela_teste_temporal', '-')}` (`{fmt_num(int(ult_av.get('n_teste_temporal', 0)), idioma)}` {lbl_ops[4]})\n\n"
-            f"**{lbl_ops[5]}** `{ult_av.get('decisao', '-')}` — {ult_av.get('motivo', '')}"
+            f"**{lbl_ops[0]}** `{tr_val(champ_info.get('versao', 'V6 Contínuo'), idioma)}` *({lbl_ops[1]} `{champ_info.get('base_treino', '-')}` • {champ_info.get('atualizado_em', '-')})* | "
+            f"**{lbl_ops[2]}** `{tr_val(ult_av.get('estrategia', '-'), idioma)}` | "
+            f"**{lbl_ops[3]}** `{tr_janela_mlops(ult_av.get('janela_teste_temporal', '-'), idioma)}` (`{fmt_num(int(ult_av.get('n_teste_temporal', 0)), idioma)}` {lbl_ops[4]})\n\n"
+            f"**{lbl_ops[5]}** `{tr_val(ult_av.get('decisao', '-'), idioma)}` — {tr_mlops_motivo(ult_av.get('motivo', ''), idioma)}"
         )
         if ult_av.get("promovido"):
             st.success(resumo_mlops)
@@ -924,15 +931,15 @@ with tab_ml:
                 lg_cl = c_run.get("Longa_Permanencia", {}).get("challenger", {})
                 linhas_m.append({
                     "data": h_run.get("data_local", "-"),
-                    "versao": h_run.get("versao_resultante", "V6 Contínuo" if h_run.get("promovido") else "Champion Mantido"),
-                    "estrategia": h_run.get("estrategia", "-"),
+                    "versao": tr_val(h_run.get("versao_resultante", "V6 Contínuo" if h_run.get("promovido") else "Champion Mantido"), idioma),
+                    "estrategia": tr_val(h_run.get("estrategia", "-"), idioma),
                     "janela_treino": h_run.get("janela_treino_cal", "-"),
-                    "janela_teste": h_run.get("janela_teste_temporal", "-"),
+                    "janela_teste": tr_janela_mlops(h_run.get("janela_teste_temporal", "-"), idioma),
                     "n_teste": int(h_run.get("n_teste_temporal", 0)),
                     "obito_comp": f"{ob_ch.get('roc_auc', 0):.4f}/{ob_ch.get('pr_auc', 0):.4f} → {ob_cl.get('roc_auc', 0):.4f}/{ob_cl.get('pr_auc', 0):.4f}",
                     "longa_comp": f"{lg_ch.get('roc_auc', 0):.4f}/{lg_ch.get('pr_auc', 0):.4f} → {lg_cl.get('roc_auc', 0):.4f}/{lg_cl.get('pr_auc', 0):.4f}",
-                    "decisao": h_run.get("decisao", "-"),
-                    "motivo": h_run.get("motivo", "-"),
+                    "decisao": tr_val(h_run.get("decisao", "-"), idioma),
+                    "motivo": tr_mlops_motivo(h_run.get("motivo", "-"), idioma),
                 })
             m_cols = t["ml_hist_cols"]
             df_m_hist = pd.DataFrame(linhas_m).rename(columns=m_cols)

@@ -5,6 +5,7 @@ Centraliza textos da interface, mapeamentos de categorias clínicas do SIH/SUS
 e tabelas multilíngues do Dicionário Auditado, Glossário e Jornada.
 """
 
+import re
 import pandas as pd
 
 MAPAS_CAT = {
@@ -27,6 +28,41 @@ MAPAS_CAT = {
         "Eletiva": "Eletiva",
         "Media_Complexidade": "Média Complexidade",
         "Alta_Complexidade": "Alta Complexidade",
+        "I - Infecciosas": "I - Infecciosas",
+        "II - Neoplasias": "II - Neoplasias",
+        "III - Sangue": "III - Sangue",
+        "IV - Endocrinas": "IV - Endócrinas",
+        "V - Mentais": "V - Mentais",
+        "VI - Nervoso": "VI - Nervoso",
+        "VII/VIII - Olho/Ouvido": "VII/VIII - Olho/Ouvido",
+        "IX - Circulatorio": "IX - Circulatório",
+        "X - Respiratorio": "X - Respiratório",
+        "XI - Digestivo": "XI - Digestivo",
+        "XII - Pele": "XII - Pele",
+        "XIII - Osteomuscular": "XIII - Osteomuscular",
+        "XIV - Geniturinario": "XIV - Geniturinário",
+        "XV - Gravidez/Parto": "XV - Gravidez / Parto",
+        "XVI - Perinatal": "XVI - Perinatal",
+        "XVII - Congenitas": "XVII - Congênitas",
+        "XVIII - Sintomas": "XVIII - Sintomas",
+        "XIX - Lesoes": "XIX - Lesões",
+        "XX - Causas externas": "XX - Causas Externas",
+        "XXI - Fatores de saude": "XXI - Fatores de Saúde",
+        "Ignorado": "Ignorado",
+        "Carga Base Nacional 2024": "Carga Base Nacional 2024",
+        "Incremental FTP DataSUS": "Incremental FTP DataSUS",
+        "V6 Contínuo": "V6 Contínuo",
+        "V5 Nacional (Base 2024)": "V5 Nacional (Base 2024)",
+        "V5 Nacional (2024)": "V5 Nacional (2024)",
+        "Champion Mantido": "Champion Mantido",
+        "acumulado": "Acumulado",
+        "rolling": "Janela Deslizante",
+        "recalibrar": "Recalibração",
+        "baseline_v5_cid3": "Baseline V5 (CID3)",
+        "PROMOVIDO": "PROMOVIDO",
+        "CHAMPION_MANTIDO": "CHAMPION MANTIDO",
+        "BASELINE_INICIAL": "BASELINE INICIAL",
+        "APROVADO_DRY_RUN": "APROVADO (SIMULAÇÃO)",
     },
     "en": {
         "Todas": "All",
@@ -88,6 +124,20 @@ MAPAS_CAT = {
         "Random Forest": "Random Forest",
         "XGBoost": "XGBoost",
         "LightGBM": "LightGBM",
+        "Carga Base Nacional 2024": "2024 National Base Load",
+        "Incremental FTP DataSUS": "DataSUS FTP Incremental",
+        "V6 Contínuo": "Continuous V6",
+        "V5 Nacional (Base 2024)": "National V5 (2024 Base)",
+        "V5 Nacional (2024)": "National V5 (2024)",
+        "Champion Mantido": "Champion Retained",
+        "acumulado": "Cumulative",
+        "rolling": "Rolling Window",
+        "recalibrar": "Recalibration",
+        "baseline_v5_cid3": "V5 Baseline (CID3)",
+        "PROMOVIDO": "PROMOTED",
+        "CHAMPION_MANTIDO": "CHAMPION RETAINED",
+        "BASELINE_INICIAL": "INITIAL BASELINE",
+        "APROVADO_DRY_RUN": "APPROVED (DRY-RUN)",
     },
     "es": {
         "Todas": "Todas",
@@ -149,6 +199,20 @@ MAPAS_CAT = {
         "Random Forest": "Random Forest",
         "XGBoost": "XGBoost",
         "LightGBM": "LightGBM",
+        "Carga Base Nacional 2024": "Carga Base Nacional 2024",
+        "Incremental FTP DataSUS": "Incremental FTP DATASUS",
+        "V6 Contínuo": "V6 Continuo",
+        "V5 Nacional (Base 2024)": "V5 Nacional (Base 2024)",
+        "V5 Nacional (2024)": "V5 Nacional (2024)",
+        "Champion Mantido": "Champion Mantenido",
+        "acumulado": "Acumulado",
+        "rolling": "Ventana Deslizante",
+        "recalibrar": "Recalibración",
+        "baseline_v5_cid3": "Baseline V5 (CIE3)",
+        "PROMOVIDO": "PROMOVIDO",
+        "CHAMPION_MANTIDO": "CHAMPION MANTENIDO",
+        "BASELINE_INICIAL": "BASELINE INICIAL",
+        "APROVADO_DRY_RUN": "APROBADO (SIMULACIÓN)",
     },
 }
 
@@ -164,6 +228,49 @@ def tr_series(series: pd.Series, lang: str) -> pd.Series:
         novas = [mapa.get(str(c), str(c)) for c in series.cat.categories]
         return series.cat.rename_categories(novas)
     return series.astype(str).map(lambda x: mapa.get(x, x))
+
+
+def tr_janela_mlops(texto: str, lang: str) -> str:
+    s = str(texto)
+    if lang == "en":
+        return s.replace("(Teste Cego Estrat.)", "(Strat. Blind Test)")
+    if lang == "es":
+        return s.replace("(Teste Cego Estrat.)", "(Prueba Ciega Estrat.)")
+    return s
+
+
+def tr_mlops_motivo(motivo: str, lang: str) -> str:
+    s = str(motivo or "")
+    if lang == "pt" or not s:
+        return s
+    if s == "Modelo V5 inaugural com cid3 Bayesiano (m=50) e calibração isotônica colocado em produção.":
+        return (
+            "Inaugural V5 model with Bayesian cid3 (m=50) and isotonic calibration deployed to production."
+            if lang == "en"
+            else "Modelo V5 inaugural con cid3 Bayesiano (m=50) y calibración isotónica desplegado en producción."
+        )
+    m_prom = re.match(r"Challenger promovido com melhoria significativa em (\d+)/2 desfechos sem regressões\.", s)
+    if m_prom:
+        n = m_prom.group(1)
+        return (
+            f"Challenger promoted with significant gains in {n}/2 outcomes with no regressions."
+            if lang == "en"
+            else f"Challenger promovido con mejora significativa en {n}/2 desenlaces sin regresiones."
+        )
+    if s.startswith("Champion mantido devido a regressão em: "):
+        tail = s.split(": ", 1)[1]
+        return (
+            f"Champion retained due to regression in: {tail}"
+            if lang == "en"
+            else f"Champion mantenido por regresión en: {tail}"
+        )
+    if s.startswith("Champion mantido: diferença dentro da margem"):
+        return (
+            "Champion retained: metric difference within tie margin (insufficient gain to replace)."
+            if lang == "en"
+            else "Champion mantenido: diferencia dentro del margen de empate técnico."
+        )
+    return s
 
 
 TEXTOS = {
@@ -243,6 +350,7 @@ TEXTOS = {
         "col_uf": "UF",
         "col_reg": "Região",
         "col_int": "Internações",
+        "col_ob_cnt": "Óbitos",
         "col_ob_pct": "Taxa Óbito (%)",
         "col_lg_pct": "Longa Perm. (%)",
         "col_med_d": "Média Diárias",
@@ -346,7 +454,7 @@ Esta aba audita a qualidade de **toda nova carga incremental** (lotes em `histor
         "ml_img2": "Calibração Isotônica: curvas coladas na linha pontilhada provam que o % previsto é realista.",
         "ml_img3": "Fatores que mais pesam na decisão da IA (ex.: Idade, Clínica Médica e Urgência).",
         "ml_ops_hdr": "#### ⚖️ Governança MLOps: Retreinamento Contínuo & Champion vs. Challenger",
-        "ml_ops_sub": "Fluxo autônomo em nuvem (**GitHub Actions quinzenal + Releases `lakehouse-data`**): quando acumulam `>= 3` competências inéditas (após 30d) ou ocorre **drift clínico**, um **Challenger** enfrenta o **Champion** em **teste cego temporal** — e só substitui a produção se comprovar ganho sem regressões.",
+        "ml_ops_sub": "Fluxo autônomo em nuvem (**GitHub Actions quinzenal + Releases `lakehouse-data`**): quando acumulam `>= 3` competências inéditas (após 30d) ou ocorre **drift clínico**, um **Challenger** enfrenta o **Champion** em **teste cego temporal** — e só substitui a produção se comprovar ganho sem regressões, com backup em `modelos/archive/`, **regeneração automática das 3 figuras 300 DPI** e cache dinâmico no app.",
         "ml_ops_empty": "Execute `python scripts/orquestrador_continuo.py --forcar-retreino` para registrar a avaliação Champion vs. Challenger.",
         "ml_ops_cols": {"Alvo": "Desfecho", "Papel": "Modelo", "ROC_AUC": "ROC-AUC", "PR_AUC": "PR-AUC", "Brier": "Brier Cal.", "Limiar": "Corte (%)", "Sens": "Detecção (%)"},
         "ml_pol_hdr": "##### ⏱️ Política Automática de Retreino & Monitoramento de Drift (Cloud)",
@@ -504,8 +612,8 @@ Esta aba audita a qualidade de **toda nova carga incremental** (lotes em `histor
         "j_v6_tit": "6️⃣ Fase V6 Contínuo — Nuvem (`2024–2026` • `38,31M`), Históricos & MLOps Champion/Challenger",
         "j_v6_txt": """
 - **Ingestão Idempotente (`38,31M` casos):** Pipeline `2025/2026` somou **`+564` partições (`888` no total, `+24,73M` internações)** com chave natural (`n_aih + dt_inter + cnes`) e cubo deploy multi-ano de **`11,81 MB`** (`100%` exato).
-- **Retreino Temporal Champion vs. Challenger (`2026/07–09` cego `300k`):** **LightGBM V6 Contínuo** (`2,4M` treino `2024/01–2026/06`) venceu o Champion V5 (`Base 2024`) em **2/2 desfechos** (`Óbito ROC 0,9107 | PR 0,3089 | Brier 0,0300`; `Longa ROC 0,8447 | PR 0,3493 | Brier 0,0469`) e foi promovido com backup em `modelos/archive/`.
-- **Automação Cloud + Auditoria Contínua:** **GitHub Actions (`cron 0 6 5,20 * *`) + Releases (`lakehouse-data`)** buscam lotes inéditos, alimentam o **histórico de cargas (Aba 2)**, monitoram **drift + meta de acúmulo (`>=3` meses)** e registram cada **substituição de modelo (Aba 3)** com auto-deploy no Streamlit Cloud.
+- **Retreino Temporal Champion vs. Challenger (`2026/07–09` cego `300k`):** **LightGBM V6 Contínuo** (`2,4M` treino `2024/01–2026/06`) venceu o Champion V5 (`Base 2024`) em **2/2 desfechos** (`Óbito ROC 0,9107 | PR 0,3089 | Brier 0,0300`; `Longa ROC 0,8447 | PR 0,3493 | Brier 0,0469`), com backup em `modelos/archive/` e **regeneração automática das 3 figuras 300 DPI** (refletidas sem cache defasado por `mtime`).
+- **Automação Cloud + Auditoria Contínua:** **GitHub Actions (`cron 0 6 5,20 * *`) + Releases (`lakehouse-data`)** buscam lotes inéditos, alimentam o **histórico de cargas (Aba 2)**, monitoram **drift em `60k` casos + gatilho (`>=3` meses ou `3M` regs + `30d`)** e registram cada **substituição de modelo (Aba 3)** com auto-deploy no Streamlit Cloud.
 """,
         "j_evol_hdr": "#### 📊 Linha do Tempo Comparativa das Versões (V1 → V6 Contínuo)",
         "j_tech_hdr": "#### 🛠️ Tecnologias Utilizadas & Por Que Cada Escolha Foi Feita",
@@ -588,6 +696,7 @@ Esta aba audita a qualidade de **toda nova carga incremental** (lotes em `histor
         "col_uf": "State",
         "col_reg": "Region",
         "col_int": "Admissions",
+        "col_ob_cnt": "Deaths",
         "col_ob_pct": "Mortality (%)",
         "col_lg_pct": "Long Stay (%)",
         "col_med_d": "Avg. Days",
@@ -691,7 +800,7 @@ This tab continuously audits **every incremental load** (logged in `historico_ca
         "ml_img2": "Isotonic Calibration: curves hugging the diagonal dashed line confirm true clinical probabilities.",
         "ml_img3": "Top features driving AI decisions (Age and Bayesian `cid3` severity lead both outcomes).",
         "ml_ops_hdr": "#### ⚖️ MLOps Governance: Continuous Retraining & Champion vs. Challenger",
-        "ml_ops_sub": "Autonomous cloud pipeline (**biweekly GitHub Actions + `lakehouse-data` Releases**): once `>= 3` new months accumulate (after 30d cooldown) or **clinical drift** occurs, a **Challenger** battles the **Champion** on an unseen temporal holdout — replacing production only upon verified non-regressive gains.",
+        "ml_ops_sub": "Autonomous cloud pipeline (**biweekly GitHub Actions + `lakehouse-data` Releases**): once `>= 3` new months accumulate (after 30d cooldown) or **clinical drift** occurs, a **Challenger** battles the **Champion** on an unseen temporal holdout — replacing production only upon verified non-regressive gains, archiving prior weights in `modelos/archive/`, **auto-regenerating all 3 300-DPI plots**, and refreshing app caches via `mtime`.",
         "ml_ops_empty": "Run `python scripts/orquestrador_continuo.py --forcar-retreino` to log Champion vs. Challenger evaluations.",
         "ml_ops_cols": {"Alvo": "Outcome", "Papel": "Role", "ROC_AUC": "ROC-AUC", "PR_AUC": "PR-AUC", "Brier": "Cal. Brier", "Limiar": "Cutoff (%)", "Sens": "Recall (%)"},
         "ml_pol_hdr": "##### ⏱️ Automated Retraining Policy & Clinical Drift Monitor (Cloud)",
@@ -849,8 +958,8 @@ This tab continuously audits **every incremental load** (logged in `historico_ca
         "j_v6_tit": "6️⃣ Phase V6 Continuous — Cloud (`2024–2026` • `38.31M`), Histories & Champion/Challenger MLOps",
         "j_v6_txt": """
 - **Idempotent Multi-Year Lakehouse (`38.31M` cases):** `2025/2026` ingestion added **`+564` partitions (`888` total, `+24.73M` admissions)** with natural-key deduplication (`n_aih + dt_inter + cnes`) and an exact **`11.81 MB`** multi-year Cube.
-- **Temporal Champion vs. Challenger (`2026/07–09` 300k blind test):** **Continuous LightGBM V6** (`2.4M` train `2024/01–2026/06`) beat the V5 (`2024 Base`) Champion across **2/2 outcomes** (`Mortality ROC 0.9107 | PR 0.3089 | Brier 0.0300`; `Long Stay ROC 0.8447 | PR 0.3493 | Brier 0.0469`) and was promoted with backup in `modelos/archive/`.
-- **Cloud Automation & Audit Trails:** **GitHub Actions (`cron 0 6 5,20 * *`) + Releases (`lakehouse-data`)** fetch unseen DataSUS dumps, populate **Tab 2 batch history**, enforce the **hybrid trigger + drift monitor**, and log every **model promotion (Tab 3)** to Streamlit Cloud.
+- **Temporal Champion vs. Challenger (`2026/07–09` 300k blind test):** **Continuous LightGBM V6** (`2.4M` train `2024/01–2026/06`) beat the V5 (`2024 Base`) Champion across **2/2 outcomes** (`Mortality ROC 0.9107 | PR 0.3089 | Brier 0.0300`; `Long Stay ROC 0.8447 | PR 0.3493 | Brier 0.0469`), archiving backups in `modelos/archive/`, **auto-regenerating the 3 300-DPI diagnostic figures**, and invalidating app caches by `mtime`.
+- **Cloud Automation & Audit Trails:** **GitHub Actions (`cron 0 6 5,20 * *`) + Releases (`lakehouse-data`)** fetch unseen DataSUS dumps, populate **Tab 2 batch history**, monitor **`60k` recent drift + trigger (`>=3` months or `3M` rows + `30d`)**, and log every **model promotion (Tab 3)** to Streamlit Cloud.
 """,
         "j_evol_hdr": "#### 📊 Version Evolution Summary Table (V1 → Continuous V6)",
         "j_tech_hdr": "#### 🛠️ Tech Stack Used & Architectural Rationale",
@@ -933,6 +1042,7 @@ This tab continuously audits **every incremental load** (logged in `historico_ca
         "col_uf": "Estado",
         "col_reg": "Región",
         "col_int": "Ingresos",
+        "col_ob_cnt": "Fallecimientos",
         "col_ob_pct": "Mortalidad (%)",
         "col_lg_pct": "Larga Est. (%)",
         "col_med_d": "Prom. Días",
@@ -1036,7 +1146,7 @@ Esta pestaña audita continuamente **cada nueva carga incremental** (lotes en `h
         "ml_img2": "Calibración Isotónica: curvas pegadas a la diagonal punteada prueban probabilidades realistas.",
         "ml_img3": "Factores con mayor peso en la IA (ej.: Edad, Medicina Interna e Ingreso de Urgencia).",
         "ml_ops_hdr": "#### ⚖️ Gobernanza MLOps: Reentrenamiento Continuo y Champion vs. Challenger",
-        "ml_ops_sub": "Flujo autónomo en nube (**GitHub Actions quincenal + Releases `lakehouse-data`**): al acumular `>= 3` meses nuevos (tras 30d de espera) o detectar **drift clínico**, un **Challenger** enfrenta al **Champion** en **prueba ciega temporal** — solo reemplaza producción si mejora sin regresiones.",
+        "ml_ops_sub": "Flujo autónomo en nube (**GitHub Actions quincenal + Releases `lakehouse-data`**): al acumular `>= 3` meses nuevos (tras 30d de espera) o detectar **drift clínico**, un **Challenger** enfrenta al **Champion** en **prueba ciega temporal** — solo reemplaza producción si mejora sin regresiones, guardando respaldo en `modelos/archive/`, **regenerando las 3 figuras 300 DPI** e invalidando la caché por `mtime`.",
         "ml_ops_empty": "Ejecute `python scripts/orquestrador_continuo.py --forcar-retreino` para registrar la evaluación Champion vs. Challenger.",
         "ml_ops_cols": {"Alvo": "Desenlace", "Papel": "Modelo", "ROC_AUC": "ROC-AUC", "PR_AUC": "PR-AUC", "Brier": "Brier Cal.", "Limiar": "Corte (%)", "Sens": "Detección (%)"},
         "ml_pol_hdr": "##### ⏱️ Política Automática de Reentrenamiento y Monitoreo de Drift (Nube)",
@@ -1194,8 +1304,8 @@ Esta pestaña audita continuamente **cada nueva carga incremental** (lotes en `h
         "j_v6_tit": "6️⃣ Fase V6 Continuo — Nube (`2024–2026` • `38,31M`), Historiales y MLOps Champion/Challenger",
         "j_v6_txt": """
 - **Ingesta Idempotente (`38,31M` casos):** El flujo `2025/2026` sumó **`+564` particiones (`888` en total, `+24,73M` ingresos)** con clave natural (`n_aih + dt_inter + cnes`) y cubo deploy multianual de **`11,81 MB`** (`100%` exacto).
-- **Reentreno Temporal Champion vs. Challenger (`2026/07–09` ciego `300k`):** **LightGBM V6 Continuo** (`2,4M` entreno `2024/01–2026/06`) venció al Champion V5 (`Base 2024`) en **2/2 desenlaces** (`Óbito ROC 0,9107 | PR 0,3089 | Brier 0,0300`; `Larga Est. ROC 0,8447 | PR 0,3493 | Brier 0,0469`) y fue promovido con respaldo en `modelos/archive/`.
-- **Automatización Cloud y Auditoría:** **GitHub Actions (`cron 0 6 5,20 * *`) + Releases (`lakehouse-data`)** buscan lotes nuevos, alimentan el **historial de cargas (Pestaña 2)**, monitorean **drift + meta de acumulación (`>=3` meses)** y registran cada **reemplazo de modelo (Pestaña 3)** en Streamlit Cloud.
+- **Reentreno Temporal Champion vs. Challenger (`2026/07–09` ciego `300k`):** **LightGBM V6 Continuo** (`2,4M` entreno `2024/01–2026/06`) venció al Champion V5 (`Base 2024`) en **2/2 desenlaces** (`Óbito ROC 0,9107 | PR 0,3089 | Brier 0,0300`; `Larga Est. ROC 0,8447 | PR 0,3493 | Brier 0,0469`), con respaldo en `modelos/archive/`, **regeneración automática de las 3 figuras 300 DPI** y caché dinámica por `mtime`.
+- **Automatización Cloud y Auditoría:** **GitHub Actions (`cron 0 6 5,20 * *`) + Releases (`lakehouse-data`)** buscan lotes nuevos, alimentan el **historial de cargas (Pestaña 2)**, monitorean **drift en `60k` casos + gatillo (`>=3` meses o `3M` reg. + `30d`)** y registran cada **reemplazo de modelo (Pestaña 3)** en Streamlit Cloud.
 """,
         "j_evol_hdr": "#### 📊 Tabla Resumen de Evolución de Versiones (V1 → V6 Continuo)",
         "j_tech_hdr": "#### 🛠️ Stack Tecnológico Utilizado y Por Qué Se Eligió",
@@ -1223,7 +1333,7 @@ def get_evolucao_df(lang: str) -> pd.DataFrame:
             {"Version": "V3 (Ethical AI)", "Scope": "Acre (56,459)", "Targets": "Long Stay + Mortality", "Features": "8 (ethical clinical)", "Key Milestone / Decision": "Removed `raca_cor` & `mes_internacao` from AI to prevent bias/drift; kept for equity tab."},
             {"Version": "V4 (National Cloud)", "Scope": "Brazil 27 UFs (13.58M)", "Targets": "Long Stay + Mortality", "Features": "8 (calibrated LightGBM)", "Key Milestone / Decision": "DuckDB/Parquet lakehouse, 1.5M stratified sample, Isotonic Calibration (Brier 0.033/0.048), PT/EN/ES Cloud App."},
             {"Version": "V5 (2024 Base • CID3)", "Scope": "Brazil 27 UFs (3.0M)", "Targets": "Long Stay + Mortality", "Features": "9 (+ cid3 Hybrid Bayes TE)", "Key Milestone / Decision": "113-col audit + Top-200 OHE & OOF Bayes TE (m=50); ROC-AUC 0.9082/0.8481 & PR-AUC +44.5% (Death) at 0.62 MB."},
-            {"Version": "V6 Continuous (Cloud MLOps)", "Scope": "Brazil 2024–2026 (38.31M)", "Targets": "Long Stay + Mortality", "Features": "9 (Champion vs Challenger)", "Key Milestone / Decision": "+564 incremental partitions (888 total, 0 dupes), 11.81 MB cube, blind 300k cloud V6 promotion (ROC 0.9107/0.8447, PR 0.3089/0.3493)."},
+            {"Version": "V6 Continuous (Cloud MLOps)", "Scope": "Brazil 2024–2026 (38.31M)", "Targets": "Long Stay + Mortality", "Features": "9 (Champion vs Challenger)", "Key Milestone / Decision": "+564 incremental partitions (888 total, 0 dupes), 11.81 MB cube, biweekly cron, drift guard & 300-DPI plot updates (ROC 0.9107/0.8447, PR 0.3089/0.3493)."},
         ])
     if lang == "es":
         return pd.DataFrame([
@@ -1232,7 +1342,7 @@ def get_evolucao_df(lang: str) -> pd.DataFrame:
             {"Versión": "V3 (IA Ética)", "Alcance": "Acre (56.459)", "Objetivos": "Larga Est. + Óbito", "Features": "8 (clínicas y éticas)", "Decisión / Hito Principal": "Exclusión de `raca_cor` y `mes_internacao` de la IA (mantenidas solo en Equidad)."},
             {"Versión": "V4 (Nacional Cloud)", "Alcance": "Brasil 27 UFs (13,58M)", "Objetivos": "Larga Est. + Óbito", "Features": "8 (LightGBM calibrado)", "Decisión / Hito Principal": "Lakehouse DuckDB/Parquet, muestra 1,5M, Calibración Isotónica (Brier 0,033/0,048), app PT/EN/ES."},
             {"Versión": "V5 (Base 2024 • CIE3)", "Alcance": "Brasil 27 UFs (3,0M)", "Objetivos": "Larga Est. + Óbito", "Features": "9 (+ cid3 Híbrido Bayes)", "Decisión / Hito Principal": "Auditoría 113 cols + Top-200 OHE & TE Bayesiano (m=50); ROC 0,9082/0,8481 y PR-AUC +44,5% en 0,62 MB."},
-            {"Versión": "V6 Continuo (Nube MLOps)", "Alcance": "Brasil 2024–2026 (38,31M)", "Objetivos": "Larga Est. + Óbito", "Features": "9 (Champion vs Challenger)", "Decisión / Hito Principal": "+564 particiones incrementales (888 total, 0 dupl.), cubo 11,81 MB, promoción V6 en nube (ROC 0,9107/0,8447, PR 0,3089/0,3493)."},
+            {"Versión": "V6 Continuo (Nube MLOps)", "Alcance": "Brasil 2024–2026 (38,31M)", "Objetivos": "Larga Est. + Óbito", "Features": "9 (Champion vs Challenger)", "Decisión / Hito Principal": "+564 particiones incrementales (888 total, 0 dupl.), cubo 11,81 MB, cron quincenal, monitor drift y gráficos 300 DPI dinámicos (ROC 0,9107/0,8447, PR 0,3089/0,3493)."},
         ])
     return pd.DataFrame([
         {"Versão": "V1 (Baseline)", "Escopo": "Acre (56.459)", "Alvos": "Apenas Longa Perm.", "Features": "7 (com leakage cobranca)", "Decisão / Marco Principal": "Descoberta do vazamento em `cobranca` e correção do colapso SMOTE + peso no XGBoost."},
@@ -1240,7 +1350,7 @@ def get_evolucao_df(lang: str) -> pd.DataFrame:
         {"Versão": "V3 (IA Ética)", "Escopo": "Acre (56.459)", "Alvos": "Longa Perm. + Óbito", "Features": "8 (clínicas e éticas)", "Decisão / Marco Principal": "Remoção de `raca_cor` e `mes_internacao` da IA clínica (mantidas só na Aba 1 de Equidade)."},
         {"Versão": "V4 (Nacional Cloud)", "Escopo": "Brasil 27 UFs (13,58M)", "Alvos": "Longa Perm. + Óbito", "Features": "8 (LightGBM calibrado)", "Decisão / Marco Principal": "Lakehouse DuckDB/Parquet, amostra de 1,5M, Calibração Isotônica (Brier 0,033/0,048), app PT/EN/ES na nuvem."},
         {"Versão": "V5 (Base 2024 • CID3)", "Escopo": "Brasil 27 UFs (3,0M)", "Alvos": "Longa Perm. + Óbito", "Features": "9 (+ cid3 Bayes Híbrido)", "Decisão / Marco Principal": "Re-auditoria 113 cols + Top-200 OHE & TE Bayesiano (m=50); ROC 0,9082/0,8481 e PR-AUC +44,5% em 0,62 MB."},
-        {"Versão": "V6 Contínuo (Nuvem & MLOps)", "Escopo": "Brasil 2024–2026 (38,31M)", "Alvos": "Longa Perm. + Óbito", "Features": "9 (Champion vs Challenger)", "Decisão / Marco Principal": "+564 partições incrementais (888 total, 0 dup.), cubo 11,81 MB, promoção V6 em nuvem (ROC 0,9107/0,8447, PR 0,3089/0,3493)."},
+        {"Versão": "V6 Contínuo (Nuvem & MLOps)", "Escopo": "Brasil 2024–2026 (38,31M)", "Alvos": "Longa Perm. + Óbito", "Features": "9 (Champion vs Challenger)", "Decisão / Marco Principal": "+564 partições incrementais (888 total, 0 dup.), cubo 11,81 MB, cron quinzenal, monitor drift e figuras 300 DPI dinâmicas (ROC 0,9107/0,8447, PR 0,3089/0,3493)."},
     ])
 
 
@@ -1280,6 +1390,12 @@ _TECH_STACK = [
         {"pt": "Pipelines, Baselines & Calibração", "en": "Pipelines, Baselines & Calibration", "es": "Pipelines, Baselines y Calibración"},
         {"pt": "Encapsula AdmissionV5Preprocessor (OOF Target Encoding Bayesiano m=50 + Top-200 OHE + StandardScaler) e CalibratedClassifierCV isotônica.", "en": "Wraps AdmissionV5Preprocessor (OOF Bayesian Target Encoding m=50 + Top-200 OHE + StandardScaler) and isotonic calibration.", "es": "Encapsula AdmissionV5Preprocessor (OOF Target Encoding Bayesiano m=50 + Top-200 OHE + StandardScaler) y Calibración Isotónica."},
         {"pt": "Impede data leakage no pré-processamento e derrubou o Brier Score para 0,0300 / 0,0469 no V6 Contínuo.", "en": "Prevents preprocessing leakage and cut probability error (Brier Score) down to 0.0300 / 0.0469 in Continuous V6.", "es": "Evita fugas en preprocesamiento y bajó el Brier Score a 0,0300 / 0,0469 en V6 Continuo."},
+    ),
+    (
+        "LightGBM & XGBoost",
+        {"pt": "Modelos Preditivos Principais", "en": "Gradient Boosting Engines", "es": "Modelos Predictivos Principales"},
+        {"pt": "LightGBM (modelo oficial V6 Contínuo) e XGBoost treinam árvores baseadas em histograma sobre 2,4M internações com inferência em milissegundos.", "en": "LightGBM (production Continuous V6 model) and XGBoost fit histogram-based boosted trees on 2.4M admissions with millisecond inference.", "es": "LightGBM (modelo oficial V6 Continuo) y XGBoost entrenan árboles por histogramas sobre 2,4M ingresos con inferencia en milisegundos."},
+        {"pt": "LightGBM lidera em ROC-AUC (0,9107 / 0,8447), detecção clínica e leveza na nuvem (0,62 MB por artefato calibrado).", "en": "LightGBM leads on ROC-AUC (0.9107 / 0.8447), admission recall, and tiny cloud footprint (0.62 MB per calibrated bundle).", "es": "LightGBM lidera en ROC-AUC (0,9107 / 0,8447), detección clínica y ligereza en nube (0,62 MB por artefacto calibrado)."},
     ),
     (
         "Plotly & Matplotlib",
@@ -1354,6 +1470,13 @@ def get_qualidade_variaveis_df(res_dq: dict, esperado_ufs: int, lang: str) -> tu
     u_both = {"pt": "Perfil + Treino IA", "en": "Profile + AI Train", "es": "Perfil + Entreno IA"}[k]
     u_tgt = {"pt": "Perfil + Alvo IA", "en": "Profile + AI Target", "es": "Perfil + Objetivo IA"}[k]
 
+    lbl_sexo_ok = {"pt": "0% outro/inv.", "en": "0% other/inv.", "es": "0% otro/inv."}[k]
+    lbl_ign = {"pt": "Ign.", "en": "Unk.", "es": "Ign."}[k]
+    lbl_outras = {"pt": "Outras", "en": "Other", "es": "Otras"}[k]
+    lbl_null_zero = {"pt": "0 nulos", "en": "0 nulls", "es": "0 nulos"}[k]
+    lbl_comp = {"pt": "comp.", "en": "mo.", "es": "comp."}[k]
+    lbl_alvos_row = {"pt": "qt_diarias & Obito (Alvos)", "en": "qt_diarias & Obito (Targets)", "es": "qt_diarias & Obito (Objetivos)"}[k]
+
     def _pct_ok(erros: int) -> str:
         if n_am <= 0:
             return "-"
@@ -1372,7 +1495,7 @@ def get_qualidade_variaveis_df(res_dq: dict, esperado_ufs: int, lang: str) -> tu
         (
             "ano & mes_internacao",
             u_epi,
-            f"{res_dq['particoes_uf_mes']} / {esperado_parts} ({res_dq['meses_cobertos']}/{comp_esp} comp.)",
+            f"{res_dq['particoes_uf_mes']} / {esperado_parts} ({res_dq['meses_cobertos']}/{comp_esp} {lbl_comp})",
             lbl_ok if cov_ok else lbl_warn,
             "dq_ok" if cov_ok else "dq_warn",
             {"pt": "Competências anuais/mensais indexadas no pipeline incremental; excluídas da IA na V3 para evitar data drift.", "en": "Yearly/monthly partitions indexed incrementally; excluded from AI in V3 to avoid drift.", "es": "Competencias anuales/mensuales indexadas incrementalmente; excluidas de la IA en V3 para evitar drift."}[k],
@@ -1396,7 +1519,7 @@ def get_qualidade_variaveis_df(res_dq: dict, esperado_ufs: int, lang: str) -> tu
         (
             "sexo",
             u_both,
-            f"{_pct_ok(res_dq['bad_sexo'])} (0% outro/inv.)",
+            f"{_pct_ok(res_dq['bad_sexo'])} ({lbl_sexo_ok})",
             lbl_ok if sexo_ok else lbl_alert,
             "dq_ok" if sexo_ok else "dq_alert",
             {"pt": "100% aderente aos códigos válidos 1 (Masculino) e 3 (Feminino) no cubo e no treino.", "en": "100% compliant with valid codes 1 (Male) and 3 (Female) across cube and training.", "es": "100% conforme a los códigos válidos 1 (Masculino) y 3 (Femenino)."}[k],
@@ -1404,7 +1527,7 @@ def get_qualidade_variaveis_df(res_dq: dict, esperado_ufs: int, lang: str) -> tu
         (
             "capitulo_cid & cid3 (diag_princ)",
             u_both,
-            f"{_pct_ok(res_dq['bad_cid'])} ({_fmt_pct_lang(res_dq['pct_cid_ign'], 3, k)} Ign.)",
+            f"{_pct_ok(res_dq['bad_cid'])} ({_fmt_pct_lang(res_dq['pct_cid_ign'], 3, k)} {lbl_ign})",
             lbl_ok if cid_ok else lbl_warn,
             "dq_ok" if cid_ok else "dq_warn",
             {"pt": "Mapeia diag_princ em 20 capítulos + 1.665 códigos cid3 (encoder Bayesiano V5/V6 Contínuo) equilibrando detalhe e ruído.", "en": "Maps diag_princ into 20 chapters + 1,665 cid3 codes (V5/Continuous V6 Bayesian encoder) balancing granularity and noise.", "es": "Mapea diag_princ en 20 capítulos + 1.665 códigos cid3 (encoder Bayesiano V5/V6 Continuo) equilibrando detalle y ruido."}[k],
@@ -1412,7 +1535,7 @@ def get_qualidade_variaveis_df(res_dq: dict, esperado_ufs: int, lang: str) -> tu
         (
             "especialidade_leito",
             u_both,
-            f"{_fmt_pct_lang(max(0.0, 100.0 - res_dq['pct_esp_outras']), 2, k)} ({_fmt_pct_lang(res_dq['pct_esp_outras'], 2, k)} Outras)",
+            f"{_fmt_pct_lang(max(0.0, 100.0 - res_dq['pct_esp_outras']), 2, k)} ({_fmt_pct_lang(res_dq['pct_esp_outras'], 2, k)} {lbl_outras})",
             lbl_ok if esp_ok else lbl_warn,
             "dq_ok" if esp_ok else "dq_warn",
             {"pt": "Variável crítica na admissão; categoria 'Outras' monitorada por variações de cadastro.", "en": "Key intake predictor; 'Other' category monitored for hospital coding gaps.", "es": "Predictor clave al ingreso; categoría 'Otras' monitoreada por variaciones de registro."}[k],
@@ -1420,7 +1543,7 @@ def get_qualidade_variaveis_df(res_dq: dict, esperado_ufs: int, lang: str) -> tu
         (
             "carater_internacao & complexidade",
             u_ia,
-            f"{_pct_ok(res_dq['null_carater'] + res_dq['null_complex'])} (0 nulos)",
+            f"{_pct_ok(res_dq['null_carater'] + res_dq['null_complex'])} ({lbl_null_zero})",
             lbl_ok if cat_ok else lbl_alert,
             "dq_ok" if cat_ok else "dq_alert",
             {"pt": "Disponíveis no acolhimento (Urgência/Eletiva e Média/Alta), sem vazamento pós-alta.", "en": "Available right at intake (Urgency/Elective & Complexity) with zero leakage.", "es": "Disponibles al ingreso (Urgencia/Electiva y Complejidad), sin fuga de datos."}[k],
@@ -1428,13 +1551,13 @@ def get_qualidade_variaveis_df(res_dq: dict, esperado_ufs: int, lang: str) -> tu
         (
             "transferido_intermun & fds",
             u_ia,
-            f"{_pct_ok(res_dq['null_transf'] + res_dq['null_fds'])} (0 nulos)",
+            f"{_pct_ok(res_dq['null_transf'] + res_dq['null_fds'])} ({lbl_null_zero})",
             lbl_ok if flags_ok else lbl_alert,
             "dq_ok" if flags_ok else "dq_alert",
             {"pt": "Flags binárias derivadas de munic_res!=munic_mov e dt_inter na entrada hospitalar.", "en": "Binary flags derived from munic_res!=munic_mov and intake weekday.", "es": "Variables binarias derivadas de munic_res!=munic_mov y día de ingreso."}[k],
         ),
         (
-            "qt_diarias & Obito (Alvos)",
+            lbl_alvos_row,
             u_tgt,
             f"{_pct_ok(res_dq['bad_diarias'])} ({res_dq['min_diarias']}–{res_dq['max_diarias']}d)",
             lbl_ok if alvo_ok else lbl_alert,

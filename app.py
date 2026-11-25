@@ -2,11 +2,11 @@
 """
 🏥 SUS Analytics & Clinical Intelligence Platform (PT / EN / ES)
 Aplicação Streamlit Multi-Abas Conectada ao Data Lake Parquet + DuckDB:
-- Aba 1: Perfil Epidemiológico & Equidade em Saúde (27 UFs / 13,58M internações)
-- Aba 2: Qualidade dos Dados & Contrato de Integridade
-- Aba 3: Como a IA Funciona (Modelos V5 Calibrados com CID3 Híbrido, Benchmarks, Prós & Contras)
+- Aba 1: Perfil Epidemiológico & Equidade em Saúde (Multi-Ano 2024–2026)
+- Aba 2: Qualidade dos Dados, Lotes Incrementais & Contrato de Integridade
+- Aba 3: Como a IA Funciona (Modelos V5 Calibrados com CID3 Híbrido + Governança Champion/Challenger)
 - Aba 4: Painel de Gestão Clínica & Leitos (Simulador CID3 + Flags Calibradas)
-- Aba 5: Dicionário Completo SIH/SUS (113 Colunas + 13 Derivadas) & Glossário
+- Aba 5: Dicionário Completo SIH/SUS (113 Colunas + 14 Derivadas) & Glossário
 - Aba 6: Jornada, Decisões, Arquitetura & Stack Tecnológica
 """
 
@@ -184,53 +184,68 @@ def get_filtros_v2():
 
 
 @st.cache_data(ttl=300)
-def get_kpis(regiao, uf):
-    return ds.obter_kpis_globais(regiao=regiao, uf=uf)
+def get_kpis(regiao, uf, ano="Todos"):
+    return ds.obter_kpis_globais(regiao=regiao, uf=uf, ano=ano)
 
 
 @st.cache_data(ttl=300)
-def get_contagem(regiao, uf, raca, espec, sexo, mes_range):
-    return ds.contar_filtrado(regiao, uf, raca, espec, sexo, mes_range)
+def get_contagem(regiao, uf, raca, espec, sexo, mes_range, ano="Todos"):
+    return ds.contar_filtrado(regiao, uf, raca, espec, sexo, mes_range, ano=ano)
 
 
 @st.cache_data(ttl=300)
-def get_faixa_sexo(regiao, uf, raca, espec, sexo, mes_range):
-    return ds.obter_distribuicao_faixa_sexo(regiao, uf, raca, espec, sexo, mes_range)
+def get_faixa_sexo(regiao, uf, raca, espec, sexo, mes_range, ano="Todos"):
+    return ds.obter_distribuicao_faixa_sexo(regiao, uf, raca, espec, sexo, mes_range, ano=ano)
 
 
 @st.cache_data(ttl=300)
-def get_raca(regiao, uf, espec, sexo, mes_range):
-    return ds.obter_equidade_raca(regiao, uf, espec, sexo, mes_range)
+def get_raca(regiao, uf, espec, sexo, mes_range, ano="Todos"):
+    return ds.obter_equidade_raca(regiao, uf, espec, sexo, mes_range, ano=ano)
 
 
 @st.cache_data(ttl=300)
-def get_sazonalidade(regiao, uf, raca, espec, sexo):
-    return ds.obter_sazonalidade_mensal(regiao, uf, raca, espec, sexo)
+def get_sazonalidade(regiao, uf, raca, espec, sexo, ano="Todos"):
+    return ds.obter_sazonalidade_mensal(regiao, uf, raca, espec, sexo, ano=ano)
 
 
 @st.cache_data(ttl=300)
-def get_cid(regiao, uf, raca, espec, sexo, mes_range):
-    return ds.obter_top_capitulos_cid(regiao, uf, raca, espec, sexo, mes_range)
+def get_evolucao_anual(regiao, uf, raca, espec, sexo):
+    return ds.obter_evolucao_anual(regiao, uf, raca, espec, sexo)
 
 
 @st.cache_data(ttl=300)
-def get_resumo_ufs(regiao):
-    return ds.obter_resumo_ufs(regiao=regiao)
+def get_cid(regiao, uf, raca, espec, sexo, mes_range, ano="Todos"):
+    return ds.obter_top_capitulos_cid(regiao, uf, raca, espec, sexo, mes_range, ano=ano)
 
 
 @st.cache_data(ttl=300)
-def get_amostra_cockpit(uf, espec, min_dias, busca):
-    return ds.obter_amostra_cockpit(uf=uf, espec=espec, min_dias=min_dias, busca=busca, limite=300)
+def get_resumo_ufs(regiao, ano="Todos"):
+    return ds.obter_resumo_ufs(regiao=regiao, ano=ano)
 
 
 @st.cache_data(ttl=300)
-def get_qualidade_resumo(regiao, uf):
-    return ds.obter_resumo_qualidade(regiao=regiao, uf=uf)
+def get_amostra_cockpit(uf, espec, min_dias, busca, ano="Todos"):
+    return ds.obter_amostra_cockpit(uf=uf, espec=espec, min_dias=min_dias, busca=busca, limite=300, ano=ano)
 
 
 @st.cache_data(ttl=300)
-def get_qualidade_uf(regiao):
-    return ds.obter_qualidade_por_uf(regiao=regiao)
+def get_qualidade_resumo(regiao, uf, ano="Todos"):
+    return ds.obter_resumo_qualidade(regiao=regiao, uf=uf, ano=ano)
+
+
+@st.cache_data(ttl=300)
+def get_qualidade_uf(regiao, ano="Todos"):
+    return ds.obter_qualidade_por_uf(regiao=regiao, ano=ano)
+
+
+@st.cache_data(ttl=60)
+def get_resumo_ultima_carga():
+    return ds.obter_resumo_ultima_carga()
+
+
+@st.cache_data(ttl=60)
+def get_registro_modelos():
+    return ds.obter_registro_modelos()
 
 
 if not ds.parquet_disponivel():
@@ -240,7 +255,7 @@ if not ds.parquet_disponivel():
 modelo_longa, modelo_obito = carregar_modelos()
 top_cid3_por_cap = carregar_top_cid3()
 filtros = get_filtros_v2()
-kpis_gerais = get_kpis("Todas", "Todas")
+kpis_gerais = get_kpis("Todas", "Todas", "Todos")
 
 
 def fmt_num(valor: int, lang: str) -> str:
@@ -328,7 +343,7 @@ with kpi4:
     lg_str = f"{kpis_gerais['taxa_longa']:.2f}%" if idioma == "en" else f"{kpis_gerais['taxa_longa']:.2f}%".replace(".", ",")
     st.markdown(f'<div class="metric-card amber"><h3>{t["kpi4_lbl"]}</h3><p style="color:#d97706;">{lg_str}</p><small>{t["kpi4_sub"]}</small></div>', unsafe_allow_html=True)
 with kpi5:
-    roc_str = "0.908 / 0.848" if idioma == "en" else "0,908 / 0,848"
+    roc_str = "0.911 / 0.845" if idioma == "en" else "0,911 / 0,845"
     st.markdown(f'<div class="metric-card green"><h3>{t["kpi5_lbl"]}</h3><p style="color:#059669;">{roc_str}</p><small>{t["kpi5_sub"]}</small></div>', unsafe_allow_html=True)
 
 st.write("")
@@ -345,7 +360,15 @@ with tab_epi:
     st.markdown(t["epi_hdr"])
     st.markdown(t["epi_sub"])
 
-    col_f1, col_f2, col_f3, col_f4, col_f5, col_f6 = st.columns(6)
+    col_f0, col_f1, col_f2, col_f3, col_f4, col_f5, col_f6 = st.columns([0.85, 1.0, 0.9, 1.0, 1.15, 0.95, 1.15])
+    with col_f0:
+        ano_sel = st.selectbox(
+            t["f_ano"],
+            ["Todos"] + filtros.get("anos", []),
+            index=0,
+            format_func=lambda x: tr_val("Todos", idioma) if x == "Todos" else str(x),
+            key="epi_ano",
+        )
     with col_f1:
         reg_sel = st.selectbox(t["f_regiao"], ["Todas"] + filtros["regioes"], index=0, format_func=lambda x: tr_val(x, idioma), key="epi_regiao")
     with col_f2:
@@ -370,7 +393,7 @@ with tab_epi:
     with col_f6:
         mes_sel = st.slider(t["f_mes"], 1, 12, (1, 12))
 
-    total_filtrado = get_contagem(reg_sel, uf_sel, raca_sel, espec_sel, sexo_sel, mes_sel)
+    total_filtrado = get_contagem(reg_sel, uf_sel, raca_sel, espec_sel, sexo_sel, mes_sel, ano_sel)
     pct_total = (total_filtrado / kpis_gerais["total"] * 100) if kpis_gerais["total"] > 0 else 0
     st.info(t["epi_info"].format(n=fmt_num(total_filtrado, idioma), pct=pct_total))
 
@@ -379,7 +402,7 @@ with tab_epi:
     with g1:
         st.markdown(t["g1_hdr"])
         st.caption(t["g1_cap"])
-        faixa_df = get_faixa_sexo(reg_sel, uf_sel, raca_sel, espec_sel, sexo_sel, mes_sel).copy()
+        faixa_df = get_faixa_sexo(reg_sel, uf_sel, raca_sel, espec_sel, sexo_sel, mes_sel, ano_sel).copy()
         faixa_df["faixa_disp"] = tr_series(faixa_df["faixa_etaria"], idioma)
         faixa_df["sexo_disp"] = tr_series(faixa_df["sexo_desc"], idioma)
         cor_sexo = {tr_val("Masculino", idioma): "#2563eb", tr_val("Feminino", idioma): "#ec4899"}
@@ -395,7 +418,7 @@ with tab_epi:
     with g2:
         st.markdown(t["g2_hdr"])
         st.caption(t["g2_cap"])
-        raca_metrics = get_raca(reg_sel, uf_sel, espec_sel, sexo_sel, mes_sel).copy()
+        raca_metrics = get_raca(reg_sel, uf_sel, espec_sel, sexo_sel, mes_sel, ano_sel).copy()
         raca_metrics["raca_disp"] = tr_series(raca_metrics["raca_cor_desc"], idioma)
         fig_raca = px.scatter(
             raca_metrics, x="taxa_obito", y="media_diarias", size="total", color="raca_disp",
@@ -411,15 +434,18 @@ with tab_epi:
     with g3:
         st.markdown(t["g3_hdr"])
         st.caption(t["g3_cap"])
-        mes_agg = get_sazonalidade(reg_sel, uf_sel, raca_sel, espec_sel, sexo_sel)
+        mes_agg = get_sazonalidade(reg_sel, uf_sel, raca_sel, espec_sel, sexo_sel, ano_sel).copy()
         fig_mes = go.Figure()
-        fig_mes.add_trace(go.Bar(x=mes_agg["mes_internacao"], y=mes_agg["internacoes"], name=t["g3_b"], marker_color="#93c5fd"))
-        fig_mes.add_trace(go.Scatter(x=mes_agg["mes_internacao"], y=mes_agg["taxa_mortalidade"], name=t["g3_l"], yaxis="y2", line=dict(color="#dc2626", width=3)))
+        multi_serie = not mes_agg.empty and ano_sel == "Todos" and mes_agg["ano"].nunique() > 1
+        x_vals = mes_agg["competencia"] if multi_serie else mes_agg["mes_internacao"]
+        fig_mes.add_trace(go.Bar(x=x_vals, y=mes_agg["internacoes"], name=t["g3_b"], marker_color="#93c5fd"))
+        fig_mes.add_trace(go.Scatter(x=x_vals, y=mes_agg["taxa_mortalidade"], name=t["g3_l"], yaxis="y2", line=dict(color="#dc2626", width=3)))
+        xaxis_cfg = dict(title=t["g3_x"], tickangle=-45) if multi_serie else dict(title=t["g3_x"], tickmode="linear", dtick=1)
         fig_mes.update_layout(
             height=350, template="plotly_white",
             yaxis=dict(title=t["g3_y1"]),
             yaxis2=dict(title=t["g3_y2"], overlaying="y", side="right"),
-            xaxis=dict(title=t["g3_x"], tickmode="linear", dtick=1),
+            xaxis=xaxis_cfg,
             legend=dict(x=0.01, y=0.99),
             margin=dict(l=20, r=20, t=20, b=20)
         )
@@ -428,7 +454,7 @@ with tab_epi:
     with g4:
         st.markdown(t["g4_hdr"])
         st.caption(t["g4_cap"])
-        cid_df = get_cid(reg_sel, uf_sel, raca_sel, espec_sel, sexo_sel, mes_sel).copy()
+        cid_df = get_cid(reg_sel, uf_sel, raca_sel, espec_sel, sexo_sel, mes_sel, ano_sel).copy()
         cid_df["cid_disp"] = tr_series(cid_df["capitulo_cid"], idioma)
         fig_cid = px.bar(
             cid_df, y="cid_disp", x="total", orientation="h",
@@ -441,9 +467,43 @@ with tab_epi:
         fig_cid.update_layout(height=350, margin=dict(l=20, r=20, t=20, b=20))
         st.plotly_chart(fig_cid, use_container_width=True)
 
+    if len(filtros.get("anos", [])) > 1:
+        evol_ano = get_evolucao_anual(reg_sel, uf_sel, raca_sel, espec_sel, sexo_sel).copy()
+        if not evol_ano.empty:
+            st.markdown(t["epi_year_hdr"])
+            st.caption(t["epi_year_cap"])
+            ya1, ya2 = st.columns([1.25, 1.0])
+            with ya1:
+                fig_ano = go.Figure()
+                anos_str = evol_ano["ano"].astype(str)
+                fig_ano.add_trace(go.Bar(x=anos_str, y=evol_ano["internacoes"], name=t["g3_b"], marker_color="#3b82f6"))
+                fig_ano.add_trace(go.Scatter(x=anos_str, y=evol_ano["taxa_mortalidade"], name=t["g3_l"], yaxis="y2", mode="lines+markers", line=dict(color="#dc2626", width=3)))
+                fig_ano.update_layout(
+                    height=290, template="plotly_white",
+                    yaxis=dict(title=t["g3_y1"]),
+                    yaxis2=dict(title=t["g3_y2"], overlaying="y", side="right"),
+                    legend=dict(x=0.01, y=0.99),
+                    margin=dict(l=20, r=20, t=20, b=20),
+                )
+                st.plotly_chart(fig_ano, use_container_width=True)
+            with ya2:
+                st.dataframe(
+                    evol_ano,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "ano": st.column_config.NumberColumn(t["p_cols"]["ano"], format="%d"),
+                        "meses_ativos": st.column_config.NumberColumn(t["dq_uf_cols"]["meses_ativos"], format="%d"),
+                        "internacoes": st.column_config.NumberColumn(t["col_int"], format="%d"),
+                        "obitos": st.column_config.NumberColumn(t["match_tokens"]["obito"], format="%d"),
+                        "taxa_mortalidade": st.column_config.NumberColumn(t["col_ob_pct"], format="%.2f%%"),
+                        "taxa_longa": st.column_config.NumberColumn(t["col_lg_pct"], format="%.2f%%"),
+                    },
+                )
+
     if len(filtros["ufs"]) > 1:
         st.markdown(t["ufs_hdr"])
-        df_ufs = get_resumo_ufs(reg_sel).copy()
+        df_ufs = get_resumo_ufs(reg_sel, ano_sel).copy()
         df_ufs["regiao"] = tr_series(df_ufs["regiao"], idioma)
         st.dataframe(
             df_ufs,
@@ -466,7 +526,64 @@ with tab_qual:
     st.markdown(t["dq_hdr"])
     st.markdown(t["dq_sub"])
 
-    dq_f1, dq_f2, _ = st.columns([1.2, 1.2, 2.6])
+    def fmt_dec(val: float, casas: int = 2) -> str:
+        s = f"{val:.{casas}f}%"
+        return s if idioma == "en" else s.replace(".", ",")
+
+    resumo_carga = get_resumo_ultima_carga()
+    st.markdown(t["dq_load_hdr"])
+    if resumo_carga and resumo_carga.get("ultimo_lote_com_dados"):
+        lote = resumo_carga["ultimo_lote_com_dados"]
+        ql = lote.get("qualidade_lote", {})
+        tb = resumo_carga.get("totais_banco", {})
+        st.caption(
+            t["dq_load_sub"].format(
+                ver=resumo_carga.get("ultima_verificacao_local", "-"),
+                pul=fmt_num(int(resumo_carga.get("ultima_verificacao_particoes_puladas", 0)), idioma),
+            )
+        )
+        lk1, lk2, lk3, lk4 = st.columns(4)
+        with lk1:
+            st.markdown(
+                f'<div class="metric-card"><h3>{t["dq_load_k1"]}</h3>'
+                f'<p style="color:#1e3a8a;">+{fmt_num(int(lote.get("qtd_particoes_novas", 0)), idioma)}</p>'
+                f'<small>{lote.get("range_lote_novo", "-")} ({lote.get("ufs_novas_count", 0)} UFs)</small></div>',
+                unsafe_allow_html=True,
+            )
+        with lk2:
+            st.markdown(
+                f'<div class="metric-card green"><h3>{t["dq_load_k2"]}</h3>'
+                f'<p style="color:#059669;">{fmt_num(int(lote.get("registros_aceitos", 0)), idioma)}</p>'
+                f'<small>{lote.get("data_execucao_local", "-")}</small></div>',
+                unsafe_allow_html=True,
+            )
+        with lk3:
+            st.markdown(
+                f'<div class="metric-card amber"><h3>{t["dq_load_k3"]}</h3>'
+                f'<p style="color:#d97706;">{fmt_num(int(lote.get("registros_descartados_filtro", 0)), idioma)} / {fmt_num(int(lote.get("registros_deduplicados", 0)), idioma)}</p>'
+                f'<small>{fmt_num(int(tb.get("total_particoes", 0)), idioma)} part. • {fmt_num(int(tb.get("total_registros", 0)), idioma)} total</small></div>',
+                unsafe_allow_html=True,
+            )
+        with lk4:
+            st.markdown(
+                f'<div class="metric-card"><h3>{t["dq_load_k4"]}</h3>'
+                f'<p style="color:#0f172a;">{fmt_dec(float(ql.get("pct_raca_nd", 0.0)), 2)}</p>'
+                f'<small>CID Ign.: {fmt_dec(float(ql.get("pct_cid_ign", 0.0)), 3)} • Outras: {fmt_dec(float(ql.get("pct_esp_outras", 0.0)), 2)}</small></div>',
+                unsafe_allow_html=True,
+            )
+        st.write("")
+    else:
+        st.info(t["dq_load_empty"])
+
+    dq_f0, dq_f1, dq_f2, _ = st.columns([0.95, 1.15, 1.15, 1.75])
+    with dq_f0:
+        dq_ano = st.selectbox(
+            t["f_ano"],
+            ["Todos"] + filtros.get("anos", []),
+            index=0,
+            format_func=lambda x: tr_val("Todos", idioma) if x == "Todos" else str(x),
+            key="dq_ano",
+        )
     with dq_f1:
         dq_reg = st.selectbox(t["f_regiao"], ["Todas"] + filtros["regioes"], index=0, format_func=lambda x: tr_val(x, idioma), key="dq_regiao")
     with dq_f2:
@@ -481,16 +598,13 @@ with tab_qual:
             st.session_state["dq_uf"] = "Todas"
         dq_uf = st.selectbox(t["f_uf"], dq_opcoes_uf, index=0, format_func=lambda x: tr_val(x, idioma), key="dq_uf")
 
-    res_dq = get_qualidade_resumo(dq_reg, dq_uf)
+    res_dq = get_qualidade_resumo(dq_reg, dq_uf, dq_ano)
     esperado_ufs = len(dq_ufs_reg) if dq_uf == "Todas" else 1
-    esperado_parts = esperado_ufs * 12
+    comp_esp = max(int(res_dq.get("competencias_esperadas", 12)), 1)
+    esperado_parts = esperado_ufs * comp_esp
 
     banner_key = "dq_banner_local" if res_dq["auditoria_fonte"] == "parquet" else "dq_banner_cloud"
     st.info(t[banner_key].format(n=fmt_num(res_dq["total"], idioma), na=fmt_num(res_dq["amostra_n"], idioma)))
-
-    def fmt_dec(val: float, casas: int = 2) -> str:
-        s = f"{val:.{casas}f}%"
-        return s if idioma == "en" else s.replace(".", ",")
 
     dk1, dk2, dk3, dk4 = st.columns(4)
     with dk1:
@@ -498,7 +612,7 @@ with tab_qual:
         st.markdown(
             f'<div class="metric-card green"><h3>{t["dq_kpi1_lbl"]}</h3>'
             f'<p style="color:{cor_cov};">{res_dq["particoes_uf_mes"]} / {esperado_parts}</p>'
-            f'<small>{res_dq["ufs_cobertas"]}/{esperado_ufs} UFs • {res_dq["meses_cobertos"]}/12 • {t["dq_kpi1_sub"]}</small></div>',
+            f'<small>{res_dq["ufs_cobertas"]}/{esperado_ufs} UFs • {res_dq["meses_cobertos"]}/{comp_esp} • {t["dq_kpi1_sub"]}</small></div>',
             unsafe_allow_html=True,
         )
     with dk2:
@@ -536,7 +650,7 @@ with tab_qual:
     render_wrapped_table(df_contrato, ["21%", "17%", "18%", "13%", "31%"], badge_col=t["dq_status_col"], status_keys=dq_status_keys)
 
     if len(filtros["ufs"]) > 1:
-        df_dq_uf = get_qualidade_uf(dq_reg)
+        df_dq_uf = get_qualidade_uf(dq_reg, dq_ano)
         if not df_dq_uf.empty:
             st.markdown(t["dq_uf_tbl_hdr"])
             df_dq_uf_disp = df_dq_uf.copy()
@@ -550,7 +664,7 @@ with tab_qual:
                     "uf": dq_cols_map["uf"],
                     "regiao": dq_cols_map["regiao"],
                     "internacoes": st.column_config.NumberColumn(dq_cols_map["internacoes"], format="%d"),
-                    "meses_ativos": st.column_config.NumberColumn(dq_cols_map["meses_ativos"], format="%d / 12"),
+                    "meses_ativos": st.column_config.NumberColumn(dq_cols_map["meses_ativos"], format=f"%d / {comp_esp}"),
                     "pct_raca_nd": st.column_config.NumberColumn(dq_cols_map["pct_raca_nd"], format="%.3f%%"),
                     "pct_cid_ign": st.column_config.NumberColumn(dq_cols_map["pct_cid_ign"], format="%.4f%%"),
                     "pct_esp_outras": st.column_config.NumberColumn(dq_cols_map["pct_esp_outras"], format="%.2f%%"),
@@ -616,6 +730,50 @@ with tab_ml:
         if os.path.exists(img_imp):
             st.image(img_imp, caption=t["ml_img3"], use_container_width=True)
 
+    st.markdown("---")
+    st.markdown(t["ml_ops_hdr"])
+    st.caption(t["ml_ops_sub"])
+    reg_ml = get_registro_modelos()
+    if reg_ml and reg_ml.get("ultima_avaliacao"):
+        ult_av = reg_ml["ultima_avaliacao"]
+        champ_info = reg_ml.get("champion_atual", {})
+        lbl_ops = {
+            "pt": ("Champion Ativo:", "Base", "Estratégia:", "Teste Cego Temporal:", "casos", "Decisão:", "Champion (Anterior/Ativo)", "Challenger (Retreinado)"),
+            "en": ("Active Champion:", "Train Base", "Strategy:", "Blind Temporal Test:", "cases", "Decision:", "Champion (Current/Prior)", "Challenger (Retrained)"),
+            "es": ("Champion Activo:", "Base Entreno", "Estrategia:", "Prueba Ciega Temporal:", "casos", "Decisión:", "Champion (Actual/Previo)", "Challenger (Reentrenado)"),
+        }[idioma]
+        resumo_mlops = (
+            f"**{lbl_ops[0]}** `{champ_info.get('versao', 'V5')}` *({lbl_ops[1]} `{champ_info.get('base_treino', '-')}` • {champ_info.get('atualizado_em', '-')})* | "
+            f"**{lbl_ops[2]}** `{ult_av.get('estrategia', '-')}` | "
+            f"**{lbl_ops[3]}** `{ult_av.get('janela_teste_temporal', '-')}` (`{fmt_num(int(ult_av.get('n_teste_temporal', 0)), idioma)}` {lbl_ops[4]})\n\n"
+            f"**{lbl_ops[5]}** `{ult_av.get('decisao', '-')}` — {ult_av.get('motivo', '')}"
+        )
+        if ult_av.get("promovido"):
+            st.success(resumo_mlops)
+        else:
+            st.info(resumo_mlops)
+
+        comp = ult_av.get("comparativo", {})
+        linhas_ops = []
+        for t_id, t_lbl in [("Obito", t["match_tokens"]["short_ob"]), ("Longa_Permanencia", t["match_tokens"]["short_lg"])]:
+            if t_id in comp:
+                for papel_key, papel_lbl in [("champion", lbl_ops[6]), ("challenger", lbl_ops[7])]:
+                    m = comp[t_id].get(papel_key, {})
+                    linhas_ops.append({
+                        "Alvo": t_lbl,
+                        "Papel": papel_lbl,
+                        "ROC_AUC": round(float(m.get("roc_auc", 0.0)), 4),
+                        "PR_AUC": round(float(m.get("pr_auc", 0.0)), 4),
+                        "Brier": round(float(m.get("brier_cal", 0.0)), 4),
+                        "Limiar": round(float(m.get("limiar", 0.0)) * 100.0, 2),
+                        "Sens": round(float(m.get("sens", 0.0)) * 100.0, 2),
+                    })
+        if linhas_ops:
+            df_ops = pd.DataFrame(linhas_ops).rename(columns=t["ml_ops_cols"])
+            st.dataframe(df_ops, use_container_width=True, hide_index=True)
+    else:
+        st.info(t["ml_ops_empty"])
+
 # ==============================================================================
 # ABA 4: PAINEL DE GESTÃO CLÍNICA & LEITOS
 # ==============================================================================
@@ -627,9 +785,9 @@ with tab_gestao:
         st.caption(t["cli_exp_txt"])
         sl_col1, sl_col2 = st.columns(2)
         with sl_col1:
-            corte_obito = st.slider(t["sl_ob"], min_value=1.0, max_value=50.0, value=(4.1, 15.0), step=0.1, format="%.1f%%")
+            corte_obito = st.slider(t["sl_ob"], min_value=1.0, max_value=50.0, value=(3.9, 15.0), step=0.1, format="%.1f%%")
         with sl_col2:
-            corte_longa = st.slider(t["sl_lg"], min_value=1.0, max_value=50.0, value=(6.3, 20.0), step=0.1, format="%.1f%%")
+            corte_longa = st.slider(t["sl_lg"], min_value=1.0, max_value=50.0, value=(6.1, 20.0), step=0.1, format="%.1f%%")
 
     ob_med, ob_crit = corte_obito[0] / 100.0, corte_obito[1] / 100.0
     lg_med, lg_crit = corte_longa[0] / 100.0, corte_longa[1] / 100.0
@@ -720,7 +878,15 @@ with tab_gestao:
     st.write("")
     st.markdown(t["panel_hdr"])
 
-    col_t1, col_t2, col_t3, col_t4, col_t5 = st.columns(5)
+    col_t0, col_t1, col_t2, col_t3, col_t4, col_t5 = st.columns([0.8, 0.95, 1.1, 1.1, 0.95, 1.1])
+    with col_t0:
+        filtro_ano = st.selectbox(
+            t["p_ano"],
+            ["Todos"] + filtros.get("anos", []),
+            index=0,
+            key="cockpit_ano",
+            format_func=lambda x: tr_val("Todos", idioma) if x == "Todos" else str(x),
+        )
     with col_t1:
         filtro_uf = st.selectbox(t["p_uf"], ["Todas"] + filtros["ufs"], index=0, key="cockpit_uf", format_func=lambda x: tr_val(x, idioma))
     with col_t2:
@@ -745,7 +911,7 @@ with tab_gestao:
             st.markdown(t["cli_guide_hdr2"])
             st.markdown(t["cli_guide_txt2"])
 
-    amostra = get_amostra_cockpit(filtro_uf, filtro_esp, filtro_dias, busca_id)
+    amostra = get_amostra_cockpit(filtro_uf, filtro_esp, filtro_dias, busca_id, filtro_ano)
 
     if amostra.empty:
         st.warning(t["p_empty"])
@@ -826,14 +992,17 @@ with tab_gestao:
         else:
             st.write(t["p_count"].format(n=0) + ":")
 
+        if "ano" not in amostra.columns:
+            amostra["ano"] = 2024
         colunas_visiveis = [
-            "id_anonimo", "uf", "idade_anos", "sexo_desc", "esp_disp",
+            "id_anonimo", "ano", "uf", "idade_anos", "sexo_desc", "esp_disp",
             "motivo_cid", "qt_diarias", "uti_mes_to", "desfecho_real",
             "flag_longa", "flag_obito", "desfecho_match"
         ]
         p_cols_map = t["p_cols"]
         df_tabela = amostra[colunas_visiveis].rename(columns={
             "id_anonimo": p_cols_map["id_anonimo"],
+            "ano": p_cols_map["ano"],
             "uf": p_cols_map["uf"],
             "idade_anos": p_cols_map["idade_anos"],
             "sexo_desc": p_cols_map["sexo_desc"],
@@ -852,6 +1021,7 @@ with tab_gestao:
             use_container_width=True,
             hide_index=True,
             column_config={
+                p_cols_map["ano"]: st.column_config.NumberColumn(format="%d"),
                 p_cols_map["idade_anos"]: st.column_config.NumberColumn(format=t["fmt_idade"]),
                 p_cols_map["qt_diarias"]: st.column_config.NumberColumn(format="%d d"),
                 p_cols_map["uti_mes_to"]: st.column_config.NumberColumn(format="%d d"),
@@ -874,7 +1044,7 @@ with tab_dic:
     n_alvo = int((df_dicionario["_status_key"] == "alvo_painel").sum())
     n_nao = int(df_dicionario["_status_key"].isin(["nao_leakage", "nao_admin"]).sum())
     with c_d1:
-        st.metric("Total (113 SIH + 13 Deriv.)", len(df_dicionario))
+        st.metric("Total (113 SIH + 14 Deriv.)", len(df_dicionario))
     with c_d2:
         lbl_ia = {"pt": "✅ IA + Epidemio", "en": "✅ AI + Epidemiology", "es": "✅ IA + Epidemiología"}[idioma]
         st.metric(lbl_ia, n_ia)

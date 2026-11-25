@@ -11,6 +11,7 @@ dados/*.dbc
 dados/*.csv
 dados/tmp_dbc/
 dados/parquet_nacional/
+dados/historico_cargas.json
 
 # Modelos pesados/legados (mantemos em Git apenas LightGBM V5 + métricas/config da última versão)
 modelos/*
@@ -19,6 +20,7 @@ modelos/*
 !modelos/metricas_v5_nacional.csv
 !modelos/config_limiares_v5.json
 !modelos/top_cid3_por_capitulo_v5.json
+!modelos/registro_modelos_v5.json
 
 # Figuras legadas/auxiliares (mantemos apenas as 3 figuras usadas no dashboard V5)
 figuras/*
@@ -36,6 +38,7 @@ scripts/*
 !scripts/duckdb_service.py
 !scripts/features_v5.py
 !scripts/treinar_modelos_v5_nacional.py
+!scripts/retreinar_e_promover.py
 !scripts/catalogo_sih.py
 !scripts/i18n.py
 

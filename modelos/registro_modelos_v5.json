@@ -1,0 +1,113 @@
+{
+  "champion_atual": {
+    "versao": "V5 Contínuo",
+    "base_treino": "2024/01 → 2026/06",
+    "atualizado_em": "2026-11-25 08:14:31"
+  },
+  "ultima_avaliacao": {
+    "data_local": "2026-11-25 08:14:31",
+    "data_utc": "2026-11-25T11:14:31.799204+00:00",
+    "estrategia": "acumulado",
+    "janela_treino_cal": "2024/01 → 2026/06",
+    "janela_teste_temporal": "2026/07 → 2026/09",
+    "n_treino": 2400000,
+    "n_cal": 300000,
+    "n_teste_temporal": 300000,
+    "decisao": "PROMOVIDO",
+    "promovido": true,
+    "motivo": "Challenger promovido com melhoria significativa em 2/2 desfechos sem regressões.",
+    "comparativo": {
+      "Longa_Permanencia": {
+        "champion": {
+          "roc_auc": 0.8443,
+          "pr_auc": 0.348,
+          "brier_cal": 0.047,
+          "limiar": 0.0627,
+          "sens": 0.8577,
+          "spec": 0.6573
+        },
+        "challenger": {
+          "roc_auc": 0.8447,
+          "pr_auc": 0.3493,
+          "brier_cal": 0.0469,
+          "limiar": 0.0614,
+          "sens": 0.8374,
+          "spec": 0.6778
+        }
+      },
+      "Obito": {
+        "champion": {
+          "roc_auc": 0.9109,
+          "pr_auc": 0.3075,
+          "brier_cal": 0.03,
+          "limiar": 0.0409,
+          "sens": 0.9067,
+          "spec": 0.7654
+        },
+        "challenger": {
+          "roc_auc": 0.9107,
+          "pr_auc": 0.3089,
+          "brier_cal": 0.03,
+          "limiar": 0.0387,
+          "sens": 0.8955,
+          "spec": 0.7749
+        }
+      }
+    },
+    "duracao_segundos": 577.5
+  },
+  "historico_execucoes": [
+    {
+      "data_local": "2026-11-25 08:14:31",
+      "data_utc": "2026-11-25T11:14:31.799204+00:00",
+      "estrategia": "acumulado",
+      "janela_treino_cal": "2024/01 → 2026/06",
+      "janela_teste_temporal": "2026/07 → 2026/09",
+      "n_treino": 2400000,
+      "n_cal": 300000,
+      "n_teste_temporal": 300000,
+      "decisao": "PROMOVIDO",
+      "promovido": true,
+      "motivo": "Challenger promovido com melhoria significativa em 2/2 desfechos sem regressões.",
+      "comparativo": {
+        "Longa_Permanencia": {
+          "champion": {
+            "roc_auc": 0.8443,
+            "pr_auc": 0.348,
+            "brier_cal": 0.047,
+            "limiar": 0.0627,
+            "sens": 0.8577,
+            "spec": 0.6573
+          },
+          "challenger": {
+            "roc_auc": 0.8447,
+            "pr_auc": 0.3493,
+            "brier_cal": 0.0469,
+            "limiar": 0.0614,
+            "sens": 0.8374,
+            "spec": 0.6778
+          }
+        },
+        "Obito": {
+          "champion": {
+            "roc_auc": 0.9109,
+            "pr_auc": 0.3075,
+            "brier_cal": 0.03,
+            "limiar": 0.0409,
+            "sens": 0.9067,
+            "spec": 0.7654
+          },
+          "challenger": {
+            "roc_auc": 0.9107,
+            "pr_auc": 0.3089,
+            "brier_cal": 0.03,
+            "limiar": 0.0387,
+            "sens": 0.8955,
+            "spec": 0.7749
+          }
+        }
+      },
+      "duracao_segundos": 577.5
+    }
+  ]
+}

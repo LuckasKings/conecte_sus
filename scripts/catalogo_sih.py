@@ -43,11 +43,12 @@ DESCS_ES = {
     "internacao_fim_de_semana": "Indicador binario derivado de `dt_inter` que señala si el ingreso ocurrió en sábado o domingo.",
     "raca_cor_desc": "Descripción legible de `raca_cor` (Blanca, Negra, Parda, Amarilla, Indígena, No Declarada). Excluida de la IA por ética.",
     "mes_internacao": "Mes numérico (1 a 12) extraído de `dt_inter`. Excluido de la IA para evitar sesgo estacional y *data drift*.",
+    "ano": "Año de competencia de ingesta (`2024`, `2025`, `2026`) en particiones Hive para comparativos interanuales. Excluido de la IA clínica.",
     "regiao": "Macrorregión brasileña (Norte, Nordeste, Centro-Oeste, Sudeste, Sur) derivada de la sigla del estado.",
     "Longa_Permanencia": "Objetivo predictivo binario: 1 cuando `qt_diarias >= 15` días; 0 en caso contrario.",
     "Obito": "Objetivo predictivo binario: 1 cuando `morte == 1` (fallecimiento intrahospitalario); 0 en caso contrario.",
     "uf_zi": "Código del municipio/estado gestor responsable del envío de la AIH (constante dentro de cada estado).",
-    "ano_cmpt": "Año de competencia contable de la AIH (2024 en toda la base — varianza cero).",
+    "ano_cmpt": "Año de competencia contable de facturación de la AIH.",
     "mes_cmpt": "Mes de competencia de procesamiento/facturación de la AIH (puede diferir del mes real de ingreso).",
     "espec": "Código de especialidad de la cama (1=Cirugía, 2=Obstetricia, 3=Medicina Interna, 4=Pediatría, 7=Psiquiatría). Origen de `especialidade_leito`.",
     "cgc_hosp": "CNPJ (ID fiscal) del establecimiento hospitalario ejecutor.",
@@ -145,7 +146,7 @@ DESCS_ES = {
 
 # Lista oficial: (coluna, bloco_pt, bloco_en, desc_pt, desc_en, status_key)
 CATALOGO_SIH_COMPLETO = [
-    # --- COLUNAS DERIVADAS DO PROJETO (13) ---
+    # --- COLUNAS DERIVADAS DO PROJETO (14) ---
     ("idade_anos", "Derivada (Projeto)", "Derived (Project)",
      "Idade contínua em anos calculada a partir de `idade` e `cod_idade` (incluindo frações para recém-nascidos).",
      "Continuous age in years computed from `idade` and `cod_idade` (including newborn fractions).", "ia_epi"),
@@ -176,6 +177,9 @@ CATALOGO_SIH_COMPLETO = [
     ("mes_internacao", "Derivada (Projeto)", "Derived (Project)",
      "Mês numérico (1 a 12) extraído de `dt_inter`. Removido da IA para evitar viés sazonal e *data drift*.",
      "Calendar month (1–12) extracted from `dt_inter`. Excluded from AI to prevent seasonal bias and data drift.", "epi"),
+    ("ano", "Derivada (Projeto)", "Derived (Project)",
+     "Ano da competência de ingestão (ex.: 2024, 2025, 2026) no particionamento Hive para comparativos interanuais. Excluído da IA clínica.",
+     "Ingestion competence year (e.g., 2024, 2025, 2026) in Hive partitioning for multi-year comparisons. Excluded from clinical AI.", "epi"),
     ("regiao", "Derivada (Projeto)", "Derived (Project)",
      "Macrorregião brasileira (Norte, Nordeste, Centro-Oeste, Sudeste, Sul) derivada da sigla da UF do arquivo.",
      "Brazilian macro-region (North, Northeast, Central-West, Southeast, South) derived from state code.", "epi"),
@@ -191,8 +195,8 @@ CATALOGO_SIH_COMPLETO = [
      "Código do município/UF gestor responsável pelo envio da AIH (constante dentro de cada UF).",
      "Managing municipality/state code responsible for the AIH submission.", "nao_admin"),
     ("ano_cmpt", "Identificação & Gestão", "ID & Governance",
-     "Ano de competência contábil da AIH (2024 em toda a base atual — variância zero).",
-     "Accounting competence year of the AIH (constant 2024 across the dataset).", "nao_admin"),
+     "Ano de competência contábil da AIH no faturamento mensal.",
+     "Accounting competence year of the AIH in monthly billing.", "nao_admin"),
     ("mes_cmpt", "Identificação & Gestão", "ID & Governance",
      "Mês de competência de processamento/faturamento da AIH (pode diferir do mês real da entrada).",
      "Billing competence month of the AIH (may lag behind actual admission month).", "nao_admin"),

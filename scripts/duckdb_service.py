@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Camada de Serviço Analítico Híbrido com DuckDB:
-- Aba 1 e KPIs: utiliza o cubo epidemiológico compacto (`dados/deploy/cubo_epidemiologico_brasil_2024.parquet`),
-  preservando 100% de exatidão sobre os 13.584.534 registros em milissegundos (local e nuvem).
-- Aba 3 (Cockpit Clínico): consulta os Parquets brutos locais (`dados/parquet_nacional/`) se presentes
-  ou faz fallback automático para a amostra estratificada (`dados/deploy/amostra_cockpit_brasil_2024.parquet`) no deploy online.
+Camada de Serviço Analítico Híbrido Multi-Ano com DuckDB:
+- Aba 1, Aba 2 e KPIs: consomem o cubo epidemiológico compacto (`dados/deploy/cubo_epidemiologico_brasil_2024.parquet`)
+  com suporte multi-ano (`ano=2024, 2025, 2026...`), preservando 100% de exatidão analítica.
+- Aba 4 (Cockpit Clínico): consulta os Parquets locais (`dados/parquet_nacional/`) quando disponíveis
+  ou usa a amostra leve (`dados/deploy/amostra_cockpit_brasil_2024.parquet`) na nuvem.
+- Governança: expõe leitura dos manifestos `resumo_ultima_carga.json` (Aba 2) e `registro_modelos_v5.json` (Aba 3).
 """
 
+import json
 from pathlib import Path
 import duckdb
 import pandas as pd
@@ -18,6 +20,8 @@ PARQUET_GLOB = str(PARQUET_DIR / "**" / "*.parquet").replace("\\", "/")
 DEPLOY_DIR = BASE_DIR / "dados" / "deploy"
 CUBO_PATH = DEPLOY_DIR / "cubo_epidemiologico_brasil_2024.parquet"
 AMOSTRA_PATH = DEPLOY_DIR / "amostra_cockpit_brasil_2024.parquet"
+RESUMO_CARGA_PATH = DEPLOY_DIR / "resumo_ultima_carga.json"
+REGISTRO_MODELOS_PATH = BASE_DIR / "modelos" / "registro_modelos_v5.json"
 
 
 def parquet_bruto_disponivel() -> bool:
@@ -30,9 +34,9 @@ def parquet_disponivel() -> bool:
 
 def modo_execucao() -> str:
     if parquet_bruto_disponivel():
-        return "Local Completo (13,58M Partições + Cubo)"
+        return "Local Completo (Partições Multi-Ano + Cubo)"
     if CUBO_PATH.exists():
-        return "Cloud Otimizado (Cubo 13,58M + Amostra 30k)"
+        return "Cloud Otimizado (Cubo Multi-Ano + Amostra 30k)"
     return "Indisponível"
 
 
@@ -40,10 +44,32 @@ def _get_con():
     return duckdb.connect(database=":memory:")
 
 
-def _build_where(regiao="Todas", uf="Todas", raca="Todas", espec="Todas", sexo="Todos", mes_range=(1, 12)):
+def _tem_coluna_ano(parquet_path: Path) -> bool:
+    if not parquet_path.exists():
+        return False
+    con = _get_con()
+    try:
+        cols = con.execute(f"DESCRIBE SELECT * FROM read_parquet('{str(parquet_path).replace(chr(92), '/')}')").df()
+        return "ano" in set(cols["column_name"].astype(str).tolist())
+    except Exception:
+        return False
+    finally:
+        con.close()
+
+
+def _fonte_tem_ano() -> bool:
+    if CUBO_PATH.exists():
+        return _tem_coluna_ano(CUBO_PATH)
+    return parquet_bruto_disponivel()
+
+
+def _build_where(regiao="Todas", uf="Todas", raca="Todas", espec="Todas", sexo="Todos", mes_range=(1, 12), ano="Todos", tem_ano=False):
     clauses = ["1=1"]
     params = []
 
+    if tem_ano and ano not in (None, "Todos", "Todas"):
+        clauses.append("CAST(ano AS INTEGER) = ?")
+        params.append(int(ano))
     if regiao and regiao != "Todas":
         clauses.append("regiao = ?")
         params.append(regiao)
@@ -75,28 +101,37 @@ def _fonte_epidemiologia() -> str:
 
 def listar_filtros_disponiveis() -> dict:
     if not parquet_disponivel():
-        return {"regioes": [], "ufs": [], "ufs_por_regiao": {}, "racas": [], "especialidades": []}
+        return {"regioes": [], "ufs": [], "ufs_por_regiao": {}, "racas": [], "especialidades": [], "anos": []}
 
     fonte = _fonte_epidemiologia()
     con = _get_con()
     df_reg_uf = con.execute(f"SELECT DISTINCT regiao, uf FROM {fonte} ORDER BY regiao, uf").df()
-    ufs_por_regiao = (
-        df_reg_uf.groupby("regiao")["uf"].apply(lambda s: sorted(s.dropna().tolist())).to_dict()
-    )
+    ufs_por_regiao = df_reg_uf.groupby("regiao")["uf"].apply(lambda s: sorted(s.dropna().tolist())).to_dict()
+    anos = []
+    if _fonte_tem_ano():
+        anos = [
+            int(a)
+            for a in con.execute(f"SELECT DISTINCT CAST(ano AS INTEGER) AS a FROM {fonte} ORDER BY a").df()["a"].dropna().tolist()
+        ]
+    else:
+        anos = [2024]
+
     return {
         "regioes": sorted(df_reg_uf["regiao"].dropna().unique().tolist()),
         "ufs": sorted(df_reg_uf["uf"].dropna().unique().tolist()),
         "ufs_por_regiao": ufs_por_regiao,
         "racas": con.execute(f"SELECT DISTINCT raca_cor_desc FROM {fonte} ORDER BY raca_cor_desc").df()["raca_cor_desc"].dropna().tolist(),
         "especialidades": con.execute(f"SELECT DISTINCT especialidade_leito FROM {fonte} ORDER BY especialidade_leito").df()["especialidade_leito"].dropna().tolist(),
+        "anos": anos,
     }
 
 
-def obter_kpis_globais(regiao="Todas", uf="Todas") -> dict:
+def obter_kpis_globais(regiao="Todas", uf="Todas", ano="Todos") -> dict:
     if not parquet_disponivel():
         return {"total": 0, "taxa_obito": 0.0, "taxa_longa": 0.0, "total_ufs": 0, "gasto_mi": 0.0}
 
-    where_sql, params = _build_where(regiao=regiao, uf=uf, mes_range=None)
+    tem_ano = _fonte_tem_ano()
+    where_sql, params = _build_where(regiao=regiao, uf=uf, mes_range=None, ano=ano, tem_ano=tem_ano)
     con = _get_con()
 
     if CUBO_PATH.exists():
@@ -132,8 +167,9 @@ def obter_kpis_globais(regiao="Todas", uf="Todas") -> dict:
     }
 
 
-def contar_filtrado(regiao="Todas", uf="Todas", raca="Todas", espec="Todas", sexo="Todos", mes_range=(1, 12)) -> int:
-    where_sql, params = _build_where(regiao, uf, raca, espec, sexo, mes_range)
+def contar_filtrado(regiao="Todas", uf="Todas", raca="Todas", espec="Todas", sexo="Todos", mes_range=(1, 12), ano="Todos") -> int:
+    tem_ano = _fonte_tem_ano()
+    where_sql, params = _build_where(regiao, uf, raca, espec, sexo, mes_range, ano=ano, tem_ano=tem_ano)
     con = _get_con()
     if CUBO_PATH.exists():
         cubo_str = str(CUBO_PATH).replace("\\", "/")
@@ -143,19 +179,16 @@ def contar_filtrado(regiao="Todas", uf="Todas", raca="Todas", espec="Todas", sex
     return int(con.execute(query, params).fetchone()[0])
 
 
-def obter_distribuicao_faixa_sexo(regiao="Todas", uf="Todas", raca="Todas", espec="Todas", sexo="Todos", mes_range=(1, 12)) -> pd.DataFrame:
-    where_sql, params = _build_where(regiao, uf, raca, espec, sexo, mes_range)
+def obter_distribuicao_faixa_sexo(regiao="Todas", uf="Todas", raca="Todas", espec="Todas", sexo="Todos", mes_range=(1, 12), ano="Todos") -> pd.DataFrame:
+    tem_ano = _fonte_tem_ano()
+    where_sql, params = _build_where(regiao, uf, raca, espec, sexo, mes_range, ano=ano, tem_ano=tem_ano)
     con = _get_con()
     if CUBO_PATH.exists():
         cubo_str = str(CUBO_PATH).replace("\\", "/")
         query = f"""
         SELECT
             faixa_etaria,
-            CASE
-                WHEN sexo = '1' THEN 'Masculino'
-                WHEN sexo = '3' THEN 'Feminino'
-                ELSE 'Outro'
-            END AS sexo_desc,
+            CASE WHEN sexo = '1' THEN 'Masculino' WHEN sexo = '3' THEN 'Feminino' ELSE 'Outro' END AS sexo_desc,
             CAST(SUM(internacoes) AS BIGINT) AS contagem
         FROM read_parquet('{cubo_str}')
         WHERE {where_sql}
@@ -173,11 +206,7 @@ def obter_distribuicao_faixa_sexo(regiao="Todas", uf="Todas", raca="Todas", espe
                 WHEN idade_anos < 80 THEN '60-79 anos'
                 ELSE '80+ anos'
             END AS faixa_etaria,
-            CASE
-                WHEN sexo = '1' THEN 'Masculino'
-                WHEN sexo = '3' THEN 'Feminino'
-                ELSE 'Outro'
-            END AS sexo_desc,
+            CASE WHEN sexo = '1' THEN 'Masculino' WHEN sexo = '3' THEN 'Feminino' ELSE 'Outro' END AS sexo_desc,
             COUNT(*) AS contagem
         FROM read_parquet('{PARQUET_GLOB}', hive_partitioning=true)
         WHERE {where_sql}
@@ -189,8 +218,9 @@ def obter_distribuicao_faixa_sexo(regiao="Todas", uf="Todas", raca="Todas", espe
     return df.sort_values("faixa_etaria")
 
 
-def obter_equidade_raca(regiao="Todas", uf="Todas", espec="Todas", sexo="Todos", mes_range=(1, 12)) -> pd.DataFrame:
-    where_sql, params = _build_where(regiao=regiao, uf=uf, raca="Todas", espec=espec, sexo=sexo, mes_range=mes_range)
+def obter_equidade_raca(regiao="Todas", uf="Todas", espec="Todas", sexo="Todos", mes_range=(1, 12), ano="Todos") -> pd.DataFrame:
+    tem_ano = _fonte_tem_ano()
+    where_sql, params = _build_where(regiao=regiao, uf=uf, raca="Todas", espec=espec, sexo=sexo, mes_range=mes_range, ano=ano, tem_ano=tem_ano)
     con = _get_con()
     if CUBO_PATH.exists():
         cubo_str = str(CUBO_PATH).replace("\\", "/")
@@ -218,39 +248,85 @@ def obter_equidade_raca(regiao="Todas", uf="Todas", espec="Todas", sexo="Todos",
     return con.execute(query, params).df()
 
 
-def obter_sazonalidade_mensal(regiao="Todas", uf="Todas", raca="Todas", espec="Todas", sexo="Todos") -> pd.DataFrame:
-    where_sql, params = _build_where(regiao=regiao, uf=uf, raca=raca, espec=espec, sexo=sexo, mes_range=(1, 12))
+def obter_sazonalidade_mensal(regiao="Todas", uf="Todas", raca="Todas", espec="Todas", sexo="Todos", ano="Todos") -> pd.DataFrame:
+    tem_ano = _fonte_tem_ano()
+    where_sql, params = _build_where(regiao=regiao, uf=uf, raca=raca, espec=espec, sexo=sexo, mes_range=(1, 12), ano=ano, tem_ano=tem_ano)
     con = _get_con()
+    ano_sel = "CAST(ano AS INTEGER) AS ano," if tem_ano else "2024 AS ano,"
+    grp_cols = "ano, mes_internacao" if tem_ano else "mes_internacao"
     if CUBO_PATH.exists():
         cubo_str = str(CUBO_PATH).replace("\\", "/")
         query = f"""
         SELECT
+            {ano_sel}
             mes_internacao,
             CAST(SUM(internacoes) AS BIGINT) AS internacoes,
             CAST(SUM(obitos) AS BIGINT) AS obitos,
             SUM(obitos) * 100.0 / NULLIF(SUM(internacoes), 0) AS taxa_mortalidade
         FROM read_parquet('{cubo_str}')
         WHERE {where_sql}
-        GROUP BY mes_internacao
-        ORDER BY mes_internacao
+        GROUP BY {grp_cols}
+        ORDER BY {grp_cols}
         """
     else:
         query = f"""
         SELECT
+            {ano_sel}
             mes_internacao,
             COUNT(*) AS internacoes,
-            SUM(Obito) AS obitos,
+            CAST(SUM(Obito) AS BIGINT) AS obitos,
             AVG(Obito) * 100 AS taxa_mortalidade
         FROM read_parquet('{PARQUET_GLOB}', hive_partitioning=true)
         WHERE {where_sql}
-        GROUP BY mes_internacao
-        ORDER BY mes_internacao
+        GROUP BY {grp_cols}
+        ORDER BY {grp_cols}
+        """
+    df = con.execute(query, params).df()
+    if not df.empty:
+        df["competencia"] = df.apply(lambda r: f"{int(r['ano'])}/{int(r['mes_internacao']):02d}", axis=1)
+    return df
+
+
+def obter_evolucao_anual(regiao="Todas", uf="Todas", raca="Todas", espec="Todas", sexo="Todos") -> pd.DataFrame:
+    if not parquet_disponivel() or not _fonte_tem_ano():
+        return pd.DataFrame()
+    where_sql, params = _build_where(regiao=regiao, uf=uf, raca=raca, espec=espec, sexo=sexo, mes_range=None, ano="Todos", tem_ano=True)
+    con = _get_con()
+    if CUBO_PATH.exists():
+        cubo_str = str(CUBO_PATH).replace("\\", "/")
+        query = f"""
+        SELECT
+            CAST(ano AS INTEGER) AS ano,
+            COUNT(DISTINCT mes_internacao) AS meses_ativos,
+            CAST(SUM(internacoes) AS BIGINT) AS internacoes,
+            CAST(SUM(obitos) AS BIGINT) AS obitos,
+            ROUND(SUM(obitos) * 100.0 / NULLIF(SUM(internacoes), 0), 2) AS taxa_mortalidade,
+            ROUND(SUM(longas) * 100.0 / NULLIF(SUM(internacoes), 0), 2) AS taxa_longa
+        FROM read_parquet('{cubo_str}')
+        WHERE {where_sql}
+        GROUP BY 1
+        ORDER BY 1
+        """
+    else:
+        query = f"""
+        SELECT
+            CAST(ano AS INTEGER) AS ano,
+            COUNT(DISTINCT mes_internacao) AS meses_ativos,
+            COUNT(*) AS internacoes,
+            CAST(SUM(Obito) AS BIGINT) AS obitos,
+            ROUND(AVG(Obito) * 100, 2) AS taxa_mortalidade,
+            ROUND(AVG(Longa_Permanencia) * 100, 2) AS taxa_longa
+        FROM read_parquet('{PARQUET_GLOB}', hive_partitioning=true)
+        WHERE {where_sql}
+        GROUP BY 1
+        ORDER BY 1
         """
     return con.execute(query, params).df()
 
 
-def obter_top_capitulos_cid(regiao="Todas", uf="Todas", raca="Todas", espec="Todas", sexo="Todos", mes_range=(1, 12)) -> pd.DataFrame:
-    where_sql, params = _build_where(regiao, uf, raca, espec, sexo, mes_range)
+def obter_top_capitulos_cid(regiao="Todas", uf="Todas", raca="Todas", espec="Todas", sexo="Todos", mes_range=(1, 12), ano="Todos") -> pd.DataFrame:
+    tem_ano = _fonte_tem_ano()
+    where_sql, params = _build_where(regiao, uf, raca, espec, sexo, mes_range, ano=ano, tem_ano=tem_ano)
     con = _get_con()
     if CUBO_PATH.exists():
         cubo_str = str(CUBO_PATH).replace("\\", "/")
@@ -283,8 +359,9 @@ def obter_top_capitulos_cid(regiao="Todas", uf="Todas", raca="Todas", espec="Tod
     return df.sort_values("total", ascending=True)
 
 
-def obter_resumo_ufs(regiao="Todas") -> pd.DataFrame:
-    where_sql, params = _build_where(regiao=regiao, mes_range=None)
+def obter_resumo_ufs(regiao="Todas", ano="Todos") -> pd.DataFrame:
+    tem_ano = _fonte_tem_ano()
+    where_sql, params = _build_where(regiao=regiao, mes_range=None, ano=ano, tem_ano=tem_ano)
     con = _get_con()
     if CUBO_PATH.exists():
         cubo_str = str(CUBO_PATH).replace("\\", "/")
@@ -318,9 +395,22 @@ def obter_resumo_ufs(regiao="Todas") -> pd.DataFrame:
     return con.execute(query, params).df()
 
 
-def obter_amostra_cockpit(uf="Todas", espec="Todos", min_dias=0, busca="", limite=300) -> pd.DataFrame:
+def obter_amostra_cockpit(uf="Todas", espec="Todos", min_dias=0, busca="", limite=300, ano="Todos") -> pd.DataFrame:
+    if parquet_bruto_disponivel():
+        fonte_cockpit = f"read_parquet('{PARQUET_GLOB}', hive_partitioning=true)"
+        tem_ano = True
+    elif AMOSTRA_PATH.exists():
+        amostra_str = str(AMOSTRA_PATH).replace("\\", "/")
+        fonte_cockpit = f"read_parquet('{amostra_str}')"
+        tem_ano = _tem_coluna_ano(AMOSTRA_PATH)
+    else:
+        return pd.DataFrame()
+
     clauses = ["1=1"]
     params = []
+    if tem_ano and ano not in (None, "Todos", "Todas"):
+        clauses.append("CAST(ano AS INTEGER) = ?")
+        params.append(int(ano))
     if uf and uf != "Todas":
         clauses.append("uf = ?")
         params.append(uf)
@@ -337,18 +427,12 @@ def obter_amostra_cockpit(uf="Todas", espec="Todos", min_dias=0, busca="", limit
 
     where_sql = " AND ".join(clauses)
     con = _get_con()
-
-    if parquet_bruto_disponivel():
-        fonte_cockpit = f"read_parquet('{PARQUET_GLOB}', hive_partitioning=true)"
-    elif AMOSTRA_PATH.exists():
-        amostra_str = str(AMOSTRA_PATH).replace("\\", "/")
-        fonte_cockpit = f"read_parquet('{amostra_str}')"
-    else:
-        return pd.DataFrame()
+    ano_sel = "CAST(ano AS INTEGER) AS ano," if tem_ano else "2024 AS ano,"
 
     query = f"""
     SELECT * FROM (
         SELECT
+            {ano_sel}
             n_aih,
             uf,
             regiao,
@@ -372,19 +456,19 @@ def obter_amostra_cockpit(uf="Todas", espec="Todos", min_dias=0, busca="", limit
     return con.execute(query, params).df()
 
 
-def _fonte_registro_detalhado() -> tuple[str, str]:
+def _fonte_registro_detalhado() -> tuple[str, str, bool]:
     if parquet_bruto_disponivel():
-        return f"read_parquet('{PARQUET_GLOB}', hive_partitioning=true)", "parquet"
+        return f"read_parquet('{PARQUET_GLOB}', hive_partitioning=true)", "parquet", True
     if AMOSTRA_PATH.exists():
         amostra_str = str(AMOSTRA_PATH).replace("\\", "/")
-        return f"read_parquet('{amostra_str}')", "amostra"
-    return "", "indisponivel"
+        return f"read_parquet('{amostra_str}')", "amostra", _tem_coluna_ano(AMOSTRA_PATH)
+    return "", "indisponivel", False
 
 
-def obter_resumo_qualidade(regiao="Todas", uf="Todas") -> dict:
-    """Computa cobertura, completude e validade focadas nos dados do Perfil Epidemiológico e Treino da IA."""
+def obter_resumo_qualidade(regiao="Todas", uf="Todas", ano="Todos") -> dict:
+    """Computa cobertura, completude e validade focadas no Perfil Epidemiológico e Treino da IA (multi-ano)."""
     vazio = {
-        "total": 0, "ufs_cobertas": 0, "meses_cobertos": 0, "particoes_uf_mes": 0,
+        "total": 0, "ufs_cobertas": 0, "meses_cobertos": 0, "competencias_esperadas": 0, "particoes_uf_mes": 0,
         "qtd_raca_nd": 0, "pct_raca_nd": 0.0, "pct_sexo_outro": 0.0,
         "pct_cid_ign": 0.0, "pct_esp_outras": 0.0,
         "amostra_n": 0, "auditoria_fonte": "indisponivel", "null_ia_features": 0,
@@ -395,47 +479,56 @@ def obter_resumo_qualidade(regiao="Todas", uf="Todas") -> dict:
     if not parquet_disponivel():
         return vazio
 
+    tem_ano = _fonte_tem_ano()
     con = _get_con()
-    where_sql, params = _build_where(regiao=regiao, uf=uf, mes_range=None)
+    where_sql, params = _build_where(regiao=regiao, uf=uf, mes_range=None, ano=ano, tem_ano=tem_ano)
+    where_nac, params_nac = _build_where(regiao="Todas", uf="Todas", mes_range=None, ano=ano, tem_ano=tem_ano)
+    comp_expr = "CAST(ano AS VARCHAR) || '-' || LPAD(CAST(mes_internacao AS VARCHAR), 2, '0')" if tem_ano else "LPAD(CAST(mes_internacao AS VARCHAR), 2, '0')"
+    part_expr = f"{comp_expr} || '-' || uf"
 
     if CUBO_PATH.exists():
         cubo_str = str(CUBO_PATH).replace("\\", "/")
+        fonte_cubo = f"read_parquet('{cubo_str}')"
         q_cubo = f"""
         SELECT
             CAST(COALESCE(SUM(internacoes), 0) AS BIGINT) AS total,
             COUNT(DISTINCT uf) AS ufs_cobertas,
-            COUNT(DISTINCT mes_internacao) AS meses_cobertos,
-            COUNT(DISTINCT uf || '-' || CAST(mes_internacao AS VARCHAR)) AS particoes_uf_mes,
+            COUNT(DISTINCT {comp_expr}) AS meses_cobertos,
+            COUNT(DISTINCT {part_expr}) AS particoes_uf_mes,
             CAST(COALESCE(SUM(CASE WHEN raca_cor_desc = 'Nao_Declarada' THEN internacoes ELSE 0 END), 0) AS BIGINT) AS qtd_raca_nd,
             COALESCE(SUM(CASE WHEN raca_cor_desc = 'Nao_Declarada' THEN internacoes ELSE 0 END) * 100.0 / NULLIF(SUM(internacoes), 0), 0.0) AS pct_raca_nd,
             COALESCE(SUM(CASE WHEN sexo NOT IN ('1', '3') THEN internacoes ELSE 0 END) * 100.0 / NULLIF(SUM(internacoes), 0), 0.0) AS pct_sexo_outro,
             COALESCE(SUM(CASE WHEN capitulo_cid = 'Ignorado' THEN internacoes ELSE 0 END) * 100.0 / NULLIF(SUM(internacoes), 0), 0.0) AS pct_cid_ign,
             COALESCE(SUM(CASE WHEN especialidade_leito = 'Outras' THEN internacoes ELSE 0 END) * 100.0 / NULLIF(SUM(internacoes), 0), 0.0) AS pct_esp_outras
-        FROM read_parquet('{cubo_str}')
+        FROM {fonte_cubo}
         WHERE {where_sql}
         """
+        comp_esp = int(con.execute(f"SELECT COUNT(DISTINCT {comp_expr}) FROM {fonte_cubo} WHERE {where_nac}", params_nac).fetchone()[0])
     else:
+        fonte_pq = f"read_parquet('{PARQUET_GLOB}', hive_partitioning=true)"
         q_cubo = f"""
         SELECT
             COUNT(*) AS total,
             COUNT(DISTINCT uf) AS ufs_cobertas,
-            COUNT(DISTINCT mes_internacao) AS meses_cobertos,
-            COUNT(DISTINCT uf || '-' || CAST(mes_internacao AS VARCHAR)) AS particoes_uf_mes,
+            COUNT(DISTINCT {comp_expr}) AS meses_cobertos,
+            COUNT(DISTINCT {part_expr}) AS particoes_uf_mes,
             SUM(CASE WHEN raca_cor_desc = 'Nao_Declarada' THEN 1 ELSE 0 END) AS qtd_raca_nd,
             COALESCE(AVG(CASE WHEN raca_cor_desc = 'Nao_Declarada' THEN 100.0 ELSE 0.0 END), 0.0) AS pct_raca_nd,
             COALESCE(AVG(CASE WHEN sexo NOT IN ('1', '3') THEN 100.0 ELSE 0.0 END), 0.0) AS pct_sexo_outro,
             COALESCE(AVG(CASE WHEN capitulo_cid = 'Ignorado' THEN 100.0 ELSE 0.0 END), 0.0) AS pct_cid_ign,
             COALESCE(AVG(CASE WHEN especialidade_leito = 'Outras' THEN 100.0 ELSE 0.0 END), 0.0) AS pct_esp_outras
-        FROM read_parquet('{PARQUET_GLOB}', hive_partitioning=true)
+        FROM {fonte_pq}
         WHERE {where_sql}
         """
-    r_c = con.execute(q_cubo, params).fetchone()
+        comp_esp = int(con.execute(f"SELECT COUNT(DISTINCT {comp_expr}) FROM {fonte_pq} WHERE {where_nac}", params_nac).fetchone()[0])
 
+    r_c = con.execute(q_cubo, params).fetchone()
     res = dict(vazio)
     res.update({
         "total": int(r_c[0]),
         "ufs_cobertas": int(r_c[1]),
         "meses_cobertos": int(r_c[2]),
+        "competencias_esperadas": max(comp_esp, int(r_c[2])),
         "particoes_uf_mes": int(r_c[3]),
         "qtd_raca_nd": int(r_c[4]),
         "pct_raca_nd": float(r_c[5]),
@@ -444,10 +537,13 @@ def obter_resumo_qualidade(regiao="Todas", uf="Todas") -> dict:
         "pct_esp_outras": float(r_c[8]),
     })
 
-    fonte_det, modo_det = _fonte_registro_detalhado()
+    fonte_det, modo_det, det_tem_ano = _fonte_registro_detalhado()
     if fonte_det:
         det_clauses = ["1=1"]
         det_params = []
+        if det_tem_ano and ano not in (None, "Todos", "Todas"):
+            det_clauses.append("CAST(ano AS INTEGER) = ?")
+            det_params.append(int(ano))
         if regiao and regiao != "Todas":
             det_clauses.append("regiao = ?")
             det_params.append(regiao)
@@ -481,9 +577,8 @@ def obter_resumo_qualidade(regiao="Todas", uf="Todas") -> dict:
         WHERE {det_where}
         """
         r_d = con.execute(q_det, det_params).fetchone()
-        n_det = int(r_d[0])
         res.update({
-            "amostra_n": n_det,
+            "amostra_n": int(r_d[0]),
             "auditoria_fonte": modo_det,
             "null_ia_features": int(r_d[1]),
             "bad_diarias": int(r_d[2]),
@@ -502,11 +597,13 @@ def obter_resumo_qualidade(regiao="Todas", uf="Todas") -> dict:
     return res
 
 
-def obter_qualidade_por_uf(regiao="Todas") -> pd.DataFrame:
+def obter_qualidade_por_uf(regiao="Todas", ano="Todos") -> pd.DataFrame:
     """Ranking por UF de completude e categorias ignoradas/não declaradas."""
     if not parquet_disponivel():
         return pd.DataFrame()
-    where_sql, params = _build_where(regiao=regiao, mes_range=None)
+    tem_ano = _fonte_tem_ano()
+    where_sql, params = _build_where(regiao=regiao, mes_range=None, ano=ano, tem_ano=tem_ano)
+    comp_expr = "CAST(ano AS VARCHAR) || '-' || LPAD(CAST(mes_internacao AS VARCHAR), 2, '0')" if tem_ano else "LPAD(CAST(mes_internacao AS VARCHAR), 2, '0')"
     con = _get_con()
     if CUBO_PATH.exists():
         cubo_str = str(CUBO_PATH).replace("\\", "/")
@@ -515,7 +612,7 @@ def obter_qualidade_por_uf(regiao="Todas") -> pd.DataFrame:
             uf,
             regiao,
             CAST(SUM(internacoes) AS BIGINT) AS internacoes,
-            COUNT(DISTINCT mes_internacao) AS meses_ativos,
+            COUNT(DISTINCT {comp_expr}) AS meses_ativos,
             ROUND(SUM(CASE WHEN raca_cor_desc = 'Nao_Declarada' THEN internacoes ELSE 0 END) * 100.0 / NULLIF(SUM(internacoes), 0), 3) AS pct_raca_nd,
             ROUND(SUM(CASE WHEN capitulo_cid = 'Ignorado' THEN internacoes ELSE 0 END) * 100.0 / NULLIF(SUM(internacoes), 0), 4) AS pct_cid_ign,
             ROUND(SUM(CASE WHEN especialidade_leito = 'Outras' THEN internacoes ELSE 0 END) * 100.0 / NULLIF(SUM(internacoes), 0), 2) AS pct_esp_outras
@@ -530,7 +627,7 @@ def obter_qualidade_por_uf(regiao="Todas") -> pd.DataFrame:
             uf,
             regiao,
             COUNT(*) AS internacoes,
-            COUNT(DISTINCT mes_internacao) AS meses_ativos,
+            COUNT(DISTINCT {comp_expr}) AS meses_ativos,
             ROUND(AVG(CASE WHEN raca_cor_desc = 'Nao_Declarada' THEN 100.0 ELSE 0.0 END), 3) AS pct_raca_nd,
             ROUND(AVG(CASE WHEN capitulo_cid = 'Ignorado' THEN 100.0 ELSE 0.0 END), 4) AS pct_cid_ign,
             ROUND(AVG(CASE WHEN especialidade_leito = 'Outras' THEN 100.0 ELSE 0.0 END), 2) AS pct_esp_outras
@@ -540,3 +637,23 @@ def obter_qualidade_por_uf(regiao="Todas") -> pd.DataFrame:
         ORDER BY pct_raca_nd DESC, pct_esp_outras DESC, internacoes DESC
         """
     return con.execute(query, params).df()
+
+
+def obter_resumo_ultima_carga() -> dict | None:
+    if RESUMO_CARGA_PATH.exists():
+        try:
+            with open(RESUMO_CARGA_PATH, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return None
+    return None
+
+
+def obter_registro_modelos() -> dict | None:
+    if REGISTRO_MODELOS_PATH.exists():
+        try:
+            with open(REGISTRO_MODELOS_PATH, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return None
+    return None

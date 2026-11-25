@@ -89,6 +89,67 @@ MAPAS_CAT = {
         "XGBoost": "XGBoost",
         "LightGBM": "LightGBM",
     },
+    "es": {
+        "Todas": "Todas",
+        "Todos": "Todos",
+        "Norte": "Norte",
+        "Nordeste": "Nordeste",
+        "Centro-Oeste": "Centro-Oeste",
+        "Sudeste": "Sudeste",
+        "Sul": "Sur",
+        "Masculino": "Masculino",
+        "Feminino": "Femenino",
+        "Outro": "Otro",
+        "Branca": "Blanca",
+        "Preta": "Negra",
+        "Parda": "Parda / Mestiza",
+        "Amarela": "Asiática",
+        "Indigena": "Indígena",
+        "Nao_Declarada": "No Declarada",
+        "Clinica_Medica": "Medicina Interna",
+        "Cirurgica": "Quirúrgica",
+        "Obstetrica": "Obstetricia",
+        "Pediatrica": "Pediatría",
+        "Hospital_Dia": "Hospital de Día",
+        "Psiquiatrica": "Psiquiatría",
+        "Outras": "Otras",
+        "Urgencia_Emergencia": "Urgencia / Emergencia",
+        "Eletiva": "Electiva",
+        "Media_Complexidade": "Complejidad Media",
+        "Alta_Complexidade": "Alta Complejidad",
+        "<1 ano": "<1 año",
+        "1-11 anos": "1-11 años",
+        "12-18 anos": "12-18 años",
+        "19-39 anos": "19-39 años",
+        "40-59 anos": "40-59 años",
+        "60-79 anos": "60-79 años",
+        "80+ anos": "80+ años",
+        "I - Infecciosas": "I - Infecciosas",
+        "II - Neoplasias": "II - Neoplasias",
+        "III - Sangue": "III - Sangre",
+        "IV - Endocrinas": "IV - Endocrinas / Metabólicas",
+        "V - Mentais": "V - Trastornos Mentales",
+        "VI - Nervoso": "VI - Sistema Nervioso",
+        "VII/VIII - Olho/Ouvido": "VII/VIII - Ojo y Oído",
+        "IX - Circulatorio": "IX - Aparato Circulatorio",
+        "X - Respiratorio": "X - Aparato Respiratorio",
+        "XI - Digestivo": "XI - Aparato Digestivo",
+        "XII - Pele": "XII - Piel y Subcutáneo",
+        "XIII - Osteomuscular": "XIII - Osteomuscular",
+        "XIV - Geniturinario": "XIV - Genitourinario",
+        "XV - Gravidez/Parto": "XV - Embarazo y Parto",
+        "XVI - Perinatal": "XVI - Afecciones Perinatales",
+        "XVII - Congenitas": "XVII - Malformaciones Congénitas",
+        "XVIII - Sintomas": "XVIII - Síntomas y Signos",
+        "XIX - Lesoes": "XIX - Traumatismos / Lesiones",
+        "XX - Causas externas": "XX - Causas Externas",
+        "XXI - Fatores de saude": "XXI - Factores de Salud",
+        "Ignorado": "Ignorado",
+        "Logistic Regression": "Regresión Logística",
+        "Random Forest": "Random Forest",
+        "XGBoost": "XGBoost",
+        "LightGBM": "LightGBM",
+    },
 }
 
 
@@ -514,6 +575,210 @@ TEXTOS = {
         "j_evol_hdr": "#### 📊 Version Evolution Summary Table (V1 → V4)",
         "footer": "SUS Analytics Brazil 2024 • DuckDB + Parquet + Calibrated LightGBM V4 • Healthcare Intelligence Portfolio",
     },
+    "es": {
+        "page_title": "SUS Analytics & Clinical Intelligence",
+        "sidebar_title": "## 🏥 SUS Analytics 2024",
+        "sidebar_caption": "Proyecto de Portafolio en Ciencia de Datos y Salud Pública",
+        "sidebar_resumo_hdr": "**📌 Resumen de Pestañas:**",
+        "sidebar_resumo_body": """
+- **📊 Pestaña 1 (Epidemiología):** Perfil hospitalario en Brasil por edad, sexo, raza/color, meses y causas CIE-10.
+- **🤖 Pestaña 2 (Modelos IA):** Desempeño de algoritmos, calibración de probabilidades y elección de LightGBM.
+- **🏥 Pestaña 3 (Gestión Clínica):** Simulador de ingreso y panel de camas con alertas predictivas ajustables.
+- **📖 Pestaña 4 (Diccionario):** Catálogo auditado de las **113 columnas oficiales del SIH/SUS** + derivadas y glosario.
+- **🧭 Pestaña 5 (Trayectoria):** Historial creativo, decisiones técnicas, corrección de *leakage* y evolución V1 → V4.
+""",
+        "sidebar_motor": "**⚙️ Motor Analítico:**",
+        "sidebar_prod": "**🧠 Producción:**\n`LightGBM V4 (Calibración Isotónica)`",
+        "sidebar_etica": "⚖️ **IA Responsable:** Raza/color y mes se mantienen en epidemiología por equidad, pero se excluyen de los modelos clínicos predictivos.",
+        "modo_local": "Local Completo (13,58M Particiones + Cubo)",
+        "modo_cloud": "Cloud Optimizado (Cubo 13,58M + Muestra 30k)",
+        "main_title": "🏥 SUS Analytics & Clinical Intelligence",
+        "sub_title": "Plataforma de Inteligencia en Salud Pública (SIH/SUS Brasil 2024): perfil epidemiológico, predicción de riesgos al ingreso y panel clínico.",
+        "kpi1_lbl": "Ingresos Analizados",
+        "kpi1_sub": "Microdatos SIH/SUS 2024",
+        "kpi2_lbl": "Estados Cubiertos",
+        "kpi2_sub": "Cobertura Nacional",
+        "kpi3_lbl": "Tasa de Mortalidad",
+        "kpi3_sub": "Óbito Intrahospitalario",
+        "kpi4_lbl": "Estancias ≥ 15 Días",
+        "kpi4_sub": "Larga Estancia",
+        "kpi5_lbl": "Poder Predictivo (ROC-AUC)",
+        "kpi5_sub": "Óbito / Larga Est. (V4)",
+        "tabs": [
+            "📊 1. Epidemiología y Equidad",
+            "🤖 2. Cómo Funciona la IA (Modelos)",
+            "🏥 3. Gestión Clínica y Camas",
+            "📖 4. Diccionario SIH/SUS (113 Cols)",
+            "🧭 5. Trayectoria, Decisiones y Diseño",
+        ],
+        "epi_hdr": "### 📊 Panorama Epidemiológico de los Ingresos Hospitalarios",
+        "epi_sub": "Explore quién utiliza los hospitales públicos de Brasil (SUS) en 2024, las principales causas de ingreso y las brechas regionales o demográficas.",
+        "f_regiao": "Región:",
+        "f_uf": "Estado (UF):",
+        "f_raca": "Raza / Color:",
+        "f_espec": "Especialidad:",
+        "f_sexo": "Sexo:",
+        "f_mes": "Mes (2024):",
+        "epi_info": "🔎 Mostrando **{n}** ingresos para los filtros seleccionados ({pct:.1f}% del total nacional). *(Consultas procesadas con DuckDB)*",
+        "g1_hdr": "#### Distribución por Grupo de Edad y Sexo",
+        "g1_cap": "Muestra el volumen de ingresos por grupo etario separado entre hombres y mujeres.",
+        "g1_x": "Grupo de Edad",
+        "g1_y": "Ingresos",
+        "g1_c": "Sexo",
+        "g2_hdr": "#### Equidad: Mortalidad y Estancia por Raza/Color",
+        "g2_cap": "Compara el promedio de días en el hospital y el riesgo de fallecimiento entre grupos raciales (tamaño = volumen).",
+        "g2_x": "Tasa de Mortalidad (%)",
+        "g2_y": "Promedio de Días",
+        "g3_hdr": "#### Estacionalidad Mensual de Ingresos y Mortalidad",
+        "g3_cap": "Sigue cómo varían el volumen mensual (barras) y la tasa de mortalidad (línea) a lo largo de los 12 meses.",
+        "g3_b": "Ingresos",
+        "g3_l": "Mortalidad (%)",
+        "g3_x": "Mes de 2024",
+        "g3_y1": "Total de Ingresos",
+        "g3_y2": "Mortalidad (%)",
+        "g4_hdr": "#### Principales Causas por Capítulo CIE-10",
+        "g4_cap": "Principales diagnósticos de ingreso; pase el cursor para ver la tasa exacta de mortalidad y larga estancia.",
+        "g4_y": "Capítulo CIE-10",
+        "g4_x": "Ingresos",
+        "g4_c": "Mortalidad (%)",
+        "g4_hover": "<b>%{y}</b><br>Ingresos: %{x:,}<br>Tasa de Mortalidad: <b>%{customdata[0]:.2f}%</b><br>Larga Estancia (≥15d): %{customdata[1]:.2f}%<extra></extra>",
+        "ufs_hdr": "#### 🗺️ Comparativo por Estado (UFs Cargadas)",
+        "col_uf": "Estado",
+        "col_reg": "Región",
+        "col_int": "Ingresos",
+        "col_ob_pct": "Mortalidad (%)",
+        "col_lg_pct": "Larga Est. (%)",
+        "col_med_d": "Prom. Días",
+        "ml_hdr": "### 🤖 Cómo Funciona la IA y Elección del Modelo (V4 Nacional)",
+        "ml_intro": """Al momento del ingreso hospitalario, dos modelos predictivos operan en paralelo usando solo **8 datos de admisión** (edad, sexo, capítulo CIE-10, especialidad, carácter urgencia/electivo, complejidad, traslado intermunicipal y entrada en fin de semana):
+1. **Modelo de Larga Estancia (≥ 15 días):** estima la probabilidad de hospitalización prolongada para apoyar el giro de camas y trabajo social.
+2. **Modelo de Mortalidad Intrahospitalaria:** estima el riesgo vital agudo para priorizar monitoreo intensivo o cama de UCI.""",
+        "ml_why": """🏆 **¿Por qué elegimos LightGBM como modelo oficial?**
+- **Empate técnico en la cima con XGBoost:** Alcanzó excelente capacidad de separación (**ROC-AUC `0,8793`** en mortalidad y **`0,8160`** en larga estancia) junto a la mejor calibración (**Brier Score `0,0329` y `0,0480`**).
+- **Mayor detección en larga estancia:** Identifica al **`83,92%`** de los casos prolongados y al **`87,58%`** de los casos críticos de mortalidad al ingreso.
+- **Agilidad en producción:** Responde en milisegundos con mínimo consumo de memoria RAM — ideal para triaje en tiempo real y despliegue en la nube.""",
+        "ml_guide": """📖 **Mini-Guía de Métricas (Lenguaje Claro):**
+- **ROC-AUC (0 a 1):** Mide cuánto distingue el modelo entre pacientes graves y estables (`0,5` = azar; `> 0,80` = excelente).
+- **PR-AUC:** Precisión enfocada en eventos poco frecuentes (fallecimiento y estancias largas).
+- **Brier Score (menor es mejor):** Mide si la probabilidad prevista coincide con la realidad tras la **Calibración Isotónica** (ej.: 20% previsto equivale a ~20 casos reales cada 100 pacientes).
+- **Ética y Cero *Data Leakage*:** Raza y mes no entran al modelo para evitar sesgos; variables post-alta fueron eliminadas.""",
+        "ml_bench": "#### 📊 Comparativo Nacional (Prueba Ciega en `300.000` ingresos de los 27 Estados)",
+        "ml_ob_sub": "##### 1. Mortalidad Intrahospitalaria *(Promedio Nacional: 3,85%)*",
+        "ml_lg_sub": "##### 2. Larga Estancia ≥ 15 Días *(Promedio Nacional: 6,17%)*",
+        "ml_cols": {"Modelo": "Modelo", "ROC_AUC": "ROC-AUC", "PR_AUC": "PR-AUC", "Brier_Calibrado": "Brier Score", "Limiar_Otimo_Pct": "Corte Alerta (%)", "Sensibilidade_Pct": "Detección (%)", "Especificidade_Pct": "Especif. (%)"},
+        "ml_evid": "#### 📈 Evidencias Visuales y Explicabilidad (V4 Nacional)",
+        "ml_img1": "Curvas ROC y PR: cuanto más cerca de la esquina superior, mayor precisión discriminativa.",
+        "ml_img2": "Calibración Isotónica: curvas pegadas a la diagonal punteada prueban probabilidades realistas.",
+        "ml_img3": "Factores con mayor peso en la IA (ej.: Edad, Medicina Interna e Ingreso de Urgencia).",
+        "cli_hdr": "### 🏥 Panel de Gestión Clínica y Riesgo de Pacientes",
+        "cli_sub": "Simulación hospitalaria de seguimiento de camas: muestra identificador anonimizado (`#AIH`), diagnóstico (`CIE-10`), días ingresados y dos **Alertas Predictivas** calculadas al ingreso.",
+        "cli_exp": "⚙️ **Calibrar Umbrales de Alerta y Entender los Porcentajes**",
+        "cli_exp_txt": "💡 **¿Por qué los cortes por defecto no son 50%?** En Brasil (2024), la tasa real de mortalidad es **3,85%** y la de larga estancia (≥15 días) es **6,17%**. Esperar un 50% al ingreso dejaría pasar casi todos los casos graves. Por eso, el corte **Amarillo/Naranja** parte del **Índice de Youden** (`4,0%` Mortalidad y `6,4%` Larga Estancia), mientras la zona **Roja** señala perfiles con **3x a 4x más riesgo que el promedio nacional** (`15,0%` y `20,0%`). Ajuste abajo según la ocupación del hospital:",
+        "sl_ob": "⚠️ Cortes Riesgo de Mortalidad — Atención / Crítico (%):",
+        "sl_lg": "🚩 Cortes Larga Estancia — Medio / Alto Riesgo (%):",
+        "leg_lg": "🚩 **Larga Estancia (≥ 15 días):** `🟢 Bajo < {a:.1f}%` | `🟡 Medio {a:.1f}%–{b:.1f}%` | `🔴 Alto Riesgo ≥ {c:.1f}%`",
+        "leg_ob": "⚠️ **Riesgo de Mortalidad:** `🟢 Estable < {a:.1f}%` | `🟠 Atención {a:.1f}%–{b:.1f}%` | `🔴 Crítico ≥ {c:.1f}%`",
+        "sim_exp": "➕ **Simular Nuevo Ingreso de Paciente (Scorecard en Tiempo Real)**",
+        "sim_idade": "Edad (años):",
+        "sim_sexo": "Sexo Biológico:",
+        "sim_espec": "Especialidad de Cama:",
+        "sim_car": "Tipo de Ingreso:",
+        "sim_cid": "Diagnóstico Principal (Capítulo CIE-10):",
+        "sim_comp": "Complejidad:",
+        "sim_transf": "¿Trasladado desde Otro Municipio?",
+        "sim_fds": "¿Ingreso en Fin de Semana?",
+        "sim_nao": "No",
+        "sim_sim": "Sí",
+        "sim_btn": "🚨 Calcular Score de Ingreso",
+        "sim_res": "#### Resultado del Triaje (Probabilidades Calibradas Brasil V4):",
+        "sim_ob_tit": "Riesgo de Mortalidad",
+        "sim_lg_tit": "Larga Estancia",
+        "badge_ob": ("CRÍTICO", "ATENCIÓN", "ESTABLE"),
+        "badge_lg": ("ALTO RIESGO", "MEDIO", "BAJO"),
+        "quads": {
+            "red": ("ZONA ROJA (CRÍTICA)", "🚨 Acción Inmediata: Asignar cama de UCI/Intermedios y soporte vital avanzado."),
+            "acute": ("ZONA DE EMERGENCIA AGUDA", "⚠️ Sala Crítica: Alto riesgo agudo. Monitoreo continuo en las primeras 48h."),
+            "chronic": ("ZONA DE CRONICIDAD", "📋 Planificación de Cama: Activar Trabajo Social y Rehabilitación para alta temprana."),
+            "fast": ("ZONA DE FLUJO RÁPIDO", "✅ Vía Estándar: Protocolo convencional con previsión de alta rápida."),
+        },
+        "panel_hdr": "#### 📋 Panel de Pacientes Ingresados *(Muestra Dinámica de Brasil)*",
+        "p_uf": "Estado (UF):",
+        "p_esp": "Especialidad:",
+        "p_grav": "Filtro de Gravedad:",
+        "p_grav_opts": ["Todos", "Crítico (Alta Mortalidad)", "Larga Estancia Elevada"],
+        "p_dias": "Días Ingresado (Mín):",
+        "p_busca": "Buscar ID (AIH) o CIE:",
+        "p_empty": "Ningún paciente coincide con los filtros.",
+        "p_count": "Mostrando **{n}** pacientes muestreados:",
+        "p_cols": {
+            "id_anonimo": "ID Paciente",
+            "uf": "Estado",
+            "idade_anos": "Edad",
+            "sexo_desc": "Sexo",
+            "especialidade_leito": "Especialidad",
+            "motivo_cid": "Motivo (CIE-10)",
+            "qt_diarias": "Días Estancia",
+            "uti_mes_to": "Días UCI",
+            "flag_longa": "🚩 Larga Estancia",
+            "flag_obito": "⚠️ Riesgo Óbito",
+        },
+        "fmt_idade": "%.0f años",
+        "dic_hdr": "### 📖 Diccionario Completo SIH/SUS (113 Columnas Oficiales + Derivadas) y Glosario",
+        "dic_sub": "Auditoría integral de cada campo del DATASUS, indicando explícitamente qué alimenta a la **IA**, qué queda solo en el **Perfil Epidemiológico** y qué fue **Descartado**.",
+        "dic_search": "🔍 Buscar columna, bloque o significado:",
+        "dic_ph": "Ej.: cobranca, diagsec, raca_cor, ROC-AUC, Brier...",
+        "dic_filter_lbl": "Filtrar por Uso en el Proyecto:",
+        "dic_filter_opts": [
+            ("all", "Todas las Columnas (125)"),
+            ("ia_epi", "✅ Usadas en IA + Epidemiología"),
+            ("epi", "📊 Solo Perfil Epidemiológico"),
+            ("alvo_painel", "🎯 Objetivo / Panel Clínico"),
+            ("nao_leakage", "⛔ No Usadas (Data Leakage / Post-Alta)"),
+            ("nao_admin", "⛔ No Usadas (Admin / Nula / Redundante)"),
+        ],
+        "dic_s1": "#### 🗂️ 1. Catálogo Auditado de Todas las Variables (SIH/SUS + Derivadas)",
+        "dic_s2": "#### 🧠 2. Glosario de Términos Técnicos (Ciencia de Datos y Salud)",
+        "dic_empty1": "No se encontraron variables con ese filtro.",
+        "dic_empty2": "No se encontraron términos técnicos con ese filtro.",
+        "dic_count": "Mostrando **{n}** variables del catálogo completo (`113` originales SIH/SUS + `12` derivadas).",
+        "j_hdr": "### 🧭 Trayectoria del Proyecto: Proceso Creativo, Decisiones y Arquitectura (V1 → V4)",
+        "j_sub": "Registro transparente de cómo un piloto estatal en Acre evolucionó hacia una plataforma nacional calibrada sobre **13.584.534 ingresos** — mostrando errores corregidos, dilemas éticos y decisiones técnicas.",
+        "j_v1_tit": "1️⃣ Fase V1 — Piloto en Acre y Descubrimiento de Trampas (56.459 casos)",
+        "j_v1_txt": """
+- **Punto de partida:** Descargamos los 12 archivos mensuales `.dbc` de Acre (2024) para predecir Larga Estancia (`>= 15 días`, solo `5,30%` de los casos — desbalance de `17,88:1`).
+- **Hallazgo crítico #1 (*Data Leakage*):** La variable `cobranca` dominaba los modelos (`85,29%` aparente en códigos `21/22`). Al auditar las reglas de DATASUS descubrimos que esas prórrogas se facturan **después** de que el paciente ya tuvo estancia larga — ¡imposible saberlo al ingreso!
+- **Hallazgo crítico #2 (Colapso por doble penalización en XGBoost):** Combinar `SMOTE` + `scale_pos_weight=18` empujó el `85%` de predicciones a positivo (`45.237` falsas alarmas, `19,77%` de exactitud). **Decisión:** eliminar `SMOTE` y usar solo ponderación nativa.
+- **Auditoría de nulos:** Los diagnósticos secundarios (`diagsec1`–`9`) tenían **`89,65%` a `100%`** de ausentes, motivando la auditoría de las 113 columnas en la Pestaña 4.
+""",
+        "j_v2_tit": "2️⃣ Fase V2 — Enfoque al Ingreso Clínico y Matriz Dual-Triage",
+        "j_v2_txt": """
+- **Cambio de paradigma:** Restringimos la predicción estrictamente a variables disponibles **en la admisión**, purgando `cobranca` y 24 variables financieras/post-alta (`val_tot`, `dt_saida`, `dias_perm`, `proc_rea`).
+- **Segundo objetivo simultáneo (`Obito`):** Incorporamos mortalidad intrahospitalaria (`2,70%` en Acre), creando la **Matriz de Decisión 2x2** (*Zona Roja Crítica, Emergencia Aguda, Cronicidad y Flujo Rápido*).
+- **Ingeniería de variables clínicas y geográficas:**
+  - `especialidade_leito`: mostró que Medicina Interna concentra el **`78,9%` de los fallecimientos** (`7,40%` vs. `0,009%` en Obstetricia).
+  - `transferido_intermun` (`munic_res != munic_mov`): reveló **`+28%` mayor mortalidad** en pacientes trasladados desde el interior (`3,72%` vs. `2,91%`).
+  - `internacao_fim_de_semana`: captura el impacto de los ingresos en sábado y domingo.
+""",
+        "j_v3_tit": "3️⃣ Fase V3 — Bioética en Salud y Desacoplamiento Estacional",
+        "j_v3_txt": """
+- **Cuestionamiento ético:** En los gráficos de importancia aparecieron `raca_cor` (raza) y `mes_internacao` (mes). ¿Debían usarse para decidir camas al ingreso?
+- **Decisión #1 — Excluir `raca_cor` de la IA:** El color de piel no es un mecanismo biológico de gravedad clínica, y usarlo en triaje podría perpetuar desigualdades en asignación de UCI. **Solución:** se excluyó de la IA y se conservó en la Pestaña 1 para auditoría de **Equidad en Salud**.
+- **Decisión #2 — Excluir `mes_internacao`:** Los árboles sobreajustaban patrones del calendario 2024 (*split bias* y riesgo de *data drift*). Se mantuvo solo para análisis temporal en la Pestaña 1.
+- **Validación (10-Fold Stratified CV):** Sin estas dos variables, el modelo mantuvo gran capacidad predictiva (**LightGBM V3: `ROC-AUC 0,8949` Mortalidad y `0,8263` Larga Estancia**).
+""",
+        "j_v4_tit": "4️⃣ Fase V4 — Escala Brasil (13,58M), Muestreo, Calibración Isotónica y Nube",
+        "j_v4_txt": """
+- **Ingesta nacional (27 Estados / 324 archivos `.dbc`):** Pipeline paralelo vía FTP DATASUS + Arrow (`datasuspy`), comprimiendo **~20 GB** de `13.584.534` ingresos a **`186,06 MB`** en Parquet particionado Hive consultado con **DuckDB**.
+- **¿Por qué muestrear `1.500.000` en entrenamiento y `30.000` en el panel web manteniendo el `100%` en la Pestaña 1?**
+  - *Pestaña 1 (0% muestreo):* Creamos un **Cubo Agregado de `3,99 MB`** (`419.801` filas) con **100% de paridad exacta** de los `13.584.534` ingresos, `520.884` fallecimientos y `839.972` estancias largas.
+  - *Entrenamiento V4 (`1,5M` = 900k entreno / 300k calibración / 300k prueba ciega):* Con 8 variables (~40 columnas codificadas), `900 mil` casos saturan la curva de aprendizaje de los 27 estados sin desbordar memoria RAM.
+  - *Panel Cloud (`30.000` casos = `0,34 MB`):* Permite filtrar pacientes reales de todos los estados en milisegundos dentro de la cuota gratuita de Streamlit Cloud.
+- **Calibración Isotónica y Umbrales de Youden:** Reemplazando `scale_pos_weight` extremo por *log-loss* nativo + **Calibración Isotónica** en `300k` casos, el **Brier Score bajó de `0,12–0,16` a `0,0329` (Mortalidad) y `0,0480` (Larga Estancia)**, logrando probabilidades reales y cortes por **Índice de Youden (`4,0%` / `6,4%`)** con deslizadores ajustables.
+- **Producto Final:** Interfaz trilingüe (PT/EN/ES), filtros en cascada Región → Estado, diccionario completo de 113 columnas y despliegue online.
+""",
+        "j_evol_hdr": "#### 📊 Tabla Resumen de Evolución de Versiones (V1 → V4)",
+        "footer": "SUS Analytics Brasil 2024 • DuckDB + Parquet + LightGBM V4 Calibrado • Portafolio de Inteligencia en Salud",
+    },
 }
 
 
@@ -530,13 +795,20 @@ def get_evolucao_df(lang: str) -> pd.DataFrame:
             {"Version": "V1 (Baseline)", "Scope": "Acre (56,459)", "Targets": "Long Stay Only", "Features": "7 (incl. cobranca leakage)", "Key Milestone / Decision": "Detected `cobranca` post-intake leakage & fixed XGBoost SMOTE + weight collapse."},
             {"Version": "V2 (Dual-Triage)", "Scope": "Acre (56,459)", "Targets": "Long Stay + Mortality", "Features": "10 (strict intake)", "Key Milestone / Decision": "Removed 24 financial/post-stay cols; created 2x2 Decision Matrix & transfer/ward features."},
             {"Version": "V3 (Ethical AI)", "Scope": "Acre (56,459)", "Targets": "Long Stay + Mortality", "Features": "8 (ethical clinical)", "Key Milestone / Decision": "Removed `raca_cor` & `mes_internacao` from AI to prevent bias/drift; kept for equity tab."},
-            {"Version": "V4 (National Cloud)", "Scope": "Brazil 27 UFs (13.58M)", "Targets": "Long Stay + Mortality", "Features": "8 (calibrated LightGBM)", "Key Milestone / Decision": "DuckDB/Parquet lakehouse, 1.5M stratified cohort, Isotonic Calibration (Brier 0.033/0.048), PT/EN Cloud App."},
+            {"Version": "V4 (National Cloud)", "Scope": "Brazil 27 UFs (13.58M)", "Targets": "Long Stay + Mortality", "Features": "8 (calibrated LightGBM)", "Key Milestone / Decision": "DuckDB/Parquet lakehouse, 1.5M stratified sample, Isotonic Calibration (Brier 0.033/0.048), PT/EN/ES Cloud App."},
+        ])
+    if lang == "es":
+        return pd.DataFrame([
+            {"Versión": "V1 (Baseline)", "Alcance": "Acre (56.459)", "Objetivos": "Solo Larga Est.", "Features": "7 (con fuga cobranca)", "Decisión / Hito Principal": "Detección de fuga en `cobranca` y corrección del colapso SMOTE + peso en XGBoost."},
+            {"Versión": "V2 (Dual-Triage)", "Alcance": "Acre (56.459)", "Objetivos": "Larga Est. + Óbito", "Features": "10 (estrictas ingreso)", "Decisión / Hito Principal": "Eliminación de 24 cols financieras/post-alta; Matriz 2x2 y variables de traslado/cama."},
+            {"Versión": "V3 (IA Ética)", "Alcance": "Acre (56.459)", "Objetivos": "Larga Est. + Óbito", "Features": "8 (clínicas y éticas)", "Decisión / Hito Principal": "Exclusión de `raca_cor` y `mes_internacao` de la IA (mantenidas solo en Equidad)."},
+            {"Versión": "V4 (Nacional Cloud)", "Alcance": "Brasil 27 UFs (13,58M)", "Objetivos": "Larga Est. + Óbito", "Features": "8 (LightGBM calibrado)", "Decisión / Hito Principal": "Lakehouse DuckDB/Parquet, muestra 1,5M, Calibración Isotónica (Brier 0,033/0,048), app PT/EN/ES."},
         ])
     return pd.DataFrame([
         {"Versão": "V1 (Baseline)", "Escopo": "Acre (56.459)", "Alvos": "Apenas Longa Perm.", "Features": "7 (com leakage cobranca)", "Decisão / Marco Principal": "Descoberta do vazamento em `cobranca` e correção do colapso SMOTE + peso no XGBoost."},
         {"Versão": "V2 (Dual-Triage)", "Escopo": "Acre (56.459)", "Alvos": "Longa Perm. + Óbito", "Features": "10 (estritas de entrada)", "Decisão / Marco Principal": "Expurgo de 24 colunas financeiras/pós-alta; criação da Matriz 2x2 e flags geográficas/leito."},
         {"Versão": "V3 (IA Ética)", "Escopo": "Acre (56.459)", "Alvos": "Longa Perm. + Óbito", "Features": "8 (clínicas e éticas)", "Decisão / Marco Principal": "Remoção de `raca_cor` e `mes_internacao` da IA clínica (mantidas só na Aba 1 de Equidade)."},
-        {"Versão": "V4 (Nacional Cloud)", "Escopo": "Brasil 27 UFs (13,58M)", "Alvos": "Longa Perm. + Óbito", "Features": "8 (LightGBM calibrado)", "Decisão / Marco Principal": "Lakehouse DuckDB/Parquet, coorte 1,5M, Calibração Isotônica (Brier 0,033/0,048), app PT/EN na nuvem."},
+        {"Versão": "V4 (Nacional Cloud)", "Escopo": "Brasil 27 UFs (13,58M)", "Alvos": "Longa Perm. + Óbito", "Features": "8 (LightGBM calibrado)", "Decisão / Marco Principal": "Lakehouse DuckDB/Parquet, amostra de 1,5M, Calibração Isotônica (Brier 0,033/0,048), app PT/EN/ES na nuvem."},
     ])
 
 
@@ -554,6 +826,20 @@ def get_glossario_df(lang: str) -> pd.DataFrame:
             {"Term": "Specificity", "Domain": "Epidemiology / AI", "Plain Explanation": "Share of standard non-severe hospitalizations accurately kept in the green zone without unnecessary alarms."},
             {"Term": "Data Leakage", "Domain": "Data Engineering", "Plain Explanation": "Using future post-admission information (such as final stay length or billing extension codes) to predict intake risk. Eliminated 100%."},
             {"Term": "DuckDB + Parquet", "Domain": "Data Engineering", "Plain Explanation": "Embedded analytical SQL engine and compressed columnar file format enabling sub-second queries over 13.58M rows without heavy servers."},
+        ])
+    if lang == "es":
+        return pd.DataFrame([
+            {"Término": "SIH/SUS", "Área": "Salud Pública", "Explicación Clara": "Sistema de Información Hospitalaria del SUS. Base pública oficial del Ministerio de Salud de Brasil con todos los ingresos hospitalarios financiados por el sistema público."},
+            {"Término": "LightGBM", "Área": "Machine Learning", "Explicación Clara": "Algoritmo moderno basado en árboles de decisión rápidos. Elegido para producción por su alta precisión, gran detección y respuesta en milisegundos."},
+            {"Término": "ROC-AUC", "Área": "Métrica de IA", "Explicación Clara": "Va de 0,5 (azar) a 1,0 (perfecto). Mide la capacidad del modelo para asignar mayor riesgo a los casos graves que a los estables."},
+            {"Término": "PR-AUC", "Área": "Métrica de IA", "Explicación Clara": "Precisión enfocada en eventos poco frecuentes (mortalidad y estancias largas), evaluando aciertos sin exceso de falsas alarmas."},
+            {"Término": "Brier Score", "Área": "Calibración", "Explicación Clara": "Mide el error entre la probabilidad prevista y la realidad (más cerca de 0 es mejor). Bajó de ~0,13–0,16 (V3) a 0,033–0,048 (V4)."},
+            {"Término": "Calibración Isotónica", "Área": "Machine Learning", "Explicación Clara": "Técnica ajustada en un conjunto independiente que garantiza que una predicción del 20% corresponda a ~20 casos reales de cada 100 pacientes."},
+            {"Término": "Índice de Youden", "Área": "Estadística Clínica", "Explicación Clara": "Punto matemático óptimo que equilibra Sensibilidad y Especificidad — usado como corte inicial de alerta amarilla/naranja (4,0% y 6,4%)."},
+            {"Término": "Sensibilidad (Detección)", "Área": "Epidemiología / IA", "Explicación Clara": "Porcentaje de los casos graves reales (óbitos o estancias ≥15d) que el sistema logra detectar al ingreso (87,6% y 83,9%)."},
+            {"Término": "Especificidad", "Área": "Epidemiología / IA", "Explicación Clara": "Porcentaje de ingresos normales que el sistema mantiene correctamente en zona verde sin alarmas innecesarias."},
+            {"Término": "Data Leakage", "Área": "Ingeniería de Datos", "Explicación Clara": "Fuga de información del futuro (ej.: usar facturación o días finales para predecir el riesgo de entrada). Eliminado al 100% en este proyecto."},
+            {"Término": "DuckDB + Parquet", "Área": "Ingeniería de Datos", "Explicación Clara": "Motor analítico SQL embebido y formato columnar comprimido que permiten consultar 13,58 millones de filas en segundos sin servidores pesados."},
         ])
     return pd.DataFrame([
         {"Termo": "SIH/SUS", "Área": "Saúde Pública", "Explicação Clara": "Sistema de Informações Hospitalares do SUS. Base oficial pública do Ministério da Saúde com todas as internações financiadas pelo SUS no Brasil."},

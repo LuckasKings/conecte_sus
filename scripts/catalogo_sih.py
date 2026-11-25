@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Catálogo Completo e Auditado das 113 Colunas Oficiais do SIH/SUS (AIH Reduzida - RD)
-+ Colunas Derivadas criadas no Pipeline do Projeto (PT / EN).
++ Colunas Derivadas criadas no Pipeline do Projeto (PT / EN / ES).
 Classifica explicitamente o uso de cada coluna:
 - Modelo IA + Perfil Epidemiológico
 - Apenas Perfil Epidemiológico
@@ -12,9 +12,137 @@ Classifica explicitamente o uso de cada coluna:
 
 import pandas as pd
 
-# Lista oficial: (coluna, bloco_pt, bloco_en, desc_pt, desc_en, status_key)
-# status_key in {"ia_epi", "epi", "alvo_painel", "nao_leakage", "nao_admin"}
+DOMAINS_ES = {
+    "Derivada (Projeto)": "Derivada (Proyecto)",
+    "Derivada (Alvo 1)": "Derivada (Objetivo 1)",
+    "Derivada (Alvo 2)": "Derivada (Objetivo 2)",
+    "Identificação & Gestão": "Identificación y Gestión",
+    "Internação & Leito": "Ingreso y Cama",
+    "Estabelecimento": "Centro de Salud",
+    "Paciente & Demografia": "Paciente y Demografía",
+    "Leitos de UTI": "Camas de UCI",
+    "Procedimentos": "Procedimientos",
+    "Financeiro & Faturamento": "Finanzas y Facturación",
+    "Datas & Permanência": "Fechas y Estancia",
+    "Diagnósticos CID-10": "Diagnósticos CIE-10",
+    "Saúde Materno-Infantil": "Salud Materno-Infantil",
+    "Desfecho Clínico": "Desenlace Clínico",
+    "Previdência & Trabalho": "Trabajo y Seguridad Social",
+    "Qualidade & Vigilância": "Calidad y Vigilancia",
+    "Auditoria": "Auditoría",
+}
 
+DESCS_ES = {
+    "idade_anos": "Edad continua en años calculada a partir de `idade` y `cod_idade` (incluye fracciones para recién nacidos).",
+    "capitulo_cid": "Gran capítulo clínico de la CIE-10 (20 grupos) extraído de la letra inicial de `diag_princ`.",
+    "especialidade_leito": "Especialidad de la cama mapeada desde `espec` (Medicina Interna, Cirugía, Obstetricia, Pediatría, etc.).",
+    "carater_internacao": "Agrupación de `car_int` que separa ingresos programados (Electivo) de entradas agudas (Urgencia/Emergencia).",
+    "complexidade": "Nivel tecnológico mapeado de `complex` (Complejidad Media vs. Alta Complejidad).",
+    "transferido_intermun": "Indicador binario de traslado geográfico (`munic_res != munic_mov`): paciente atendido fuera de su municipio.",
+    "internacao_fim_de_semana": "Indicador binario derivado de `dt_inter` que señala si el ingreso ocurrió en sábado o domingo.",
+    "raca_cor_desc": "Descripción legible de `raca_cor` (Blanca, Negra, Parda, Amarilla, Indígena, No Declarada). Excluida de la IA por ética.",
+    "mes_internacao": "Mes numérico (1 a 12) extraído de `dt_inter`. Excluido de la IA para evitar sesgo estacional y *data drift*.",
+    "regiao": "Macrorregión brasileña (Norte, Nordeste, Centro-Oeste, Sudeste, Sur) derivada de la sigla del estado.",
+    "Longa_Permanencia": "Objetivo predictivo binario: 1 cuando `qt_diarias >= 15` días; 0 en caso contrario.",
+    "Obito": "Objetivo predictivo binario: 1 cuando `morte == 1` (fallecimiento intrahospitalario); 0 en caso contrario.",
+    "uf_zi": "Código del municipio/estado gestor responsable del envío de la AIH (constante dentro de cada estado).",
+    "ano_cmpt": "Año de competencia contable de la AIH (2024 en toda la base — varianza cero).",
+    "mes_cmpt": "Mes de competencia de procesamiento/facturación de la AIH (puede diferir del mes real de ingreso).",
+    "espec": "Código de especialidad de la cama (1=Cirugía, 2=Obstetricia, 3=Medicina Interna, 4=Pediatría, 7=Psiquiatría). Origen de `especialidade_leito`.",
+    "cgc_hosp": "CNPJ (ID fiscal) del establecimiento hospitalario ejecutor.",
+    "n_aih": "Número oficial único de la Autorización de Ingreso Hospitalario (AIH). Se muestra anonimizado (`#AIH-...`) en la Pestaña 3.",
+    "ident": "Tipo de AIH (1 = Normal, 5 = Larga estancia / psiquiatría continuada).",
+    "cep": "Código postal de residencia del paciente (excluido de la IA por privacidad y alta cardinalidad).",
+    "munic_res": "Código IBGE del municipio de residencia. Comparado con `munic_mov` para crear `transferido_intermun`.",
+    "nasc": "Fecha de nacimiento del paciente (reemplazada por `idade_anos`).",
+    "sexo": "Sexo biológico registrado en el ingreso (1 = Masculino, 3 = Femenino).",
+    "uti_mes_in": "Días en UCI en el mes inicial del ingreso (medido durante/después de la estancia).",
+    "uti_mes_an": "Días en UCI en el mes anterior a la facturación (post-ingreso).",
+    "uti_mes_al": "Días en UCI en el mes del alta (post-ingreso).",
+    "uti_mes_to": "Total de días en UCI durante la hospitalización. Mostrado en la Pestaña 3; excluido de la IA de ingreso por fuga de datos.",
+    "marca_uti": "Indicador/tipo de cama de UCI utilizada (registrado durante el ingreso).",
+    "uti_int_in": "Días en Unidad de Cuidados Intermedios en el mes inicial (post-ingreso).",
+    "uti_int_an": "Días en Unidad de Cuidados Intermedios en el mes anterior (post-ingreso).",
+    "uti_int_al": "Días en Unidad de Cuidados Intermedios en el mes del alta (post-ingreso).",
+    "uti_int_to": "Total de días en Unidad de Cuidados Intermedios (post-ingreso).",
+    "diar_acom": "Cantidad de días de acompañante facturados al finalizar la hospitalización.",
+    "qt_diarias": "Total de días hospitalarios de la AIH. Origen directo del objetivo `Longa_Permanencia` (>= 15d) y mostrado en la Pestaña 3.",
+    "proc_solic": "Código SIGTAP del procedimiento solicitado inicialmente en la autorización.",
+    "proc_rea": "Código SIGTAP del procedimiento efectivamente realizado y facturado al alta (*data leakage*).",
+    "val_sh": "Importe pagado por Servicios Hospitalarios (facturado al alta — *data leakage*).",
+    "val_sp": "Importe pagado por Servicios Profesionales (facturado al alta — *data leakage*).",
+    "val_sadt": "Importe pagado por Servicios Auxiliares de Diagnóstico y Terapia (post-ingreso).",
+    "val_rn": "Importe facturado por atención al recién nacido (post-ingreso).",
+    "val_acomp": "Importe facturado por días de acompañante (post-ingreso).",
+    "val_ortp": "Importe facturado de órtesis y prótesis (post-ingreso).",
+    "val_sangue": "Importe facturado de hemoterapia/sangre (post-ingreso).",
+    "val_sadtsr": "Importe de SADT sin prorrateo (post-ingreso).",
+    "val_transp": "Importe facturado de transporte médico especial (post-ingreso).",
+    "val_obsang": "Importe facturado de examen obstétrico/sangre (post-ingreso).",
+    "val_ped1ac": "Importe facturado de primera consulta pediátrica en sala de partos (post-ingreso).",
+    "val_tot": "Importe total de la AIH en Reales (BRL). Agregado en DuckDB para auditoría macro de costos; excluido de la IA.",
+    "val_uti": "Importe total facturado por días en UCI (post-ingreso).",
+    "us_tot": "Importe total convertido en Unidades de Servicio históricas (post-ingreso).",
+    "dt_inter": "Fecha de ingreso hospitalario (AAAAMMDD). Origen de `mes_internacao` y `internacao_fim_de_semana`.",
+    "dt_saida": "Fecha de salida/alta o fallecimiento (AAAAMMDD) — conocida solo al final (*data leakage*).",
+    "diag_princ": "Código exacto CIE-10 del diagnóstico principal al ingreso. Origen de `capitulo_cid` (IA) y mostrado en la Pestaña 3.",
+    "diag_secun": "Campo heredado de diagnóstico secundario (generalmente 0000; sustituido por diagsec1-9).",
+    "cobranca": "Motivo de cierre/facturación (ej.: 21/22 = prórroga larga; 41/42 = óbito). Eliminado en V2 por **Data Leakage Crítico**.",
+    "natureza": "Código antiguo de naturaleza jurídica del hospital (descontinuado/constante).",
+    "nat_jur": "Naturaleza jurídica del establecimiento (administración pública, sin fines de lucro, privada).",
+    "gestao": "Nivel de gestión del hospital (Estatal, Municipal o Dual).",
+    "rubrica": "Rúbrica contable presupuestaria interna (constante en cero).",
+    "ind_vdrl": "Indicador de prueba VDRL (sífilis) en ingresos obstétricos.",
+    "munic_mov": "Código IBGE del municipio donde se ubica el hospital. Usado con `munic_res` para crear `transferido_intermun`.",
+    "cod_idade": "Unidad de `idade` (2=días, 3=meses, 4=años, 5=centenarios). Combinada con `idade` para crear `idade_anos`.",
+    "idade": "Valor numérico bruto de edad en unidad `cod_idade`. Combinado con `cod_idade` para crear `idade_anos`.",
+    "dias_perm": "Días de estancia calculados entre ingreso y salida — fuga directa si se usa al ingreso (*data leakage*).",
+    "morte": "Indicador oficial de fallecimiento en la AIH (0 = Vivo, 1 = Fallecido). Origen directo del objetivo `Obito`.",
+    "nacional": "Código de nacionalidad del paciente (010 = Brasileño en casi todos los casos).",
+    "num_proc": "Número de expediente administrativo (100% nulo en archivos públicos).",
+    "car_int": "Código de tipo de ingreso (1=Electivo, 2=Urgencia/Emergencia). Origen de `carater_internacao`.",
+    "tot_pt_sp": "Total de puntos de Servicios Profesionales (prorrateo médico post-ingreso).",
+    "cpf_aut": "ID fiscal del auditor autorizador (enmascarado/nulo en datos públicos).",
+    "homonimo": "Indicador de homónimo en registro (constante en cero).",
+    "num_filhos": "Número de hijos declarados (planificación familiar/obstetricia; mayormente vacío).",
+    "instru": "Nivel educativo del paciente (raramente completado en la rutina hospitalaria).",
+    "cid_notif": "Código CIE-10 de enfermedad de notificación obligatoria (>95% ausente).",
+    "contracep1": "Método anticonceptivo principal (planificación familiar).",
+    "contracep2": "Método anticonceptivo secundario (planificación familiar).",
+    "gestrisco": "Indicador de embarazo de alto riesgo (específico de obstetricia).",
+    "insc_pn": "Número de inscripción en control prenatal (SISPRENATAL).",
+    "seq_aih5": "Secuencial de AIH de continuación (tipo 5).",
+    "cbor": "Código Brasileño de Ocupaciones (CBO) en accidentes laborales (mayormente cero).",
+    "cnaer": "Código de Actividad Económica (CNAE) en accidentes laborales.",
+    "vincprev": "Vínculo de seguridad social en accidentes laborales.",
+    "gestor_cod": "Código de motivo de autorización del gestor.",
+    "gestor_tp": "Tipo de gestor autorizador.",
+    "gestor_cpf": "CPF del gestor autorizador (enmascarado/cero en microdatos públicos).",
+    "gestor_dt": "Fecha de autorización del gestor (100% nulo en microdatos públicos).",
+    "cnes": "Código Nacional de Establecimientos de Salud (CNES). Guardado en Parquet para trazabilidad; excluido de la IA.",
+    "cnpj_mant": "CNPJ de la entidad mantenedora del hospital.",
+    "infehosp": "Indicador de infección intrahospitalaria (100% nulo en microdatos públicos).",
+    "cid_asso": "Código CIE-10 de causa asociada (raramente completado).",
+    "cid_morte": "Código CIE-10 de causa básica del fallecimiento — conocido solo tras el deceso (*data leakage*).",
+    "complex": "Código de complejidad asistencial (2 = Media, 3 = Alta). Origen de `complexidade`.",
+    "financ": "Fuente de financiamiento público del procedimiento (MAC, FAEC, etc.).",
+    "faec_tp": "Subtipo de financiamiento FAEC (>80% nulo).",
+    "regct": "Regla contractual del establecimiento hospitalario.",
+    "raca_cor": "Código de raza/color. Usado en la Pestaña 1 (Equidad) vía `raca_cor_desc` y excluido de la IA.",
+    "etnia": "Código específico de etnia indígena (muy disperso; agrupado en `raca_cor_desc`).",
+    "sequencia": "Número secuencial del registro dentro del lote mensual.",
+    "remessa": "Identificador del archivo de envío remitido al DATASUS.",
+    "aud_just": "Justificación de auditoría médica (campo administrativo).",
+    "sis_just": "Justificación del sistema de validación del SIH (100% nulo).",
+    "val_sh_fed": "Complemento federal en Servicios Hospitalarios (post-ingreso).",
+    "val_sp_fed": "Complemento federal en Servicios Profesionales (post-ingreso).",
+    "val_sh_ges": "Complemento estatal/municipal en Servicios Hospitalarios (post-ingreso).",
+    "val_sp_ges": "Complemento estatal/municipal en Servicios Profesionales (post-ingreso).",
+    "val_uci": "Importe facturado por Unidad de Cuidados Intermedios (post-ingreso).",
+    "marca_uci": "Marcador de acreditación en Unidad de Cuidados Intermedios.",
+}
+
+# Lista oficial: (coluna, bloco_pt, bloco_en, desc_pt, desc_en, status_key)
 CATALOGO_SIH_COMPLETO = [
     # --- COLUNAS DERIVADAS DO PROJETO (12) ---
     ("idade_anos", "Derivada (Projeto)", "Derived (Project)",
@@ -342,7 +470,6 @@ CATALOGO_SIH_COMPLETO = [
      "Intermediate Care Unit accreditation marker.", "nao_admin"),
 ]
 
-# Adicionar diagsec1..9 e tpdisec1..9 dinamicamente sem repetição
 for i in range(1, 10):
     CATALOGO_SIH_COMPLETO.append((
         f"diagsec{i}", "Diagnósticos CID-10", "ICD-10 Diagnoses",
@@ -350,6 +477,8 @@ for i in range(1, 10):
         f"Secondary diagnosis / comorbidity {i} (ICD-10). Missing in 89%–100% of records.",
         "nao_admin"
     ))
+    DESCS_ES[f"diagsec{i}"] = f"Diagnóstico secundario / comorbilidad {i} (CIE-10). Subnotificado en 89% a 100% de los ingresos."
+
 for i in range(1, 10):
     CATALOGO_SIH_COMPLETO.append((
         f"tpdisec{i}", "Diagnósticos CID-10", "ICD-10 Diagnoses",
@@ -357,6 +486,7 @@ for i in range(1, 10):
         f"Type of secondary diagnosis {i} (present on admission vs hospital-acquired; mostly zeroed).",
         "nao_admin"
     ))
+    DESCS_ES[f"tpdisec{i}"] = f"Tipo de diagnóstico secundario {i} (presente al ingreso o adquirido en el hospital; casi siempre cero)."
 
 
 STATUS_MAP = {
@@ -374,6 +504,13 @@ STATUS_MAP = {
         "nao_leakage": "Not Used (Data Leakage / Post-Stay)",
         "nao_admin": "Not Used (Admin / Sparse / Redundant)",
     },
+    "es": {
+        "ia_epi": "Usada en Modelo IA + Epidemiología",
+        "epi": "Solo Perfil Epidemiológico",
+        "alvo_painel": "Objetivo / Panel Clínico",
+        "nao_leakage": "No Usada (Data Leakage / Post-Alta)",
+        "nao_admin": "No Usada (Admin / Nula / Redundante)",
+    },
 }
 
 
@@ -387,6 +524,14 @@ def get_catalogo_completo_df(lang: str = "pt") -> pd.DataFrame:
                 "Domain": b_en,
                 "Usage Status": s_map[s_key],
                 "Description": d_en,
+                "_status_key": s_key,
+            })
+        elif lang == "es":
+            rows.append({
+                "Columna": col,
+                "Bloque": DOMAINS_ES.get(b_pt, b_pt),
+                "Uso en el Proyecto": s_map[s_key],
+                "Significado y Motivo": DESCS_ES.get(col, d_pt),
                 "_status_key": s_key,
             })
         else:

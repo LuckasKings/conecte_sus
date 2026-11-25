@@ -30,17 +30,18 @@ Hospitais públicos e operadoras enfrentam diariamente dois desafios críticos n
                              │
           ┌──────────────────┴──────────────────┐
           ▼                                     ▼
-[ Camada Analítica DuckDB ]           [ Modelos V4 Nacional (1,5M coorte) ]
+[ Camada Analítica DuckDB ]           [ Modelos V4 Nacional (1,5M amostra) ]
  - Cubo Deploy (3,99 MB exato)         - 4 Algoritmos + Calibração Isotônica
  - Amostra Cockpit (30k casos)         - Ética: Sem raça/cor ou mês na predição
           │                                     │
           └──────────────────┬──────────────────┘
                              ▼
-            [ Dashboard Interativo Streamlit (4 Abas) ]
+            [ Dashboard Interativo Streamlit (5 Abas • PT/EN/ES) ]
              1. Perfil Epidemiológico & Equidade
              2. Como a IA Funciona (Modelos & Métricas)
              3. Painel de Gestão Clínica & Leitos (Flags)
-             4. Dicionário de Dados & Glossário
+             4. Dicionário Completo SIH/SUS (113 Colunas)
+             5. Jornada, Decisões & Arquitetura (V1 a V4)
 ```
 
 ---

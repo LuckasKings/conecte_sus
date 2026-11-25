@@ -225,13 +225,15 @@ def fmt_num(valor: int, lang: str) -> str:
 # Sidebar Executiva + Seletor de Idioma
 # ==========================================
 with st.sidebar:
-    idioma = st.radio(
+    idioma_raw = st.segmented_control(
         "🌐 Idioma / Language",
-        options=["pt", "en"],
-        format_func=lambda x: "🇧🇷 Português" if x == "pt" else "🇺🇸 English",
-        horizontal=True,
+        options=["pt", "en", "es"],
+        format_func=lambda x: {"pt": "🇧🇷 PT", "en": "🇺🇸 EN", "es": "🇪🇸 ES"}[x],
+        default="pt",
+        selection_mode="single",
         key="idioma_app"
     )
+    idioma = idioma_raw or "pt"
     t = TEXTOS[idioma]
     st.markdown("---")
     st.markdown(t["sidebar_title"])
@@ -667,11 +669,14 @@ with tab_dic:
     with c_d1:
         st.metric("Total (113 SIH + 12 Deriv.)", len(df_dicionario))
     with c_d2:
-        st.metric("✅ IA + Epidemio" if idioma == "pt" else "✅ AI + Epidemiology", n_ia)
+        lbl_ia = {"pt": "✅ IA + Epidemio", "en": "✅ AI + Epidemiology", "es": "✅ IA + Epidemiología"}[idioma]
+        st.metric(lbl_ia, n_ia)
     with c_d3:
-        st.metric("📊 Epidemio / Alvo" if idioma == "pt" else "📊 Epidemio / Target", f"{n_epi} + {n_alvo}")
+        lbl_epi = {"pt": "📊 Epidemio / Alvo", "en": "📊 Epidemio / Target", "es": "📊 Epidemio / Objetivo"}[idioma]
+        st.metric(lbl_epi, f"{n_epi} + {n_alvo}")
     with c_d4:
-        st.metric("⛔ Não Usadas" if idioma == "pt" else "⛔ Not Used", n_nao)
+        lbl_nao = {"pt": "⛔ Não Usadas", "en": "⛔ Not Used", "es": "⛔ No Usadas"}[idioma]
+        st.metric(lbl_nao, n_nao)
 
     col_d1, col_d2 = st.columns([2, 1])
     with col_d1:
@@ -701,7 +706,7 @@ with tab_dic:
     else:
         status_keys_list = df_dic_show["_status_key"].tolist()
         df_dic_clean = df_dic_show.drop(columns=["_status_key"])
-        uso_col_name = "Uso no Projeto" if idioma == "pt" else "Usage Status"
+        uso_col_name = {"pt": "Uso no Projeto", "en": "Usage Status", "es": "Uso en el Proyecto"}[idioma]
         render_wrapped_table(df_dic_clean, ["15%", "17%", "24%", "44%"], badge_col=uso_col_name, status_keys=status_keys_list)
 
     st.markdown(t["dic_s2"])

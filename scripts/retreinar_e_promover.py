@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Retreinamento Contínuo & Promoção Champion vs. Challenger — SIH/SUS V5 Nacional
+Retreinamento Contínuo & Promoção Champion vs. Challenger — SIH/SUS V6 Contínuo (Nuvem)
 Protocolo MLOps sem Data Leakage Temporal:
 1. Separa as competências mais recentes como Teste Cego Temporal (`--teste-meses`, padrão 3 meses).
 2. Extrai Treino (até 2,4M) e Calibração Isotônica (300k) apenas de competências ANTERIORES
@@ -294,14 +294,14 @@ def _gerar_benchmark_e_figuras_promocao(
             ax_roc.plot(c_data["fpr"], c_data["tpr"], lw=2.2, color=cores[mod_name], label=f"{mod_name} (AUC = {c_data['roc_auc']:.4f})")
             ax_pr.plot(c_data["rec_curve"], c_data["prec_curve"], lw=2.2, color=cores[mod_name], label=f"{mod_name} (PR-AUC = {c_data['pr_auc']:.4f})")
         ax_roc.plot([0, 1], [0, 1], "k--", lw=1.2, alpha=0.6)
-        ax_roc.set_title(f"Curva ROC V5 — {t_nome} ({range_desc})", fontweight="bold")
+        ax_roc.set_title(f"Curva ROC V6 Contínuo — {t_nome} ({range_desc})", fontweight="bold")
         ax_roc.set_xlabel("Taxa de Falso Positivo (1 - Especificidade)")
         ax_roc.set_ylabel("Sensibilidade (Recall)")
         ax_roc.legend(loc="lower right", frameon=True, fontsize=9)
 
         prev_rate = float(desfechos[t_id]["y_test"].mean())
         ax_pr.axhline(prev_rate, color="black", linestyle="--", lw=1.2, alpha=0.6, label=f"Baseline ({prev_rate:.2%})")
-        ax_pr.set_title(f"Curva Precision-Recall V5 — {t_nome} ({range_desc})", fontweight="bold")
+        ax_pr.set_title(f"Curva Precision-Recall V6 Contínuo — {t_nome} ({range_desc})", fontweight="bold")
         ax_pr.set_xlabel("Sensibilidade (Recall)")
         ax_pr.set_ylabel("Precisão (VPP)")
         ax_pr.legend(loc="upper right", frameon=True, fontsize=9)
@@ -316,7 +316,7 @@ def _gerar_benchmark_e_figuras_promocao(
         ax.plot([0, 1], [0, 1], "k--", lw=1.5, label="Calibração Perfeita")
         for mod_name, c_data in curvas[t_id].items():
             ax.plot(c_data["prob_pred_cal"], c_data["prob_true_cal"], marker="o", lw=2.2, color=cores[mod_name], label=f"{mod_name} (Brier = {c_data['brier_cal']:.4f})")
-        ax.set_title(f"Calibração Isotônica V5 — {t_nome}", fontweight="bold")
+        ax.set_title(f"Calibração Isotônica V6 Contínuo — {t_nome}", fontweight="bold")
         ax.set_xlabel("Probabilidade Média Prevista")
         ax.set_ylabel("Fração Real Observada")
         ax.legend(loc="upper left", frameon=True, fontsize=9)
@@ -334,7 +334,7 @@ def _gerar_benchmark_e_figuras_promocao(
             fnames, imps = importancias[t_id]["LightGBM"]
             df_imp = pd.DataFrame({"Feature": fnames, "Importance": imps}).sort_values("Importance", ascending=True).tail(15)
             ax.barh(df_imp["Feature"], df_imp["Importance"], color="#2563eb" if idx == 1 else "#dc2626", alpha=0.88)
-            ax.set_title(f"Top 15 Variáveis (LightGBM V5 Brasil) — {t_nome}", fontweight="bold")
+            ax.set_title(f"Top 15 Variáveis (LightGBM V6 Contínuo) — {t_nome}", fontweight="bold")
             ax.set_xlabel("Importância (Splits)")
         plt.tight_layout()
         plt.savefig(FIGURAS_DIR / "fig_importancias_admissao_v5.png")
@@ -342,7 +342,7 @@ def _gerar_benchmark_e_figuras_promocao(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Retreino Temporal e Promoção Champion vs Challenger V5")
+    parser = argparse.ArgumentParser(description="Retreino Temporal e Promoção Champion vs Challenger V6 Contínuo")
     parser.add_argument("--estrategia", choices=["acumulado", "rolling", "recalibrar"], default="acumulado")
     parser.add_argument("--rolling-meses", type=int, default=18, help="Janela de meses (se estrategia=rolling)")
     parser.add_argument("--teste-meses", type=int, default=3, help="Meses mais recentes reservados para Teste Cego Temporal")
@@ -533,7 +533,7 @@ def main():
         "n_teste_temporal": int(len(X_test)),
         "decisao": status_acao,
         "promovido": bool(promover and not args.dry_run),
-        "versao_resultante": "V5 Contínuo" if (promover and not args.dry_run) else reg_prev.get("champion_atual", {}).get("versao", "V5 Nacional (2024)"),
+        "versao_resultante": "V6 Contínuo" if (promover and not args.dry_run) else reg_prev.get("champion_atual", {}).get("versao", "V5 Nacional (Base 2024)"),
         "motivo": motivo,
         "comparativo": comparativo,
         "duracao_segundos": round(time.time() - t0, 1),
@@ -545,7 +545,7 @@ def main():
 
     champion_atual = (
         {
-            "versao": "V5 Contínuo" if (promover and not args.dry_run) else reg_prev.get("champion_atual", {}).get("versao", "V5 Nacional (2024)"),
+            "versao": "V6 Contínuo" if (promover and not args.dry_run) else reg_prev.get("champion_atual", {}).get("versao", "V5 Nacional (Base 2024)"),
             "base_treino": fmt_rng(train_comps),
             "atualizado_em": run_entry["data_local"],
         }

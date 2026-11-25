@@ -1,6 +1,6 @@
 {
   "champion_atual": {
-    "versao": "V5 Contínuo",
+    "versao": "V6 Contínuo",
     "base_treino": "2024/01 → 2026/06",
     "atualizado_em": "2026-11-25 08:14:31"
   },
@@ -121,7 +121,7 @@
       "n_teste_temporal": 300000,
       "decisao": "PROMOVIDO",
       "promovido": true,
-      "versao_resultante": "V5 Contínuo",
+      "versao_resultante": "V6 Contínuo",
       "motivo": "Challenger promovido com melhoria significativa em 2/2 desfechos sem regressões.",
       "comparativo": {
         "Longa_Permanencia": {

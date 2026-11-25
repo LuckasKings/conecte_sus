@@ -175,13 +175,13 @@ TEXTOS = {
         "sidebar_resumo_body": """
 - **📊 Aba 1 (Epidemiologia):** Perfil multi-ano (`2024–2026`) no Brasil por idade, sexo, raça/cor, meses e causas CID-10.
 - **🛡️ Aba 2 (Qualidade):** Auditoria contínua, **qualidade + histórico de cargas incrementais** e integridade clínica.
-- **🤖 Aba 3 (Modelos IA):** Benchmark **V5 Contínuo**, agenda em nuvem, **monitor de drift** e **histórico Champion vs. Challenger**.
+- **🤖 Aba 3 (Modelos IA):** Benchmark **V6 Contínuo (Nuvem)**, agenda em nuvem, **monitor de drift** e **histórico Champion vs. Challenger**.
 - **🏥 Aba 4 (Gestão Clínica):** Simulador de admissão e painel de leitos com alertas preditivos e auditoria de desfecho.
 - **📖 Aba 5 (Dicionário):** Catálogo auditado das **113 colunas oficiais do SIH/SUS** + 14 derivadas e glossário técnico.
 - **🧭 Aba 6 (Jornada):** Linha do tempo `V1 → V6 Contínuo`, automação GitHub Actions + Releases e stack tecnológica.
 """,
         "sidebar_motor": "**⚙️ Motor Analítico:**",
-        "sidebar_prod": "**🧠 Produção:**\n`LightGBM V5 Contínuo (CID3 Bayes + Isotônica)`",
+        "sidebar_prod": "**🧠 Produção:**\n`LightGBM V6 Contínuo (Nuvem • CID3 Bayes + Isotônica)`",
         "sidebar_etica": "⚖️ **IA Responsável:** Raça/cor, mês e ano são mantidos na epidemiologia para equidade e sazonalidade, mas excluídos dos modelos clínicos preditivos.",
         "modo_local": "Local Completo (Partições Multi-Ano + Cubo)",
         "modo_cloud": "Cloud Otimizado (Cubo Multi-Ano + Amostra 30k)",
@@ -196,7 +196,7 @@ TEXTOS = {
         "kpi4_lbl": "Internações ≥ 15 dias",
         "kpi4_sub": "Longa Permanência",
         "kpi5_lbl": "Poder Preditivo (ROC-AUC)",
-        "kpi5_sub": "Óbito / Longa (V5 Contínuo)",
+        "kpi5_sub": "Óbito / Longa (V6 Contínuo)",
         "tabs": [
             "📊 1. Perfil Epidemiológico & Equidade",
             "🛡️ 2. Qualidade dos Dados & Integridade",
@@ -282,7 +282,7 @@ TEXTOS = {
         "dq_kpi4_lbl": "Subnotificação / Inespecíficos",
         "dq_kpi4_sub": "Raça N.Decl. / Espec. Outras",
         "dq_contract_hdr": "#### 📋 Auditoria Coluna a Coluna (Apenas Variáveis do Perfil & Treinamento)",
-        "dq_contract_sub": "Completude, faixa válida e papel exato de cada campo que entra nos painéis epidemiológicos e nos pipelines do LightGBM V5:",
+        "dq_contract_sub": "Completude, faixa válida e papel exato de cada campo que entra nos painéis epidemiológicos e nos pipelines do LightGBM V6 Contínuo:",
         "dq_status_col": "Status",
         "dq_uf_tbl_hdr": "#### 🗺️ Completude Estadual das Variáveis de Perfil",
         "dq_uf_cols": {
@@ -296,25 +296,25 @@ TEXTOS = {
         },
         "dq_other_note": """⚠️ **Sobre a cobertura da auditoria & demais colunas do SIH/SUS:**
 Esta aba audita a qualidade de **toda nova carga incremental** (lotes em `historico_cargas`), as dimensões do **Perfil (Aba 1)** e todas as **9 features + 2 alvos do Treino (Aba 3)**. Outras colunas oficiais do DataSUS ficaram fora dos modelos preditivos por **extrema falta de dados** (ex.: `diagsec1`–`diagsec9`, ausentes em `89,65%`–`100%`), **inconsistências cadastrais** ou **vazamento temporal pós-alta (*data leakage*)** — todas seguem catalogadas na **Aba 5 (Dicionário)**.""",
-        "ml_hdr": "### 🤖 Como a Inteligência Artificial Funciona & Escolha do Modelo (V5 Contínuo)",
+        "ml_hdr": "### 🤖 Como a Inteligência Artificial Funciona & Escolha do Modelo (V6 Contínuo — Nuvem)",
         "ml_intro": """No momento em que o paciente entra no hospital, dois modelos preditivos operam juntos usando apenas **9 informações da admissão** (idade, sexo, capítulo CID-10 + diagnóstico específico `cid3`, especialidade do leito, caráter urgência/eletivo, complexidade, se veio transferido de outro município e se entrou no fim de semana):
 1. **Modelo de Longa Permanência (≥ 15 dias):** estima a chance de o paciente precisar de internação prolongada, apoiando o giro de leitos e o serviço social.
 2. **Modelo de Óbito Intra-hospitalar:** estima a gravidade de risco fatal para priorizar monitoramento intensivo ou UTI.""",
-        "ml_why": """🏆 **Por que escolhemos o LightGBM V5 Contínuo como modelo oficial?**
+        "ml_why": """🏆 **Por que escolhemos o LightGBM V6 Contínuo como modelo oficial em nuvem?**
 - **Líder em discriminação clínica nos dois desfechos:** Com `cid3` híbrido (`Top-200 OHE` + *Target Encoding Bayesiano*) treinado sobre `2,4M` internações (`2024/01–2026/06`), liderou no teste cego futuro (`2026/07–09`) em **Óbito (`ROC-AUC 0,9107` | `PR-AUC 0,3089` | `Brier 0,0300`)** e **Longa Permanência (`ROC-AUC 0,8447` | `PR-AUC 0,3493` | `Brier 0,0469`)**.
-- **Detecção elevada na admissão:** Mantém **`89,55%`** de detecção em óbito (`corte Youden 3,87%`) e **`83,74%`** em longa permanência (`6,14%`), superando o Champion anterior 2024 em precisão rara (`PR-AUC`).
+- **Detecção elevada na admissão:** Mantém **`89,55%`** de detecção em óbito (`corte Youden 3,87%`) e **`83,74%`** em longa permanência (`6,14%`), superando o Champion anterior V5 (2024) em precisão rara (`PR-AUC`).
 - **Leveza extrema na nuvem:** Cada pipeline calibrado completo ocupa apenas **`0,62 MB`** e pontua em milissegundos.""",
         "ml_guide": """📖 **Mini-Guia das Métricas (Para todos os públicos):**
 - **ROC-AUC (0 a 1):** Mede o poder de distinção entre pacientes graves e estáveis (`0,5` = chute aleatório; acima de `0,80` = excelente; `> 0,90` = excepcional).
 - **PR-AUC:** Precisão focada em eventos raros (óbito e longa permanência são minoria dos casos).
 - **Brier Score (quanto menor, melhor):** Mede se a probabilidade prevista reflete a realidade graças à **Calibração Isotônica** (ex.: se diz 20%, ~20 em 100 pacientes com aquele perfil realmente têm o desfecho).
 - **Ética & Sem *Data Leakage*:** `raca_cor` e `mes_internacao` não entram no modelo para evitar preconceito algorítmico; dados pós-alta foram removidos para não "trapacear".""",
-        "ml_bench": "#### 📊 Comparativo Nacional V5 Contínuo (Teste Cego Temporal `2026/07–09` em `300.000` internações)",
+        "ml_bench": "#### 📊 Comparativo Nacional V6 Contínuo (Teste Cego Temporal `2026/07–09` em `300.000` internações)",
         "ml_ob_sub": "##### 1. Óbito Intra-hospitalar *(Média na Amostra: 3,77%)*",
         "ml_lg_sub": "##### 2. Longa Permanência ≥ 15d *(Média na Amostra: 6,06%)*",
         "ml_cols": {"Modelo": "Modelo", "ROC_AUC": "ROC-AUC", "PR_AUC": "PR-AUC", "Brier_Calibrado": "Brier Score", "Limiar_Otimo_Pct": "Corte Alerta (%)", "Sensibilidade_Pct": "Detecção (%)", "Especificidade_Pct": "Especif. (%)"},
         "ml_models_hdr": "#### 🧠 Como Funciona Cada Modelo — Prós & Contras",
-        "ml_models_sub": "Resumo didático de como cada algoritmo avaliado no benchmark temporal V5 Contínuo decide o risco na admissão hospitalar:",
+        "ml_models_sub": "Resumo didático de como cada algoritmo avaliado no benchmark temporal V6 Contínuo decide o risco na admissão hospitalar:",
         "ml_models_cards": [
             {
                 "title": "1. Regressão Logística *(Baseline Linear)*",
@@ -335,13 +335,13 @@ Esta aba audita a qualidade de **toda nova carga incremental** (lotes em `histor
                 "cons": "**⚠️ Contras:** Mais lento no treino sobre `2,4M` linhas e ficou atrás do LightGBM em `ROC-AUC` e sensibilidade (`89,14%` vs `89,55%` em Óbito; `83,04%` vs `83,74%` em Longa)."
             },
             {
-                "title": "4. LightGBM *(Gradient Boosting Leaf-Wise — Modelo Oficial V5 Contínuo)*",
+                "title": "4. LightGBM *(Gradient Boosting Leaf-Wise — Modelo Oficial V6 Contínuo)*",
                 "how": "**Como funciona:** Evolução de gradient boosting baseada em histogramas que expande as folhas de maior ganho de erro (*leaf-wise*), reduzindo cálculos e acelerando o aprendizado sobre milhões de registros.",
                 "pros": "**✅ Prós:** 1º lugar isolado em `ROC-AUC` (`0,9107 / 0,8447`) e detecção clínica (`89,55% / 83,74%`) com excelente calibração (`Brier 0,0300 / 0,0469`) em apenas `0,62 MB` por artefato.",
                 "cons": "**⚠️ Contras:** Crescimento *leaf-wise* pode superajustar subgrupos raros sem regularização — mitigado com `min_child_samples=100`, suavização Bayesiana em `cid3` (`m=50`) e calibração isotônica."
             },
         ],
-        "ml_evid": "#### 📈 Evidências Visuais e Explicabilidade (V5 Contínuo)",
+        "ml_evid": "#### 📈 Evidências Visuais e Explicabilidade (V6 Contínuo)",
         "ml_img1": "Curvas ROC e PR: quanto mais perto do topo/canto, maior a precisão do modelo.",
         "ml_img2": "Calibração Isotônica: curvas coladas na linha pontilhada provam que o % previsto é realista.",
         "ml_img3": "Fatores que mais pesam na decisão da IA (ex.: Idade, Clínica Médica e Urgência).",
@@ -371,7 +371,7 @@ Esta aba audita a qualidade de **toda nova carga incremental** (lotes em `histor
         "cli_hdr": "### 🏥 Painel de Gestão Clínica e Risco de Pacientes",
         "cli_sub": "Simulação de um painel hospitalar real de acompanhamento de leitos: mostra o identificador anônimo da internação (`#AIH`), diagnóstico (`CID-10`), tempo já internado e duas **Flags Preditivas** calculadas na admissão.",
         "cli_exp": "⚙️ **Calibrar Cortes das Flags & Entender as Porcentagens**",
-        "cli_exp_txt": "💡 **Por que os cortes padrão não são 50%?** Na janela temporal recente (`2026/07–09`), a taxa real de óbito hospitalar é de **3,77%** e a de longa permanência (≥15 dias) é de **6,06%**. Se o hospital esperasse 50% de risco na porta de entrada, quase todos os casos graves passariam sem alerta. Por isso, o corte **Amarelo/Laranja** nasce do **Limiar de Youden V5 Contínuo** (`3,9%` para Óbito e `6,1%` para Longa Permanência — ponto estatístico que maximiza a detecção precoce) e o corte **Vermelho** marca perfis com **3x a 4x mais risco que a média nacional** (`15,0%` e `20,0%`). Ajuste abaixo conforme a lotação do seu hospital:",
+        "cli_exp_txt": "💡 **Por que os cortes padrão não são 50%?** Na janela temporal recente (`2026/07–09`), a taxa real de óbito hospitalar é de **3,77%** e a de longa permanência (≥15 dias) é de **6,06%**. Se o hospital esperasse 50% de risco na porta de entrada, quase todos os casos graves passariam sem alerta. Por isso, o corte **Amarelo/Laranja** nasce do **Limiar de Youden V6 Contínuo** (`3,9%` para Óbito e `6,1%` para Longa Permanência — ponto estatístico que maximiza a detecção precoce) e o corte **Vermelho** marca perfis com **3x a 4x mais risco que a média nacional** (`15,0%` e `20,0%`). Ajuste abaixo conforme a lotação do seu hospital:",
         "sl_ob": "⚠️ Cortes Risco de Óbito — Atenção / Crítico (%):",
         "sl_lg": "🚩 Cortes Longa Permanência — Médio / Alto Risco (%):",
         "leg_lg": "🚩 **Longa Permanência (≥ 15 dias):** `🟢 Baixo < {a:.1f}%` | `🟡 Médio {a:.1f}%–{b:.1f}%` | `🔴 Alto Risco ≥ {c:.1f}%`",
@@ -394,7 +394,7 @@ Esta aba audita a qualidade de **toda nova carga incremental** (lotes em `histor
         "sim_nao": "Não",
         "sim_sim": "Sim",
         "sim_btn": "🚨 Calcular Score de Admissão",
-        "sim_res": "#### Resultado da Triagem (Probabilidades Calibradas Brasil V5 Contínuo):",
+        "sim_res": "#### Resultado da Triagem (Probabilidades Calibradas Brasil V6 Contínuo):",
         "sim_ob_tit": "Risco de Óbito",
         "sim_lg_tit": "Longa Permanência",
         "badge_ob": ("CRÍTICO", "ATENÇÃO", "ESTÁVEL"),
@@ -465,7 +465,7 @@ Esta aba audita a qualidade de **toda nova carga incremental** (lotes em `histor
         "dic_empty2": "Nenhum termo técnico encontrado para esse filtro.",
         "dic_count": "Exibindo **{n}** variáveis do catálogo completo (`113` originais do SIH/SUS + `14` derivadas).",
         "j_hdr": "### 🧭 Jornada do Projeto: Processo Criativo, Decisões & Arquitetura (V1 → V6 Contínuo)",
-        "j_sub": "Registro transparente de como um estudo exploratório no Acre evoluiu para uma plataforma nacional contínua sobre **38.313.128 internações (`2024/01–2026/09`)** — mostrando erros corrigidos, dilemas éticos, ingestão incremental e governança Champion vs. Challenger.",
+        "j_sub": "Registro transparente de como um estudo exploratório no Acre evoluiu para uma plataforma nacional contínua em nuvem sobre **~38,31 milhões de internações (`38.306.556` deduplicadas • `2024/01–2026/09`)** — mostrando erros corrigidos, dilemas éticos, ingestão incremental e governança Champion vs. Challenger.",
         "j_v1_tit": "1️⃣ Fase V1 — Baseline no Acre & Descoberta de Armadilhas (56.459 casos)",
         "j_v1_txt": """
 - **Ponto de partida:** Baixamos os 12 arquivos mensais `.dbc` do Acre (2024) e construímos o primeiro classificador para prever Longa Permanência (`>= 15 dias`, apenas `5,30%` dos casos — desbalanceamento de `17,88:1`).
@@ -495,22 +495,22 @@ Esta aba audita a qualidade de **toda nova carga incremental** (lotes em `histor
 - **Cubo Exato vs. Amostragem:** Aba 1 opera sobre o **Cubo Agregado de `3,99 MB`** (`100%` das `13.584.534` internações), o Cockpit usa `30.000` casos (`0,34 MB`) na nuvem, e o V4 validou o treino nacional (`900k`) com **Calibração Isotônica** (`Brier 0,0329 / 0,0480`).
 - **Produto & Auditoria:** Interface PT/EN/ES, Aba 2 de Qualidade dos Dados e Dicionário auditado de todas as 113 colunas SIH/SUS.
 """,
-        "j_v5_tit": "5️⃣ Fase V5 — Re-auditoria 113 Colunas, `cid3` Bayesiano & Escala `2,4M`",
+        "j_v5_tit": "5️⃣ Fase V5 (Base 2024) — Re-auditoria 113 Colunas, `cid3` Bayesiano & Escala `2,4M`",
         "j_v5_txt": """
 - **Segunda auditoria empírica:** Reavaliamos as 113 colunas para eliminar *leakage* (`ident`, `marca_uti`), flags quebradas (`gestrisco=1` em `99,75%`) e nulos extremos (`diagsec1`–`9`), descobrindo ganho massivo ao abrir **`diag_princ` em 3 dígitos (`cid3`, `1.665` doenças)** para distinguir Resfriado (`J00`) de Pneumonia (`J18`).
 - **Controle Bayesiano na Cauda Rara (`Top-200 OHE` + `m=50`):** `698` doenças raras somam apenas `0,73%` dos casos; o recuo hierárquico para a média do capítulo (`capitulo_cid`) evitou *overfitting* e elevou o `ROC-AUC` nos diagnósticos raros de `0,8526 → 0,8930` (Óbito).
 - **Liderança LightGBM V5 (`Base 2024`, `2,4M/300k/300k`):** Atingiu `ROC-AUC 0,9082` (`PR 0,3035`, `Brier 0,0306`, detecção `89,58%`) em Óbito e `0,8481` (`PR 0,3663`, `Brier 0,0471`, `85,32%`) em Longa em apenas `0,62 MB` por modelo.
 """,
-        "j_v6_tit": "6️⃣ Fase V6 — Nuvem Contínua (`2024–2026`), Históricos & MLOps Champion/Challenger",
+        "j_v6_tit": "6️⃣ Fase V6 Contínuo — Nuvem (`2024–2026` • `38,31M`), Históricos & MLOps Champion/Challenger",
         "j_v6_txt": """
 - **Ingestão Idempotente (`38,31M` casos):** Pipeline `2025/2026` somou **`+564` partições (`888` no total, `+24,73M` internações)** com chave natural (`n_aih + dt_inter + cnes`) e cubo deploy multi-ano de **`11,81 MB`** (`100%` exato).
-- **Retreino Temporal Champion vs. Challenger (`2026/07–09` cego `300k`):** **LightGBM V5 Contínuo** (`2,4M` treino `2024/01–2026/06`) venceu o Champion 2024 em **2/2 desfechos** (`Óbito ROC 0,9107 | PR 0,3089 | Brier 0,0300`; `Longa ROC 0,8447 | PR 0,3493 | Brier 0,0469`) e foi promovido com backup em `modelos/archive/`.
+- **Retreino Temporal Champion vs. Challenger (`2026/07–09` cego `300k`):** **LightGBM V6 Contínuo** (`2,4M` treino `2024/01–2026/06`) venceu o Champion V5 (`Base 2024`) em **2/2 desfechos** (`Óbito ROC 0,9107 | PR 0,3089 | Brier 0,0300`; `Longa ROC 0,8447 | PR 0,3493 | Brier 0,0469`) e foi promovido com backup em `modelos/archive/`.
 - **Automação Cloud + Auditoria Contínua:** **GitHub Actions (`cron 0 6 5,20 * *`) + Releases (`lakehouse-data`)** buscam lotes inéditos, alimentam o **histórico de cargas (Aba 2)**, monitoram **drift + meta de acúmulo (`>=3` meses)** e registram cada **substituição de modelo (Aba 3)** com auto-deploy no Streamlit Cloud.
 """,
         "j_evol_hdr": "#### 📊 Linha do Tempo Comparativa das Versões (V1 → V6 Contínuo)",
         "j_tech_hdr": "#### 🛠️ Tecnologias Utilizadas & Por Que Cada Escolha Foi Feita",
         "j_tech_sub": "Arquitetura pensada para processar **38,3 milhões** de registros em computador comum e rodar gratuitamente em nuvem com resposta em milissegundos:",
-        "footer": "SUS Analytics Brasil 2024–2026 • DuckDB + Parquet Multi-Ano + LightGBM V5 Contínuo • Portfólio de Inteligência em Saúde",
+        "footer": "SUS Analytics Brasil 2024–2026 • DuckDB + Parquet Multi-Ano + LightGBM V6 Contínuo (Nuvem) • Portfólio de Inteligência em Saúde",
     },
     "en": {
         "page_title": "SUS Analytics & Clinical Intelligence",
@@ -520,13 +520,13 @@ Esta aba audita a qualidade de **toda nova carga incremental** (lotes em `histor
         "sidebar_resumo_body": """
 - **📊 Tab 1 (Epidemiology):** Multi-year (`2024–2026`) hospitalization profile across Brazil by age, sex, race, months, and ICD-10 chapters.
 - **🛡️ Tab 2 (Data Quality):** Continuous audit, **incremental load quality & batch history**, and clinical integrity rules.
-- **🤖 Tab 3 (AI Models):** **Continuous V5** benchmark, cloud cron schedule, **clinical drift monitor**, and **model replacement history**.
+- **🤖 Tab 3 (AI Models):** **Continuous V6 (Cloud)** benchmark, cloud cron schedule, **clinical drift monitor**, and **model replacement history**.
 - **🏥 Tab 4 (Clinical Panel):** Admission simulator and ward cockpit with predictive alerts and outcome match auditing.
 - **📖 Tab 5 (Dictionary):** Audited catalog of all **113 official SIH/SUS columns** + 14 derived fields & technical glossary.
 - **🧭 Tab 6 (Journey):** Engineering log `V1 → Continuous V6`, GitHub Actions + Releases automation, and full tech stack.
 """,
         "sidebar_motor": "**⚙️ Analytics Engine:**",
-        "sidebar_prod": "**🧠 Production Model:**\n`Continuous LightGBM V5 (Bayes CID3 + Isotonic)`",
+        "sidebar_prod": "**🧠 Production Model:**\n`Continuous LightGBM V6 (Cloud • Bayes CID3 + Isotonic)`",
         "sidebar_etica": "⚖️ **Responsible AI:** Race, month, and year stay in epidemiology for equity and trend analysis, but are excluded from clinical prediction models.",
         "modo_local": "Full Local (Multi-Year Partitions + Cube)",
         "modo_cloud": "Cloud Optimized (Multi-Year Cube + 30k Sample)",
@@ -541,7 +541,7 @@ Esta aba audita a qualidade de **toda nova carga incremental** (lotes em `histor
         "kpi4_lbl": "Stays ≥ 15 Days",
         "kpi4_sub": "Long Length of Stay",
         "kpi5_lbl": "Predictive Power (ROC-AUC)",
-        "kpi5_sub": "Mortality / Long Stay (Cont. V5)",
+        "kpi5_sub": "Mortality / Long Stay (Cont. V6)",
         "tabs": [
             "📊 1. Epidemiology & Health Equity",
             "🛡️ 2. Data Quality & Integrity",
@@ -627,7 +627,7 @@ Esta aba audita a qualidade de **toda nova carga incremental** (lotes em `histor
         "dq_kpi4_lbl": "Underreporting / Generic",
         "dq_kpi4_sub": "Race Not Decl. / Other Spec.",
         "dq_contract_hdr": "#### 📋 Column-by-Column Audit (Profile & Model Training Variables Only)",
-        "dq_contract_sub": "Completeness, valid value bounds, and exact role of every column entering the epidemiological charts and LightGBM V5 training:",
+        "dq_contract_sub": "Completeness, valid value bounds, and exact role of every column entering the epidemiological charts and Continuous LightGBM V6 training:",
         "dq_status_col": "Status",
         "dq_uf_tbl_hdr": "#### 🗺️ State-Level Completeness for Profile Variables",
         "dq_uf_cols": {
@@ -641,25 +641,25 @@ Esta aba audita a qualidade de **toda nova carga incremental** (lotes em `histor
         },
         "dq_other_note": """⚠️ **Audit scope & remaining SIH/SUS columns:**
 This tab continuously audits **every incremental load** (logged in `historico_cargas`), the **Epidemiology Profile (Tab 1)**, and all **9 AI intake features + 2 targets (Tab 3)**. Other official DATASUS columns were excluded from predictive models due to **severe missingness** (e.g., secondary diagnoses `diagsec1`–`diagsec9`, missing in `89.65%`–`100%`), **recording inconsistencies**, or **post-discharge data leakage** — all `113` fields remain documented in **Tab 5 (Dictionary)**.""",
-        "ml_hdr": "### 🤖 How the AI Works & Model Selection (Continuous V5)",
+        "ml_hdr": "### 🤖 How the AI Works & Model Selection (Continuous V6 — Cloud)",
         "ml_intro": """At the exact moment of hospital admission, two predictive models run simultaneously using only **9 intake variables** (age, sex, ICD-10 chapter + specific 3-character `cid3` code, ward specialty, admission urgency, complexity level, inter-municipal transfer, and weekend admission):
 1. **Long Length of Stay Model (≥ 15 days):** estimates the probability of prolonged hospitalization to guide bed turnover and social work early on.
 2. **In-Hospital Mortality Model:** estimates fatal deterioration risk to prioritize intensive monitoring or ICU allocation.""",
-        "ml_why": """🏆 **Why did we choose Continuous LightGBM V5 as our production model?**
+        "ml_why": """🏆 **Why did we choose Continuous LightGBM V6 as our cloud production model?**
 - **Outright clinical discrimination leader:** Powered by hybrid `cid3` encoding (`Top-200 OHE` + Bayesian Target Encoding) trained on `2.4M` admissions (`2024/01–2026/06`), it led on the unseen temporal test (`2026/07–09`) for **Mortality (`ROC-AUC 0.9107` | `PR-AUC 0.3089` | `Brier 0.0300`)** and **Long Stay (`ROC-AUC 0.8447` | `PR-AUC 0.3493` | `Brier 0.0469`)**.
-- **High early admission recall:** Captures **`89.55%`** of fatal cases (`3.87%` Youden cut) and **`83.74%`** of prolonged stays (`6.14%`), outperforming the 2024 Champion on rare-event `PR-AUC`.
+- **High early admission recall:** Captures **`89.55%`** of fatal cases (`3.87%` Youden cut) and **`83.74%`** of prolonged stays (`6.14%`), outperforming the prior 2024 V5 Champion on rare-event `PR-AUC`.
 - **Tiny cloud footprint:** Each calibrated bundle occupies just **`0.62 MB`** and scores patients in milliseconds.""",
         "ml_guide": """📖 **Metrics Mini-Guide (Plain Language):**
 - **ROC-AUC (0 to 1):** Measures how well the model separates high-risk from stable patients (`0.5` = random guess; `> 0.80` = strong; `> 0.90` = exceptional).
 - **PR-AUC:** Precision focus on rare events (mortality and long stays represent a small minority of admissions).
 - **Brier Score (lower is better):** Measures how close predicted probabilities are to actual outcomes after **Isotonic Calibration** (e.g., 20% predicted means ~20 in 100 patients experience the event).
 - **Ethics & No *Data Leakage*:** Race and month are excluded from model training to prevent algorithmic bias; post-discharge billing fields were removed to prevent leakage.""",
-        "ml_bench": "#### 📊 National Continuous V5 Benchmark (Blind Temporal Holdout `2026/07–09` on `300,000` admissions)",
+        "ml_bench": "#### 📊 National Continuous V6 Benchmark (Blind Temporal Holdout `2026/07–09` on `300,000` admissions)",
         "ml_ob_sub": "##### 1. In-Hospital Mortality *(Sample Baseline: 3.77%)*",
         "ml_lg_sub": "##### 2. Long Stay ≥ 15 Days *(Sample Baseline: 6.06%)*",
         "ml_cols": {"Modelo": "Model", "ROC_AUC": "ROC-AUC", "PR_AUC": "PR-AUC", "Brier_Calibrado": "Brier Score", "Limiar_Otimo_Pct": "Alert Cut (%)", "Sensibilidade_Pct": "Recall (%)", "Especificidade_Pct": "Specif. (%)"},
         "ml_models_hdr": "#### 🧠 How Each Model Works — Pros & Cons",
-        "ml_models_sub": "Concise breakdown of how each algorithm evaluated in the Continuous V5 temporal benchmark scores admission risk:",
+        "ml_models_sub": "Concise breakdown of how each algorithm evaluated in the Continuous V6 temporal benchmark scores admission risk:",
         "ml_models_cards": [
             {
                 "title": "1. Logistic Regression *(Linear Baseline)*",
@@ -680,13 +680,13 @@ This tab continuously audits **every incremental load** (logged in `historico_ca
                 "cons": "**⚠️ Cons:** Slower than LightGBM across `2.4M` training rows and trailed LightGBM on `ROC-AUC` and clinical recall (`89.14%` vs `89.55%` Mortality; `83.04%` vs `83.74%` Long Stay)."
             },
             {
-                "title": "4. LightGBM *(Leaf-Wise Gradient Boosting — Continuous V5)*",
+                "title": "4. LightGBM *(Leaf-Wise Gradient Boosting — Continuous V6)*",
                 "how": "**How it works:** Fast histogram-based gradient boosting expanding leaves with highest loss reduction (*leaf-wise*), scaling smoothly to millions of rows.",
                 "pros": "**✅ Pros:** Overall #1 on `ROC-AUC` (`0.9107 / 0.8447`) and recall (`89.55% / 83.74%`), sharp calibration (`Brier 0.0300 / 0.0469`), `0.62 MB` bundle size, and millisecond scoring.",
                 "cons": "**⚠️ Cons:** Leaf-wise splitting can overfit rare subgroups if unregularized — mitigated via `min_child_samples=100`, Bayesian `cid3` shrinkage (`m=50`), and isotonic calibration."
             },
         ],
-        "ml_evid": "#### 📈 Visual Diagnostics & Explainability (Continuous V5)",
+        "ml_evid": "#### 📈 Visual Diagnostics & Explainability (Continuous V6)",
         "ml_img1": "ROC & PR Curves: curves closer to the top-left (ROC) or top-right (PR) indicate stronger accuracy.",
         "ml_img2": "Isotonic Calibration: curves hugging the diagonal dashed line confirm true clinical probabilities.",
         "ml_img3": "Top features driving AI decisions (Age and Bayesian `cid3` severity lead both outcomes).",
@@ -716,7 +716,7 @@ This tab continuously audits **every incremental load** (logged in `historico_ca
         "cli_hdr": "### 🏥 Clinical Management & Patient Risk Cockpit",
         "cli_sub": "Real-time hospital ward simulation displaying anonymized admission IDs (`#AIH`), primary diagnosis (`ICD-10`), current stay length, and two **Predictive Risk Flags** computed at admission.",
         "cli_exp": "⚙️ **Calibrate Alert Thresholds & Understand the Percentages**",
-        "cli_exp_txt": "💡 **Why aren't default thresholds set to 50%?** Across our latest blind window (`2026/07–09`), baseline in-hospital mortality is **3.77%** and long stays (≥15 days) occur in **6.06%** of admissions. Waiting for 50% risk at intake would miss nearly all high-risk patients. Thus, **Yellow/Orange** cuts start at the **Continuous V5 Youden Index** (`3.9%` Mortality, `6.1%` Long Stay — the statistical optimum maximizing early detection), while **Red** alerts mark **3x to 4x higher risk than baseline** (`15.0%` and `20.0%`). Adjust below based on hospital capacity:",
+        "cli_exp_txt": "💡 **Why aren't default thresholds set to 50%?** Across our latest blind window (`2026/07–09`), baseline in-hospital mortality is **3.77%** and long stays (≥15 days) occur in **6.06%** of admissions. Waiting for 50% risk at intake would miss nearly all high-risk patients. Thus, **Yellow/Orange** cuts start at the **Continuous V6 Youden Index** (`3.9%` Mortality, `6.1%` Long Stay — the statistical optimum maximizing early detection), while **Red** alerts mark **3x to 4x higher risk than baseline** (`15.0%` and `20.0%`). Adjust below based on hospital capacity:",
         "sl_ob": "⚠️ Mortality Risk Cutoffs — Watch / Critical (%):",
         "sl_lg": "🚩 Long Stay Cutoffs — Medium / High Risk (%):",
         "leg_lg": "🚩 **Long Stay (≥ 15 days):** `🟢 Low < {a:.1f}%` | `🟡 Medium {a:.1f}%–{b:.1f}%` | `🔴 High Risk ≥ {c:.1f}%`",
@@ -739,7 +739,7 @@ This tab continuously audits **every incremental load** (logged in `historico_ca
         "sim_nao": "No",
         "sim_sim": "Yes",
         "sim_btn": "🚨 Compute Admission Risk Score",
-        "sim_res": "#### Triage Result (Calibrated Continuous Brazil V5 Probabilities):",
+        "sim_res": "#### Triage Result (Calibrated Continuous Brazil V6 Probabilities):",
         "sim_ob_tit": "Mortality Risk",
         "sim_lg_tit": "Long Stay",
         "badge_ob": ("CRITICAL", "WATCH", "STABLE"),
@@ -810,7 +810,7 @@ This tab continuously audits **every incremental load** (logged in `historico_ca
         "dic_empty2": "No technical terms match your filter.",
         "dic_count": "Showing **{n}** cataloged variables (`113` original SIH/SUS fields + `14` derived fields).",
         "j_hdr": "### 🧭 Project Journey: Creative Process, Decisions & Architecture (V1 → Continuous V6)",
-        "j_sub": "Transparent engineering log showing how a single-state pilot evolved into a continuous national platform across **38,313,128 hospitalizations (`2024/01–2026/09`)** — including bugs fixed, ethical choices, incremental loading, and Champion vs. Challenger MLOps.",
+        "j_sub": "Transparent engineering log showing how a single-state pilot evolved into a continuous national cloud platform across **~38.31M hospitalizations (`38,306,556` deduplicated • `2024/01–2026/09`)** — including bugs fixed, ethical choices, incremental loading, and Champion vs. Challenger MLOps.",
         "j_v1_tit": "1️⃣ Phase V1 — Acre Pilot & Uncovering Traps (56,459 admissions)",
         "j_v1_txt": """
 - **Starting point:** Ingested 12 monthly `.dbc` files from Acre (2024) to predict Long Length of Stay (`>= 15 days`, only `5.30%` of cases — `17.88:1` class imbalance).
@@ -840,22 +840,22 @@ This tab continuously audits **every incremental load** (logged in `historico_ca
 - **Exact Cube vs. Sampling:** Tab 1 runs on a **`3.99 MB` Cube** (`100%` of all `13,584,534` hospitalizations), the Ward Cockpit filters `30,000` real cases (`0.34 MB`) in Cloud RAM, and V4 validated national `900k` training with **Isotonic Calibration** (`Brier 0.0329 / 0.0480`).
 - **Product & Audit:** Added PT/EN/ES switcher, Tab 2 Data Quality audits, and full 113-column audit table.
 """,
-        "j_v5_tit": "5️⃣ Phase V5 — Re-Auditing 113 Columns, Bayesian `cid3` & `2.4M` Scale",
+        "j_v5_tit": "5️⃣ Phase V5 (2024 Base) — Re-Auditing 113 Columns, Bayesian `cid3` & `2.4M` Scale",
         "j_v5_txt": """
 - **Second empirical audit:** Re-evaluated all 113 raw columns to eliminate leakage (`ident`, `marca_uti`), broken flags (`gestrisco=1` in `99.75%`), and extreme nulls (`diagsec1`–`9`), uncovering major clinical signal by expanding **`diag_princ` into 3-char ICD-10 (`cid3`, `1,665` codes)** (e.g., Cold `J00` vs. Pneumonia `J18`).
 - **Bayesian Rare-Tail Control (`Top-200 OHE` + `m=50`):** `698` rare codes make up just `0.73%` of stays; hierarchical shrinkage to the chapter average (`capitulo_cid`) prevented overfitting and jumped rare-code `ROC-AUC` from `0.8526 → 0.8930` (Mortality).
 - **LightGBM V5 Leadership (`2024 Base`, `2.4M/300k/300k`):** Reached `ROC-AUC 0.9082` (`PR 0.3035`, `Brier 0.0306`, recall `89.58%`) on Mortality and `0.8481` (`PR 0.3663`, `Brier 0.0471`, `85.32%`) on Long Stay in `0.62 MB` per bundle.
 """,
-        "j_v6_tit": "6️⃣ Phase V6 — Automated Cloud (`2024–2026`), Histories & Champion/Challenger MLOps",
+        "j_v6_tit": "6️⃣ Phase V6 Continuous — Cloud (`2024–2026` • `38.31M`), Histories & Champion/Challenger MLOps",
         "j_v6_txt": """
 - **Idempotent Multi-Year Lakehouse (`38.31M` cases):** `2025/2026` ingestion added **`+564` partitions (`888` total, `+24.73M` admissions)** with natural-key deduplication (`n_aih + dt_inter + cnes`) and an exact **`11.81 MB`** multi-year Cube.
-- **Temporal Champion vs. Challenger (`2026/07–09` 300k blind test):** **Continuous LightGBM V5** (`2.4M` train `2024/01–2026/06`) beat the 2024 Champion across **2/2 outcomes** (`Mortality ROC 0.9107 | PR 0.3089 | Brier 0.0300`; `Long Stay ROC 0.8447 | PR 0.3493 | Brier 0.0469`) and was promoted with backup in `modelos/archive/`.
+- **Temporal Champion vs. Challenger (`2026/07–09` 300k blind test):** **Continuous LightGBM V6** (`2.4M` train `2024/01–2026/06`) beat the V5 (`2024 Base`) Champion across **2/2 outcomes** (`Mortality ROC 0.9107 | PR 0.3089 | Brier 0.0300`; `Long Stay ROC 0.8447 | PR 0.3493 | Brier 0.0469`) and was promoted with backup in `modelos/archive/`.
 - **Cloud Automation & Audit Trails:** **GitHub Actions (`cron 0 6 5,20 * *`) + Releases (`lakehouse-data`)** fetch unseen DataSUS dumps, populate **Tab 2 batch history**, enforce the **hybrid trigger + drift monitor**, and log every **model promotion (Tab 3)** to Streamlit Cloud.
 """,
         "j_evol_hdr": "#### 📊 Version Evolution Summary Table (V1 → Continuous V6)",
         "j_tech_hdr": "#### 🛠️ Tech Stack Used & Architectural Rationale",
         "j_tech_sub": "Every library was chosen to process **38.3 million** federal admissions on standard hardware and serve sub-second cloud triage for free:",
-        "footer": "SUS Analytics Brazil 2024–2026 • DuckDB + Multi-Year Parquet + Continuous LightGBM V5 • Healthcare Intelligence Portfolio",
+        "footer": "SUS Analytics Brazil 2024–2026 • DuckDB + Multi-Year Parquet + Continuous LightGBM V6 (Cloud) • Healthcare Intelligence Portfolio",
     },
     "es": {
         "page_title": "SUS Analytics & Clinical Intelligence",
@@ -865,13 +865,13 @@ This tab continuously audits **every incremental load** (logged in `historico_ca
         "sidebar_resumo_body": """
 - **📊 Pestaña 1 (Epidemiología):** Perfil multianual (`2024–2026`) en Brasil por edad, sexo, raza/color, meses y causas CIE-10.
 - **🛡️ Pestaña 2 (Calidad):** Auditoría continua, **calidad e historial de cargas incrementales** e integridad clínica.
-- **🤖 Pestaña 3 (Modelos IA):** Benchmark **V5 Continuo**, agenda en nube, **monitor de drift** e **historial Champion vs. Challenger**.
+- **🤖 Pestaña 3 (Modelos IA):** Benchmark **V6 Continuo (Nube)**, agenda en nube, **monitor de drift** e **historial Champion vs. Challenger**.
 - **🏥 Pestaña 4 (Gestión Clínica):** Simulador de ingreso y panel de camas con alertas predictivas y auditoría de desenlace.
 - **📖 Pestaña 5 (Diccionario):** Catálogo auditado de las **113 columnas oficiales del SIH/SUS** + 14 derivadas y glosario técnico.
 - **🧭 Pestaña 6 (Trayectoria):** Línea de tiempo `V1 → V6 Continuo`, automatización GitHub Actions + Releases y stack tecnológica.
 """,
         "sidebar_motor": "**⚙️ Motor Analítico:**",
-        "sidebar_prod": "**🧠 Producción:**\n`LightGBM V5 Continuo (Bayes CIE3 + Isotónica)`",
+        "sidebar_prod": "**🧠 Producción:**\n`LightGBM V6 Continuo (Nube • Bayes CIE3 + Isotónica)`",
         "sidebar_etica": "⚖️ **IA Responsable:** Raza/color, mes y año se mantienen en epidemiología por equidad y tendencia, pero se excluyen de los modelos clínicos.",
         "modo_local": "Local Completo (Particiones Multianual + Cubo)",
         "modo_cloud": "Cloud Optimizado (Cubo Multianual + Muestra 30k)",
@@ -886,7 +886,7 @@ This tab continuously audits **every incremental load** (logged in `historico_ca
         "kpi4_lbl": "Estancias ≥ 15 Días",
         "kpi4_sub": "Larga Estancia",
         "kpi5_lbl": "Poder Predictivo (ROC-AUC)",
-        "kpi5_sub": "Óbito / Larga Est. (V5 Continuo)",
+        "kpi5_sub": "Óbito / Larga Est. (V6 Continuo)",
         "tabs": [
             "📊 1. Epidemiología y Equidad",
             "🛡️ 2. Calidad de Datos e Integridad",
@@ -972,7 +972,7 @@ This tab continuously audits **every incremental load** (logged in `historico_ca
         "dq_kpi4_lbl": "Subregistro / Inespecíficos",
         "dq_kpi4_sub": "Raza No Decl. / Espec. Otras",
         "dq_contract_hdr": "#### 📋 Auditoría Columna por Columna (Solo Variables de Perfil y Entrenamiento)",
-        "dq_contract_sub": "Completitud, rango válido y rol exacto de cada campo utilizado en los gráficos epidemiológicos y en el entrenamiento de LightGBM V5:",
+        "dq_contract_sub": "Completitud, rango válido y rol exacto de cada campo utilizado en los gráficos epidemiológicos y en el entrenamiento de LightGBM V6 Continuo:",
         "dq_status_col": "Estado",
         "dq_uf_tbl_hdr": "#### 🗺️ Completitud Estatal de las Variables de Perfil",
         "dq_uf_cols": {
@@ -986,25 +986,25 @@ This tab continuously audits **every incremental load** (logged in `historico_ca
         },
         "dq_other_note": """⚠️ **Sobre la cobertura de auditoría y demás columnas del SIH/SUS:**
 Esta pestaña audita continuamente **cada nueva carga incremental** (lotes en `historico_cargas`), el **Perfil (Pestaña 1)** y todas las **9 variables + 2 objetivos del Entreno (Pestaña 3)**. Otras columnas oficiales quedaron fuera de los modelos por **ausencia extrema de datos** (ej.: `diagsec1`–`diagsec9`, nulas en `89,65%`–`100%`), **inconsistencias de registro** o **fuga temporal post-alta (*data leakage*)** — todas siguen documentadas en la **Pestaña 5 (Diccionario)**.""",
-        "ml_hdr": "### 🤖 Cómo Funciona la IA y Elección del Modelo (V5 Continuo)",
+        "ml_hdr": "### 🤖 Cómo Funciona la IA y Elección del Modelo (V6 Continuo — Nube)",
         "ml_intro": """Al momento del ingreso hospitalario, dos modelos predictivos operan en paralelo usando solo **9 datos de admisión** (edad, sexo, capítulo CIE-10 + diagnóstico específico `cid3`, especialidad de cama, carácter urgencia/electivo, complejidad, traslado intermunicipal y entrada en fin de semana):
 1. **Modelo de Larga Estancia (≥ 15 días):** estima la probabilidad de hospitalización prolongada para apoyar el giro de camas y trabajo social.
 2. **Modelo de Mortalidad Intrahospitalaria:** estima el riesgo vital agudo para priorizar monitoreo intensivo o cama de UCI.""",
-        "ml_why": """🏆 **¿Por qué elegimos LightGBM V5 Continuo como modelo oficial?**
+        "ml_why": """🏆 **¿Por qué elegimos LightGBM V6 Continuo como modelo oficial en la nube?**
 - **Líder en discriminación clínica en ambos desenlaces:** Con la codificación híbrida de `cid3` (`Top-200 OHE` + *Target Encoding Bayesiano*) entrenada sobre `2,4M` ingresos (`2024/01–2026/06`), lideró en la prueba ciega futura (`2026/07–09`) en **Mortalidad (`ROC-AUC 0,9107` | `PR-AUC 0,3089` | `Brier 0,0300`)** y **Larga Estancia (`ROC-AUC 0,8447` | `PR-AUC 0,3493` | `Brier 0,0469`)**.
-- **Alta detección al ingreso:** Mantiene **`89,55%`** de detección en mortalidad (`corte Youden 3,87%`) y **`83,74%`** en larga estancia (`6,14%`), superando al Champion 2024 previo en precisión rara (`PR-AUC`).
+- **Alta detección al ingreso:** Mantiene **`89,55%`** de detección en mortalidad (`corte Youden 3,87%`) y **`83,74%`** en larga estancia (`6,14%`), superando al Champion V5 (2024) previo en precisión rara (`PR-AUC`).
 - **Ligereza extrema en la nube:** Cada pipeline calibrado completo ocupa apenas **`0,62 MB`** y responde en milisegundos.""",
         "ml_guide": """📖 **Mini-Guía de Métricas (Lenguaje Claro):**
 - **ROC-AUC (0 a 1):** Mide cuánto distingue el modelo entre pacientes graves y estables (`0,5` = azar; `> 0,80` = excelente; `> 0,90` = excepcional).
 - **PR-AUC:** Precisión enfocada en eventos poco frecuentes (fallecimiento y estancias largas).
 - **Brier Score (menor es mejor):** Mide si la probabilidad prevista coincide con la realidad tras la **Calibración Isotónica** (ej.: 20% previsto equivale a ~20 casos reales cada 100 pacientes).
 - **Ética y Cero *Data Leakage*:** Raza y mes no entran al modelo para evitar sesgos; variables post-alta fueron eliminadas.""",
-        "ml_bench": "#### 📊 Comparativo Nacional V5 Continuo (Prueba Ciega Temporal `2026/07–09` en `300.000` ingresos)",
+        "ml_bench": "#### 📊 Comparativo Nacional V6 Continuo (Prueba Ciega Temporal `2026/07–09` en `300.000` ingresos)",
         "ml_ob_sub": "##### 1. Mortalidad Intrahospitalaria *(Promedio en la Muestra: 3,77%)*",
         "ml_lg_sub": "##### 2. Larga Estancia ≥ 15 Días *(Promedio en la Muestra: 6,06%)*",
         "ml_cols": {"Modelo": "Modelo", "ROC_AUC": "ROC-AUC", "PR_AUC": "PR-AUC", "Brier_Calibrado": "Brier Score", "Limiar_Otimo_Pct": "Corte Alerta (%)", "Sensibilidade_Pct": "Detección (%)", "Especificidade_Pct": "Especif. (%)"},
         "ml_models_hdr": "#### 🧠 Cómo Funciona Cada Modelo — Pros y Contras",
-        "ml_models_sub": "Resumen claro de cómo cada algoritmo evaluado en el comparativo temporal V5 Continuo calcula el riesgo al ingreso:",
+        "ml_models_sub": "Resumen claro de cómo cada algoritmo evaluado en el comparativo temporal V6 Continuo calcula el riesgo al ingreso:",
         "ml_models_cards": [
             {
                 "title": "1. Regresión Logística *(Baseline Lineal)*",
@@ -1025,13 +1025,13 @@ Esta pestaña audita continuamente **cada nueva carga incremental** (lotes en `h
                 "cons": "**⚠️ Contras:** Ligeramente más lento sobre `2,4M` filas y quedó detrás de LightGBM tanto en `ROC-AUC` como en sensibilidad (`89,14%` vs `89,55%` Mortalidad; `83,04%` vs `83,74%` Larga)."
             },
             {
-                "title": "4. LightGBM *(Gradient Boosting Leaf-Wise — Modelo Oficial V5 Continuo)*",
+                "title": "4. LightGBM *(Gradient Boosting Leaf-Wise — Modelo Oficial V6 Continuo)*",
                 "how": "**Cómo funciona:** Algoritmo rápido por histogramas que expande primero las hojas con mayor ganancia de error (*leaf-wise*), reduciendo cómputo y acelerando el aprendizaje sobre millones de registros.",
                 "pros": "**✅ Pros:** 1.er lugar aislado en `ROC-AUC` (`0,9107 / 0,8447`) y detección clínica (`89,55% / 83,74%`), gran calibración (`Brier 0,0300 / 0,0469`) en solo `0,62 MB` por artefacto.",
                 "cons": "**⚠️ Contras:** El crecimiento *leaf-wise* puede sobreajustar subgrupos raros sin regularización — mitigado con `min_child_samples=100`, suavizado Bayesiano en `cid3` (`m=50`) y calibración isotónica."
             },
         ],
-        "ml_evid": "#### 📈 Evidencias Visuales y Explicabilidad (V5 Continuo)",
+        "ml_evid": "#### 📈 Evidencias Visuales y Explicabilidad (V6 Continuo)",
         "ml_img1": "Curvas ROC y PR: cuanto más cerca de la esquina superior, mayor precisión discriminativa.",
         "ml_img2": "Calibración Isotónica: curvas pegadas a la diagonal punteada prueban probabilidades realistas.",
         "ml_img3": "Factores con mayor peso en la IA (ej.: Edad, Medicina Interna e Ingreso de Urgencia).",
@@ -1061,7 +1061,7 @@ Esta pestaña audita continuamente **cada nueva carga incremental** (lotes en `h
         "cli_hdr": "### 🏥 Panel de Gestión Clínica y Riesgo de Pacientes",
         "cli_sub": "Simulación hospitalaria de seguimiento de camas: muestra identificador anonimizado (`#AIH`), diagnóstico (`CIE-10`), días ingresados y dos **Alertas Predictivas** calculadas al ingreso.",
         "cli_exp": "⚙️ **Calibrar Umbrales de Alerta y Entender los Porcentajes**",
-        "cli_exp_txt": "💡 **¿Por qué los cortes por defecto no son 50%?** En la ventana temporal reciente (`2026/07–09`), la tasa real de mortalidad es **3,77%** y la de larga estancia (≥15 días) es **6,06%**. Esperar un 50% al ingreso dejaría pasar casi todos los casos graves. Por eso, el corte **Amarillo/Naranja** parte del **Umbral de Youden V5 Continuo** (`3,9%` Mortalidad y `6,1%` Larga Estancia), mientras la zona **Roja** señala perfiles con **3x a 4x más riesgo que el promedio nacional** (`15,0%` y `20,0%`). Ajuste abajo según la ocupación del hospital:",
+        "cli_exp_txt": "💡 **¿Por qué los cortes por defecto no son 50%?** En la ventana temporal reciente (`2026/07–09`), la tasa real de mortalidad es **3,77%** y la de larga estancia (≥15 días) es **6,06%**. Esperar un 50% al ingreso dejaría pasar casi todos los casos graves. Por eso, el corte **Amarillo/Naranja** parte del **Umbral de Youden V6 Continuo** (`3,9%` Mortalidad y `6,1%` Larga Estancia), mientras la zona **Roja** señala perfiles con **3x a 4x más riesgo que el promedio nacional** (`15,0%` y `20,0%`). Ajuste abajo según la ocupación del hospital:",
         "sl_ob": "⚠️ Cortes Riesgo de Mortalidad — Atención / Crítico (%):",
         "sl_lg": "🚩 Cortes Larga Estancia — Medio / Alto Riesgo (%):",
         "leg_lg": "🚩 **Larga Estancia (≥ 15 días):** `🟢 Bajo < {a:.1f}%` | `🟡 Medio {a:.1f}%–{b:.1f}%` | `🔴 Alto Riesgo ≥ {c:.1f}%`",
@@ -1084,7 +1084,7 @@ Esta pestaña audita continuamente **cada nueva carga incremental** (lotes en `h
         "sim_nao": "No",
         "sim_sim": "Sí",
         "sim_btn": "🚨 Calcular Score de Ingreso",
-        "sim_res": "#### Resultado del Triaje (Probabilidades Calibradas Brasil V5 Continuo):",
+        "sim_res": "#### Resultado del Triaje (Probabilidades Calibradas Brasil V6 Continuo):",
         "sim_ob_tit": "Riesgo de Mortalidad",
         "sim_lg_tit": "Larga Estancia",
         "badge_ob": ("CRÍTICO", "ATENCIÓN", "ESTABLE"),
@@ -1155,7 +1155,7 @@ Esta pestaña audita continuamente **cada nueva carga incremental** (lotes en `h
         "dic_empty2": "No se encontraron términos técnicos con ese filtro.",
         "dic_count": "Mostrando **{n}** variables del catálogo completo (`113` originales SIH/SUS + `14` derivadas).",
         "j_hdr": "### 🧭 Trayectoria del Proyecto: Proceso Creativo, Decisiones y Arquitectura (V1 → V6 Continuo)",
-        "j_sub": "Registro transparente de cómo un piloto estatal en Acre evolucionó hacia una plataforma nacional continua sobre **38.313.128 ingresos (`2024/01–2026/09`)** — mostrando errores corregidos, dilemas éticos, carga incremental y gobernanza Champion vs. Challenger.",
+        "j_sub": "Registro transparente de cómo un piloto estatal en Acre evolucionó hacia una plataforma nacional continua en la nube sobre **~38,31 millones de ingresos (`38.306.556` deduplicados • `2024/01–2026/09`)** — mostrando errores corregidos, dilemas éticos, carga incremental y gobernanza Champion vs. Challenger.",
         "j_v1_tit": "1️⃣ Fase V1 — Piloto en Acre y Descubrimiento de Trampas (56.459 casos)",
         "j_v1_txt": """
 - **Punto de partida:** Descargamos los 12 archivos mensuales `.dbc` de Acre (2024) para predecir Larga Estancia (`>= 15 días`, solo `5,30%` de los casos — desbalance de `17,88:1`).
@@ -1185,22 +1185,22 @@ Esta pestaña audita continuamente **cada nueva carga incremental** (lotes en `h
 - **Cubo Exacto vs. Muestreo:** La Pestaña 1 opera sobre el **Cubo Agregado de `3,99 MB`** (`100%` de los `13.584.534` ingresos), el Panel Clínico usa `30.000` casos (`0,34 MB`) en la nube y V4 validó el entrenamiento nacional (`900k`) con **Calibración Isotónica** (`Brier 0,0329 / 0,0480`).
 - **Producto y Auditoría:** Interfaz PT/EN/ES, Pestaña 2 de Calidad de Datos y Diccionario auditado de todas las 113 columnas SIH/SUS.
 """,
-        "j_v5_tit": "5️⃣ Fase V5 — Re-auditoría 113 Columnas, `cid3` Bayesiano y Escala `2,4M`",
+        "j_v5_tit": "5️⃣ Fase V5 (Base 2024) — Re-auditoría 113 Columnas, `cid3` Bayesiano y Escala `2,4M`",
         "j_v5_txt": """
 - **Segunda auditoría empírica:** Reevaluamos las 113 columnas para eliminar *leakage* (`ident`, `marca_uti`), flags rotas (`gestrisco=1` en `99,75%`) y nulos extremos (`diagsec1`–`9`), confirmando gran mejora al abrir **`diag_princ` en 3 dígitos (`cid3`, `1.665` códigos)** (ej.: Resfriado `J00` vs. Neumonía `J18`).
 - **Control Bayesiano en Cola Rara (`Top-200 OHE` + `m=50`):** `698` patologías raras suman solo `0,73%` de los ingresos; el ajuste jerárquico hacia el capítulo (`capitulo_cid`) evitó *overfitting* y subió el `ROC-AUC` en enfermedades raras de `0,8526 → 0,8930` (Óbito).
 - **Liderazgo LightGBM V5 (`Base 2024`, `2,4M/300k/300k`):** Alcanzó `ROC-AUC 0,9082` (`PR 0,3035`, `Brier 0,0306`, detección `89,58%`) en Óbito y `0,8481` (`PR 0,3663`, `Brier 0,0471`, `85,32%`) en Larga Estancia en `0,62 MB`.
 """,
-        "j_v6_tit": "6️⃣ Fase V6 — Nube Continua (`2024–2026`), Historiales y MLOps Champion/Challenger",
+        "j_v6_tit": "6️⃣ Fase V6 Continuo — Nube (`2024–2026` • `38,31M`), Historiales y MLOps Champion/Challenger",
         "j_v6_txt": """
 - **Ingesta Idempotente (`38,31M` casos):** El flujo `2025/2026` sumó **`+564` particiones (`888` en total, `+24,73M` ingresos)** con clave natural (`n_aih + dt_inter + cnes`) y cubo deploy multianual de **`11,81 MB`** (`100%` exacto).
-- **Reentreno Temporal Champion vs. Challenger (`2026/07–09` ciego `300k`):** **LightGBM V5 Continuo** (`2,4M` entreno `2024/01–2026/06`) venció al Champion 2024 en **2/2 desenlaces** (`Óbito ROC 0,9107 | PR 0,3089 | Brier 0,0300`; `Larga Est. ROC 0,8447 | PR 0,3493 | Brier 0,0469`) y fue promovido con respaldo en `modelos/archive/`.
+- **Reentreno Temporal Champion vs. Challenger (`2026/07–09` ciego `300k`):** **LightGBM V6 Continuo** (`2,4M` entreno `2024/01–2026/06`) venció al Champion V5 (`Base 2024`) en **2/2 desenlaces** (`Óbito ROC 0,9107 | PR 0,3089 | Brier 0,0300`; `Larga Est. ROC 0,8447 | PR 0,3493 | Brier 0,0469`) y fue promovido con respaldo en `modelos/archive/`.
 - **Automatización Cloud y Auditoría:** **GitHub Actions (`cron 0 6 5,20 * *`) + Releases (`lakehouse-data`)** buscan lotes nuevos, alimentan el **historial de cargas (Pestaña 2)**, monitorean **drift + meta de acumulación (`>=3` meses)** y registran cada **reemplazo de modelo (Pestaña 3)** en Streamlit Cloud.
 """,
         "j_evol_hdr": "#### 📊 Tabla Resumen de Evolución de Versiones (V1 → V6 Continuo)",
         "j_tech_hdr": "#### 🛠️ Stack Tecnológico Utilizado y Por Qué Se Eligió",
         "j_tech_sub": "Arquitectura diseñada para procesar **38,3 millones** de registros en hardware estándar y operar gratis en la nube con latencia de milisegundos:",
-        "footer": "SUS Analytics Brasil 2024–2026 • DuckDB + Parquet Multianual + LightGBM V5 Continuo • Portafolio de Inteligencia en Salud",
+        "footer": "SUS Analytics Brasil 2024–2026 • DuckDB + Parquet Multianual + LightGBM V6 Continuo (Nube) • Portafolio de Inteligencia en Salud",
     },
 }
 
@@ -1222,8 +1222,8 @@ def get_evolucao_df(lang: str) -> pd.DataFrame:
             {"Version": "V2 (Dual-Triage)", "Scope": "Acre (56,459)", "Targets": "Long Stay + Mortality", "Features": "10 (strict intake)", "Key Milestone / Decision": "Removed 24 financial/post-stay cols; created 2x2 Decision Matrix & transfer/ward features."},
             {"Version": "V3 (Ethical AI)", "Scope": "Acre (56,459)", "Targets": "Long Stay + Mortality", "Features": "8 (ethical clinical)", "Key Milestone / Decision": "Removed `raca_cor` & `mes_internacao` from AI to prevent bias/drift; kept for equity tab."},
             {"Version": "V4 (National Cloud)", "Scope": "Brazil 27 UFs (13.58M)", "Targets": "Long Stay + Mortality", "Features": "8 (calibrated LightGBM)", "Key Milestone / Decision": "DuckDB/Parquet lakehouse, 1.5M stratified sample, Isotonic Calibration (Brier 0.033/0.048), PT/EN/ES Cloud App."},
-            {"Version": "V5 (CID3 + 2.4M)", "Scope": "Brazil 27 UFs (3.0M)", "Targets": "Long Stay + Mortality", "Features": "9 (+ cid3 Hybrid Bayes TE)", "Key Milestone / Decision": "113-col audit + Top-200 OHE & OOF Bayes TE (m=50); ROC-AUC 0.9082/0.8481 & PR-AUC +44.5% (Death) at 0.62 MB."},
-            {"Version": "V6 (Continuous MLOps)", "Scope": "Brazil 2024–2026 (38.31M)", "Targets": "Long Stay + Mortality", "Features": "9 (Champion vs Challenger)", "Key Milestone / Decision": "+564 incremental partitions (888 total, 0 dupes), 11.81 MB cube, blind 300k promotion (ROC 0.9107/0.8447, PR 0.3089/0.3493)."},
+            {"Version": "V5 (2024 Base • CID3)", "Scope": "Brazil 27 UFs (3.0M)", "Targets": "Long Stay + Mortality", "Features": "9 (+ cid3 Hybrid Bayes TE)", "Key Milestone / Decision": "113-col audit + Top-200 OHE & OOF Bayes TE (m=50); ROC-AUC 0.9082/0.8481 & PR-AUC +44.5% (Death) at 0.62 MB."},
+            {"Version": "V6 Continuous (Cloud MLOps)", "Scope": "Brazil 2024–2026 (38.31M)", "Targets": "Long Stay + Mortality", "Features": "9 (Champion vs Challenger)", "Key Milestone / Decision": "+564 incremental partitions (888 total, 0 dupes), 11.81 MB cube, blind 300k cloud V6 promotion (ROC 0.9107/0.8447, PR 0.3089/0.3493)."},
         ])
     if lang == "es":
         return pd.DataFrame([
@@ -1231,16 +1231,16 @@ def get_evolucao_df(lang: str) -> pd.DataFrame:
             {"Versión": "V2 (Dual-Triage)", "Alcance": "Acre (56.459)", "Objetivos": "Larga Est. + Óbito", "Features": "10 (estrictas ingreso)", "Decisión / Hito Principal": "Eliminación de 24 cols financieras/post-alta; Matriz 2x2 y variables de traslado/cama."},
             {"Versión": "V3 (IA Ética)", "Alcance": "Acre (56.459)", "Objetivos": "Larga Est. + Óbito", "Features": "8 (clínicas y éticas)", "Decisión / Hito Principal": "Exclusión de `raca_cor` y `mes_internacao` de la IA (mantenidas solo en Equidad)."},
             {"Versión": "V4 (Nacional Cloud)", "Alcance": "Brasil 27 UFs (13,58M)", "Objetivos": "Larga Est. + Óbito", "Features": "8 (LightGBM calibrado)", "Decisión / Hito Principal": "Lakehouse DuckDB/Parquet, muestra 1,5M, Calibración Isotónica (Brier 0,033/0,048), app PT/EN/ES."},
-            {"Versión": "V5 (CIE3 + 2,4M)", "Alcance": "Brasil 27 UFs (3,0M)", "Objetivos": "Larga Est. + Óbito", "Features": "9 (+ cid3 Híbrido Bayes)", "Decisión / Hito Principal": "Auditoría 113 cols + Top-200 OHE & TE Bayesiano (m=50); ROC 0,9082/0,8481 y PR-AUC +44,5% en 0,62 MB."},
-            {"Versión": "V6 (MLOps Continuo)", "Alcance": "Brasil 2024–2026 (38,31M)", "Objetivos": "Larga Est. + Óbito", "Features": "9 (Champion vs Challenger)", "Decisión / Hito Principal": "+564 particiones incrementales (888 total, 0 dupl.), cubo 11,81 MB, promoción temporal 300k (ROC 0,9107/0,8447, PR 0,3089/0,3493)."},
+            {"Versión": "V5 (Base 2024 • CIE3)", "Alcance": "Brasil 27 UFs (3,0M)", "Objetivos": "Larga Est. + Óbito", "Features": "9 (+ cid3 Híbrido Bayes)", "Decisión / Hito Principal": "Auditoría 113 cols + Top-200 OHE & TE Bayesiano (m=50); ROC 0,9082/0,8481 y PR-AUC +44,5% en 0,62 MB."},
+            {"Versión": "V6 Continuo (Nube MLOps)", "Alcance": "Brasil 2024–2026 (38,31M)", "Objetivos": "Larga Est. + Óbito", "Features": "9 (Champion vs Challenger)", "Decisión / Hito Principal": "+564 particiones incrementales (888 total, 0 dupl.), cubo 11,81 MB, promoción V6 en nube (ROC 0,9107/0,8447, PR 0,3089/0,3493)."},
         ])
     return pd.DataFrame([
         {"Versão": "V1 (Baseline)", "Escopo": "Acre (56.459)", "Alvos": "Apenas Longa Perm.", "Features": "7 (com leakage cobranca)", "Decisão / Marco Principal": "Descoberta do vazamento em `cobranca` e correção do colapso SMOTE + peso no XGBoost."},
         {"Versão": "V2 (Dual-Triage)", "Escopo": "Acre (56.459)", "Alvos": "Longa Perm. + Óbito", "Features": "10 (estritas de entrada)", "Decisão / Marco Principal": "Expurgo de 24 colunas financeiras/pós-alta; criação da Matriz 2x2 e flags geográficas/leito."},
         {"Versão": "V3 (IA Ética)", "Escopo": "Acre (56.459)", "Alvos": "Longa Perm. + Óbito", "Features": "8 (clínicas e éticas)", "Decisão / Marco Principal": "Remoção de `raca_cor` e `mes_internacao` da IA clínica (mantidas só na Aba 1 de Equidade)."},
         {"Versão": "V4 (Nacional Cloud)", "Escopo": "Brasil 27 UFs (13,58M)", "Alvos": "Longa Perm. + Óbito", "Features": "8 (LightGBM calibrado)", "Decisão / Marco Principal": "Lakehouse DuckDB/Parquet, amostra de 1,5M, Calibração Isotônica (Brier 0,033/0,048), app PT/EN/ES na nuvem."},
-        {"Versão": "V5 (CID3 + 2,4M)", "Escopo": "Brasil 27 UFs (3,0M)", "Alvos": "Longa Perm. + Óbito", "Features": "9 (+ cid3 Bayes Híbrido)", "Decisão / Marco Principal": "Re-auditoria 113 cols + Top-200 OHE & TE Bayesiano (m=50); ROC 0,9082/0,8481 e PR-AUC +44,5% em 0,62 MB."},
-        {"Versão": "V6 (Contínuo & MLOps)", "Escopo": "Brasil 2024–2026 (38,31M)", "Alvos": "Longa Perm. + Óbito", "Features": "9 (Champion vs Challenger)", "Decisão / Marco Principal": "+564 partições incrementais (888 total, 0 dup.), cubo 11,81 MB, promoção cega 300k (ROC 0,9107/0,8447, PR 0,3089/0,3493)."},
+        {"Versão": "V5 (Base 2024 • CID3)", "Escopo": "Brasil 27 UFs (3,0M)", "Alvos": "Longa Perm. + Óbito", "Features": "9 (+ cid3 Bayes Híbrido)", "Decisão / Marco Principal": "Re-auditoria 113 cols + Top-200 OHE & TE Bayesiano (m=50); ROC 0,9082/0,8481 e PR-AUC +44,5% em 0,62 MB."},
+        {"Versão": "V6 Contínuo (Nuvem & MLOps)", "Escopo": "Brasil 2024–2026 (38,31M)", "Alvos": "Longa Perm. + Óbito", "Features": "9 (Champion vs Challenger)", "Decisão / Marco Principal": "+564 partições incrementais (888 total, 0 dup.), cubo 11,81 MB, promoção V6 em nuvem (ROC 0,9107/0,8447, PR 0,3089/0,3493)."},
     ])
 
 
@@ -1248,7 +1248,7 @@ _TECH_STACK = [
     (
         "Python 3.11+ & Joblib",
         {"pt": "Linguagem Base & Serialização", "en": "Core Language & Serialization", "es": "Lenguaje Base y Serialización"},
-        {"pt": "Orquestra ETL, modelagem, calibração e app web; Joblib empacota pipelines V5 (0,62 MB) em .joblib com cache instantâneo.", "en": "Unifies ETL, modeling, calibration, and web UI; Joblib packages V5 pipelines (0.62 MB) into .joblib for instant caching.", "es": "Unifica ETL, modelado, calibración y app web; Joblib empaqueta los pipelines V5 (0,62 MB) en .joblib con caché instantánea."},
+        {"pt": "Orquestra ETL, modelagem, calibração e app web; Joblib empacota pipelines V6 Contínuo (0,62 MB) em .joblib com cache instantâneo.", "en": "Unifies ETL, modeling, calibration, and web UI; Joblib packages Continuous V6 pipelines (0.62 MB) into .joblib for instant caching.", "es": "Unifica ETL, modelado, calibración y app web; Joblib empaqueta los pipelines V6 Continuo (0,62 MB) en .joblib con caché instantánea."},
         {"pt": "Evita fragmentação entre pesquisa e produção e garante reprodutibilidade determinística na nuvem.", "en": "Avoids research-to-production friction and ensures deterministic model loading in the cloud.", "es": "Evita fricción entre investigación y producción y garantiza carga determinística en la nube."},
     ),
     (
@@ -1279,7 +1279,7 @@ _TECH_STACK = [
         "Scikit-Learn",
         {"pt": "Pipelines, Baselines & Calibração", "en": "Pipelines, Baselines & Calibration", "es": "Pipelines, Baselines y Calibración"},
         {"pt": "Encapsula AdmissionV5Preprocessor (OOF Target Encoding Bayesiano m=50 + Top-200 OHE + StandardScaler) e CalibratedClassifierCV isotônica.", "en": "Wraps AdmissionV5Preprocessor (OOF Bayesian Target Encoding m=50 + Top-200 OHE + StandardScaler) and isotonic calibration.", "es": "Encapsula AdmissionV5Preprocessor (OOF Target Encoding Bayesiano m=50 + Top-200 OHE + StandardScaler) y Calibración Isotónica."},
-        {"pt": "Impede data leakage no pré-processamento e derrubou o Brier Score para 0,0300 / 0,0469 no V5 Contínuo.", "en": "Prevents preprocessing leakage and cut probability error (Brier Score) down to 0.0300 / 0.0469 in Continuous V5.", "es": "Evita fugas en preprocesamiento y bajó el Brier Score a 0,0300 / 0,0469 en V5 Continuo."},
+        {"pt": "Impede data leakage no pré-processamento e derrubou o Brier Score para 0,0300 / 0,0469 no V6 Contínuo.", "en": "Prevents preprocessing leakage and cut probability error (Brier Score) down to 0.0300 / 0.0469 in Continuous V6.", "es": "Evita fugas en preprocesamiento y bajó el Brier Score a 0,0300 / 0,0469 en V6 Continuo."},
     ),
     (
         "Plotly & Matplotlib",
@@ -1407,7 +1407,7 @@ def get_qualidade_variaveis_df(res_dq: dict, esperado_ufs: int, lang: str) -> tu
             f"{_pct_ok(res_dq['bad_cid'])} ({_fmt_pct_lang(res_dq['pct_cid_ign'], 3, k)} Ign.)",
             lbl_ok if cid_ok else lbl_warn,
             "dq_ok" if cid_ok else "dq_warn",
-            {"pt": "Mapeia diag_princ em 20 capítulos + 1.665 códigos cid3 (encoder Bayesiano V5) equilibrando detalhe e ruído.", "en": "Maps diag_princ into 20 chapters + 1,665 cid3 codes (V5 Bayesian encoder) balancing granularity and noise.", "es": "Mapea diag_princ en 20 capítulos + 1.665 códigos cid3 (encoder Bayesiano V5) equilibrando detalle y ruido."}[k],
+            {"pt": "Mapeia diag_princ em 20 capítulos + 1.665 códigos cid3 (encoder Bayesiano V5/V6 Contínuo) equilibrando detalhe e ruído.", "en": "Maps diag_princ into 20 chapters + 1,665 cid3 codes (V5/Continuous V6 Bayesian encoder) balancing granularity and noise.", "es": "Mapea diag_princ en 20 capítulos + 1.665 códigos cid3 (encoder Bayesiano V5/V6 Continuo) equilibrando detalle y ruido."}[k],
         ),
         (
             "especialidade_leito",
@@ -1458,10 +1458,10 @@ def get_glossario_df(lang: str) -> pd.DataFrame:
             {"Term": "LightGBM", "Domain": "Machine Learning", "Plain Explanation": "Fast gradient-boosted decision tree algorithm. Selected for production due to top accuracy, strong recall, and millisecond scoring latency."},
             {"Term": "ROC-AUC", "Domain": "AI Metric", "Plain Explanation": "Ranges from 0.5 (random coin flip) to 1.0 (perfect). Measures how well the model assigns higher risk scores to severe cases than stable ones."},
             {"Term": "PR-AUC", "Domain": "AI Metric", "Plain Explanation": "Precision-Recall area under curve focused on rare events (mortality and long stays), evaluating detection quality without excessive false alarms."},
-            {"Term": "Brier Score", "Domain": "Calibration", "Plain Explanation": "Measures probability calibration error (closer to 0 is better). Improved from ~0.13–0.16 (V3) down to 0.030–0.047 (Continuous V5)."},
+            {"Term": "Brier Score", "Domain": "Calibration", "Plain Explanation": "Measures probability calibration error (closer to 0 is better). Improved from ~0.13–0.16 (V3) down to 0.030–0.047 (Continuous V6)."},
             {"Term": "Isotonic Calibration", "Domain": "Machine Learning", "Plain Explanation": "Non-parametric calibration fitted on a dedicated holdout set ensuring that a 20% prediction corresponds to ~20 real cases out of 100."},
-            {"Term": "Youden Index", "Domain": "Clinical Statistics", "Plain Explanation": "Optimal threshold maximizing Sensitivity + Specificity - 1, used as the baseline Yellow/Orange alert cutoff (3.9% Mortality and 6.1% Long Stay in Continuous V5)."},
-            {"Term": "Sensitivity (Recall)", "Domain": "Epidemiology / AI", "Plain Explanation": "Share of true severe cases (deaths or 15+ day stays) successfully flagged right at admission (89.55% and 83.74% in Continuous V5)."},
+            {"Term": "Youden Index", "Domain": "Clinical Statistics", "Plain Explanation": "Optimal threshold maximizing Sensitivity + Specificity - 1, used as the baseline Yellow/Orange alert cutoff (3.9% Mortality and 6.1% Long Stay in Continuous V6)."},
+            {"Term": "Sensitivity (Recall)", "Domain": "Epidemiology / AI", "Plain Explanation": "Share of true severe cases (deaths or 15+ day stays) successfully flagged right at admission (89.55% and 83.74% in Continuous V6)."},
             {"Term": "Specificity", "Domain": "Epidemiology / AI", "Plain Explanation": "Share of standard non-severe hospitalizations accurately kept in the green zone without unnecessary alarms."},
             {"Term": "False Positive (Preventive Alert)", "Domain": "Clinical Triage / AI", "Plain Explanation": "Occurs when the AI triggers an alert above the cutoff (e.g., ≥ 3.9% mortality or ≥ 6.1% long stay), yet the patient recovers or goes home before 15 days. In clinical triage it translates into extra vigilance and protective care — far safer than missing an unstable patient, though overly low cutoffs would cause alert fatigue."},
             {"Term": "False Negative (Missed Case)", "Domain": "Clinical Triage / AI", "Plain Explanation": "Occurs when an admission stays in the green zone below the cutoff, yet the patient later dies or stays ≥ 15 days. In healthcare, False Negatives carry the highest clinical risk by delaying ICU or discharge care — which is why our Youden cutoffs prioritize ~84%–90% recall over late thresholds like 50%."},
@@ -1476,10 +1476,10 @@ def get_glossario_df(lang: str) -> pd.DataFrame:
             {"Término": "LightGBM", "Área": "Machine Learning", "Explicación Clara": "Algoritmo moderno basado en árboles de decisión rápidos. Elegido para producción por su alta precisión, gran detección y respuesta en milisegundos."},
             {"Término": "ROC-AUC", "Área": "Métrica de IA", "Explicación Clara": "Va de 0,5 (azar) a 1,0 (perfecto). Mide la capacidad del modelo para asignar mayor riesgo a los casos graves que a los estables."},
             {"Término": "PR-AUC", "Área": "Métrica de IA", "Explicación Clara": "Precisión enfocada en eventos poco frecuentes (mortalidad y estancias largas), evaluando aciertos sin exceso de falsas alarmas."},
-            {"Término": "Brier Score", "Área": "Calibración", "Explicación Clara": "Mide el error entre la probabilidad prevista y la realidad (más cerca de 0 es mejor). Bajó de ~0,13–0,16 (V3) a 0,030–0,047 (V5 Continuo)."},
+            {"Término": "Brier Score", "Área": "Calibración", "Explicación Clara": "Mide el error entre la probabilidad prevista y la realidad (más cerca de 0 es mejor). Bajó de ~0,13–0,16 (V3) a 0,030–0,047 (V6 Continuo)."},
             {"Término": "Calibración Isotónica", "Área": "Machine Learning", "Explicación Clara": "Técnica ajustada en un conjunto independiente que garantiza que una predicción del 20% corresponda a ~20 casos reales de cada 100 pacientes."},
-            {"Término": "Índice de Youden", "Área": "Estadística Clínica", "Explicación Clara": "Punto matemático óptimo que equilibra Sensibilidad y Especificidad — usado como corte inicial de alerta amarilla/naranja (3,9% Mortalidad y 6,1% Larga Estancia en V5 Continuo)."},
-            {"Término": "Sensibilidad (Detección)", "Área": "Epidemiología / IA", "Explicación Clara": "Porcentaje de los casos graves reales (óbitos o estancias ≥15d) que el sistema logra detectar al ingreso (89,55% y 83,74% en V5 Continuo)."},
+            {"Término": "Índice de Youden", "Área": "Estadística Clínica", "Explicación Clara": "Punto matemático óptimo que equilibra Sensibilidad y Especificidad — usado como corte inicial de alerta amarilla/naranja (3,9% Mortalidad y 6,1% Larga Estancia en V6 Continuo)."},
+            {"Término": "Sensibilidad (Detección)", "Área": "Epidemiología / IA", "Explicación Clara": "Porcentaje de los casos graves reales (óbitos o estancias ≥15d) que el sistema logra detectar al ingreso (89,55% y 83,74% en V6 Continuo)."},
             {"Término": "Especificidad", "Área": "Epidemiología / IA", "Explicación Clara": "Porcentaje de ingresos normales que el sistema mantiene correctamente en zona verde sin alarmas innecesarias."},
             {"Término": "Falso Positivo (Alarma Preventiva)", "Área": "Triaje Clínico / IA", "Explicación Clara": "Ocurre cuando la IA activa la alerta por encima del corte (ej.: ≥ 3,9% mortalidad o ≥ 6,1% estancia larga), pero el paciente se recupera o sale antes de 15 días. En triaje hospitalario significa vigilancia preventiva y cuidado extra: mucho menos riesgoso que omitir un caso grave, aunque demasiados FP generan fatiga de alertas."},
             {"Término": "Falso Negativo (Caso No Detectado)", "Área": "Triaje Clínico / IA", "Explicación Clara": "Ocurre cuando el ingreso queda en zona verde por debajo del corte, pero luego fallece o permanece ≥ 15 días. En salud es el fallo más crítico por retrasar cama de UCI o planificación del alta; por eso los umbrales de Youden priorizan ~84%–90% de detección frente a cortes tardíos como 50%."},
@@ -1493,10 +1493,10 @@ def get_glossario_df(lang: str) -> pd.DataFrame:
         {"Termo": "LightGBM", "Área": "Machine Learning", "Explicação Clara": "Algoritmo moderno baseado em árvores de decisão rápidas. Escolhido para produção pela alta precisão, ótima detecção e resposta em milissegundos."},
         {"Termo": "ROC-AUC", "Área": "Métrica de IA", "Explicação Clara": "Vai de 0,5 (chute aleatório) a 1,0 (perfeito). Mede a capacidade do modelo de dar um escore maior a quem realmente vai agravar do que a quem está estável."},
         {"Termo": "PR-AUC", "Área": "Métrica de IA", "Explicação Clara": "Precisão focada em eventos raros (como óbito e longa permanência), onde acertar o grupo minoritário sem gerar excesso de falsos alarmes é desafiador."},
-        {"Termo": "Brier Score", "Área": "Calibração", "Explicação Clara": "Mede o erro entre a probabilidade prevista e a realidade (quanto mais perto de 0, melhor). Caiu de ~0,13–0,16 (V3) para 0,030–0,047 (V5 Contínuo)."},
+        {"Termo": "Brier Score", "Área": "Calibração", "Explicação Clara": "Mede o erro entre a probabilidade prevista e a realidade (quanto mais perto de 0, melhor). Caiu de ~0,13–0,16 (V3) para 0,030–0,047 (V6 Contínuo)."},
         {"Termo": "Calibração Isotônica", "Área": "Machine Learning", "Explicação Clara": "Técnica aplicada em dados separados que garante que uma previsão de 20% realmente corresponda a ~20 casos reais a cada 100 pacientes."},
-        {"Termo": "Limiar de Youden", "Área": "Estatística Clínica", "Explicação Clara": "Ponto matemático ideal que equilibra Sensibilidade e Especificidade — usado como linha de corte inicial para o alerta amarelo/laranja (3,9% Óbito e 6,1% Longa Perm. no V5 Contínuo)."},
-        {"Termo": "Sensibilidade (Detecção)", "Área": "Epidemiologia / IA", "Explicação Clara": "De todos os pacientes que realmente morreram ou ficaram 15+ dias, quantos por cento o sistema conseguiu sinalizar na entrada (89,55% e 83,74% no V5 Contínuo)."},
+        {"Termo": "Limiar de Youden", "Área": "Estatística Clínica", "Explicação Clara": "Ponto matemático ideal que equilibra Sensibilidade e Especificidade — usado como linha de corte inicial para o alerta amarelo/laranja (3,9% Óbito e 6,1% Longa Perm. no V6 Contínuo)."},
+        {"Termo": "Sensibilidade (Detecção)", "Área": "Epidemiología / IA", "Explicação Clara": "De todos os pacientes que realmente morreram ou ficaram 15+ dias, quantos por cento o sistema conseguiu sinalizar na entrada (89,55% e 83,74% no V6 Contínuo)."},
         {"Termo": "Especificidade", "Área": "Epidemiologia / IA", "Explicação Clara": "De todos os pacientes que tiveram alta normal, quantos por cento o sistema corretamente manteve no sinal verde."},
         {"Termo": "Falso Positivo (Alarme Preventivo)", "Área": "Triagem Clínica / IA", "Explicação Clara": "Acontece quando a IA acende o alerta acima do corte (ex.: ≥ 3,9% óbito ou ≥ 6,1% longa perm.), mas o paciente se recupera ou sai antes de 15 dias. Na saúde significa vigilância preventiva e cuidado extra — muito menos problemático do que deixar um paciente grave sem alerta, embora cortes baixos demais gerem fadiga de alertas."},
         {"Termo": "Falso Negativo (Caso Não Detectado)", "Área": "Triagem Clínica / IA", "Explicação Clara": "Acontece quando a admissão fica na faixa verde abaixo do corte, mas o paciente evolui para ≥ 15 dias de internação ou óbito. Na saúde é a falha mais crítica por atrasar UTI ou serviço social; por isso usamos o Limiar de Youden para priorizar ~84%–90% de sensibilidade em vez de esperar 50%."},

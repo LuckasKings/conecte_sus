@@ -4,7 +4,7 @@
 Aplicação Streamlit Multi-Abas Conectada ao Data Lake Parquet + DuckDB:
 - Aba 1: Perfil Epidemiológico & Equidade em Saúde (Multi-Ano 2024–2026)
 - Aba 2: Qualidade dos Dados, Lotes Incrementais & Contrato de Integridade
-- Aba 3: Como a IA Funciona (Modelos V5 Calibrados com CID3 Híbrido + Governança Champion/Challenger)
+- Aba 3: Como a IA Funciona (Modelos V6 Contínuo Calibrados com CID3 Híbrido + Governança Champion/Challenger)
 - Aba 4: Painel de Gestão Clínica & Leitos (Simulador CID3 + Flags Calibradas)
 - Aba 5: Dicionário Completo SIH/SUS (113 Colunas + 14 Derivadas) & Glossário
 - Aba 6: Jornada, Decisões, Arquitetura & Stack Tecnológica
@@ -793,7 +793,7 @@ with tab_ml:
             "es": ("Champion Activo:", "Base Entreno", "Estrategia:", "Prueba Ciega Temporal:", "casos", "Decisión:", "Champion (Actual/Previo)", "Challenger (Reentrenado)"),
         }[idioma]
         resumo_mlops = (
-            f"**{lbl_ops[0]}** `{champ_info.get('versao', 'V5')}` *({lbl_ops[1]} `{champ_info.get('base_treino', '-')}` • {champ_info.get('atualizado_em', '-')})* | "
+            f"**{lbl_ops[0]}** `{champ_info.get('versao', 'V6 Contínuo')}` *({lbl_ops[1]} `{champ_info.get('base_treino', '-')}` • {champ_info.get('atualizado_em', '-')})* | "
             f"**{lbl_ops[2]}** `{ult_av.get('estrategia', '-')}` | "
             f"**{lbl_ops[3]}** `{ult_av.get('janela_teste_temporal', '-')}` (`{fmt_num(int(ult_av.get('n_teste_temporal', 0)), idioma)}` {lbl_ops[4]})\n\n"
             f"**{lbl_ops[5]}** `{ult_av.get('decisao', '-')}` — {ult_av.get('motivo', '')}"
@@ -906,7 +906,7 @@ with tab_ml:
                 lg_cl = c_run.get("Longa_Permanencia", {}).get("challenger", {})
                 linhas_m.append({
                     "data": h_run.get("data_local", "-"),
-                    "versao": h_run.get("versao_resultante", "V5 Contínuo" if h_run.get("promovido") else "V5 Mantido"),
+                    "versao": h_run.get("versao_resultante", "V6 Contínuo" if h_run.get("promovido") else "Champion Mantido"),
                     "estrategia": h_run.get("estrategia", "-"),
                     "janela_treino": h_run.get("janela_treino_cal", "-"),
                     "janela_teste": h_run.get("janela_teste_temporal", "-"),

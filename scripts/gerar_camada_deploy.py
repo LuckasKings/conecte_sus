@@ -73,7 +73,8 @@ def gerar():
             transferido_intermun,
             internacao_fim_de_semana,
             qt_diarias,
-            uti_mes_to
+            uti_mes_to,
+            Obito
         FROM read_parquet('{PARQUET_GLOB}', hive_partitioning=true)
         USING SAMPLE 30000 ROWS (reservoir, 42)
     ) TO '{amostra_path}' (FORMAT PARQUET, COMPRESSION ZSTD);

@@ -778,11 +778,39 @@ with tab_gestao:
             lambda p: f"{'🔴 ' + lg_lbls[0] if p >= lg_crit else ('🟡 ' + lg_lbls[1] if p >= lg_med else '🟢 ' + lg_lbls[2])} ({p * 100:.1f}%)"
         )
 
-        st.write(t["p_count"].format(n=len(amostra)))
+        mt = t["match_tokens"]
+        real_ob_s = amostra["Obito"].fillna(0).astype(int) == 1 if "Obito" in amostra.columns else pd.Series(False, index=amostra.index)
+        real_lg_s = amostra["qt_diarias"].fillna(0).astype(int) >= 15
+        hit_ob_s = (amostra["p_obito"] >= ob_med) == real_ob_s
+        hit_lg_s = (amostra["p_longa"] >= lg_med) == real_lg_s
+        both_s = hit_ob_s & hit_lg_s
+
+        def _fmt_match(r_ob: bool, r_lg: bool, h_ob: bool, h_lg: bool) -> str:
+            real_txt = mt["obito"] if r_ob else (mt["alta_longa"] if r_lg else mt["alta_curta"])
+            if h_ob and h_lg:
+                return f"✅ {mt['ok']} • {real_txt}"
+            if h_ob or h_lg:
+                lg_mark = "✓" if h_lg else "✗"
+                ob_mark = "✓" if h_ob else "✗"
+                return f"⚠️ {mt['partial']} ({mt['short_lg']} {lg_mark}, {mt['short_ob']} {ob_mark}) • {real_txt}"
+            return f"❌ {mt['miss']} • {real_txt}"
+
+        amostra["desfecho_match"] = [
+            _fmt_match(r_ob, r_lg, h_ob, h_lg)
+            for r_ob, r_lg, h_ob, h_lg in zip(real_ob_s, real_lg_s, hit_ob_s, hit_lg_s)
+        ]
+
+        if not amostra.empty:
+            pct_both = float(both_s.mean() * 100)
+            pct_lg = float(hit_lg_s.mean() * 100)
+            pct_ob = float(hit_ob_s.mean() * 100)
+            st.write(f"{t['p_count'].format(n=len(amostra))} ({t['p_match_summary'].format(both=pct_both, lg=pct_lg, ob=pct_ob)}):")
+        else:
+            st.write(t["p_count"].format(n=0) + ":")
 
         colunas_visiveis = [
             "id_anonimo", "uf", "idade_anos", "sexo_desc", "esp_disp",
-            "motivo_cid", "qt_diarias", "uti_mes_to", "flag_longa", "flag_obito"
+            "motivo_cid", "qt_diarias", "uti_mes_to", "flag_longa", "flag_obito", "desfecho_match"
         ]
         p_cols_map = t["p_cols"]
         df_tabela = amostra[colunas_visiveis].rename(columns={
@@ -796,6 +824,7 @@ with tab_gestao:
             "uti_mes_to": p_cols_map["uti_mes_to"],
             "flag_longa": p_cols_map["flag_longa"],
             "flag_obito": p_cols_map["flag_obito"],
+            "desfecho_match": p_cols_map["desfecho_match"],
         })
 
         st.dataframe(

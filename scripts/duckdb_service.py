@@ -362,7 +362,8 @@ def obter_amostra_cockpit(uf="Todas", espec="Todos", min_dias=0, busca="", limit
             transferido_intermun,
             internacao_fim_de_semana,
             qt_diarias,
-            uti_mes_to
+            uti_mes_to,
+            Obito
         FROM {fonte_cockpit}
         WHERE {where_sql}
     ) AS filtrado

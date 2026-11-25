@@ -502,24 +502,26 @@ with tab_epi:
             with ya1:
                 fig_ano = go.Figure()
                 anos_str = evol_ano["ano"].astype(str)
+                mort_max = float(evol_ano["taxa_mortalidade"].max()) if not evol_ano["taxa_mortalidade"].isna().all() else 5.0
+                y2_top = 5.0 if mort_max <= 5.0 else round(mort_max * 1.15, 1)
                 fig_ano.add_trace(go.Bar(x=anos_str, y=evol_ano["internacoes"], name=t["g3_b"], marker_color="#3b82f6"))
                 fig_ano.add_trace(go.Scatter(x=anos_str, y=evol_ano["taxa_mortalidade"], name=t["g3_l"], yaxis="y2", mode="lines+markers", line=dict(color="#dc2626", width=3)))
                 fig_ano.update_layout(
                     height=290, template="plotly_white",
                     yaxis=dict(title=t["g3_y1"]),
-                    yaxis2=dict(title=t["g3_y2"], overlaying="y", side="right"),
+                    yaxis2=dict(title=t["g3_y2"], overlaying="y", side="right", range=[0, y2_top]),
                     legend=dict(x=0.01, y=0.99),
                     margin=dict(l=20, r=20, t=20, b=20),
                 )
                 st.plotly_chart(fig_ano, use_container_width=True)
             with ya2:
+                evol_ano_disp = evol_ano[["ano", "internacoes", "obitos", "taxa_mortalidade", "taxa_longa"]]
                 st.dataframe(
-                    evol_ano,
+                    evol_ano_disp,
                     use_container_width=True,
                     hide_index=True,
                     column_config={
                         "ano": st.column_config.NumberColumn(t["p_cols"]["ano"], format="%d"),
-                        "meses_ativos": st.column_config.NumberColumn(t["dq_uf_cols"]["meses_ativos"], format="%d"),
                         "internacoes": st.column_config.NumberColumn(t["col_int"], format="%d"),
                         "obitos": st.column_config.NumberColumn(t["col_ob_cnt"], format="%d"),
                         "taxa_mortalidade": st.column_config.NumberColumn(t["col_ob_pct"], format="%.2f%%"),

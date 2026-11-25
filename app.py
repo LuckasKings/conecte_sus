@@ -22,7 +22,7 @@ if os.path.join(BASE_DIR, "scripts") not in sys.path:
     sys.path.insert(0, os.path.join(BASE_DIR, "scripts"))
 
 import duckdb_service as ds
-from i18n import TEXTOS, get_dicionario_df, get_evolucao_df, get_glossario_df, tr_series, tr_val
+from i18n import TEXTOS, get_dicionario_df, get_evolucao_df, get_glossario_df, get_tecnologias_df, tr_series, tr_val
 
 # ==========================================
 # 1. Configuração da Página e Estilo Visual
@@ -424,6 +424,20 @@ with tab_ml:
             st.dataframe(df_lg_m, use_container_width=True, hide_index=True)
 
     st.markdown("---")
+    st.markdown(t["ml_models_hdr"])
+    st.caption(t["ml_models_sub"])
+    cards_ml = t["ml_models_cards"]
+    for row_idx in range(0, len(cards_ml), 2):
+        mc1, mc2 = st.columns(2)
+        for col_w, card in zip([mc1, mc2], cards_ml[row_idx:row_idx + 2]):
+            with col_w:
+                with st.container(border=True):
+                    st.markdown(f"##### {card['title']}")
+                    st.markdown(card["how"])
+                    st.markdown(card["pros"])
+                    st.markdown(card["cons"])
+
+    st.markdown("---")
     st.markdown(t["ml_evid"])
     col_img1, col_img2, col_img3 = st.columns(3)
     with col_img1:
@@ -752,6 +766,12 @@ with tab_jornada:
     st.markdown(t["j_evol_hdr"])
     df_evol = get_evolucao_df(idioma)
     render_wrapped_table(df_evol, ["16%", "17%", "16%", "18%", "33%"])
+
+    st.markdown("---")
+    st.markdown(t["j_tech_hdr"])
+    st.caption(t["j_tech_sub"])
+    df_tech = get_tecnologias_df(idioma)
+    render_wrapped_table(df_tech, ["20%", "20%", "28%", "32%"])
 
 st.markdown("---")
 st.markdown(f"<p style='text-align: center; color: #94a3b8; font-size: 0.85rem;'>{t['footer']}</p>", unsafe_allow_html=True)

@@ -258,6 +258,34 @@ TEXTOS = {
         "ml_ob_sub": "##### 1. Óbito Intra-hospitalar *(Média Nacional: 3,85%)*",
         "ml_lg_sub": "##### 2. Longa Permanência ≥ 15d *(Média Nacional: 6,17%)*",
         "ml_cols": {"Modelo": "Modelo", "ROC_AUC": "ROC-AUC", "PR_AUC": "PR-AUC", "Brier_Calibrado": "Brier Score", "Limiar_Otimo_Pct": "Corte Alerta (%)", "Sensibilidade_Pct": "Detecção (%)", "Especificidade_Pct": "Especif. (%)"},
+        "ml_models_hdr": "#### 🧠 Como Funciona Cada Modelo — Prós & Contras",
+        "ml_models_sub": "Resumo didático de como cada algoritmo avaliado no benchmark nacional decide o risco na admissão hospitalar:",
+        "ml_models_cards": [
+            {
+                "title": "1. Regressão Logística *(Baseline Linear)*",
+                "how": "**Como funciona:** Modelo estatístico clássico que soma pesos fixos para cada informação da entrada (idade, CID, leito) e aplica uma curva sigmoide para estimar a chance do desfecho.",
+                "pros": "**✅ Prós:** Muito rápido, transparente (mostra o peso exato de cada variável), consome quase zero memória e já nasce bem calibrado (`Brier 0,0334 / 0,0493`).",
+                "cons": "**⚠️ Contras:** Assume relação linear simples — não combina interações complexas (ex.: idade avançada + capítulo CID + urgência), ficando atrás em discriminação (`ROC-AUC 0,7805` e `PR-AUC 0,2916` em Longa Permanência)."
+            },
+            {
+                "title": "2. Random Forest *(Ensemble Bagging)*",
+                "how": "**Como funciona:** Constrói centenas de árvores de decisão independentes em sorteios aleatórios dos dados e decide a probabilidade final pela média dos votos de toda a floresta.",
+                "pros": "**✅ Prós:** Captura relações não lineares naturalmente, é robusto contra ruídos/outliers e atingiu a maior especificidade no teste nacional (`74,94%` em Óbito e `62,32%` em Longa).",
+                "cons": "**⚠️ Contras:** Gera arquivos pesados na memória RAM/nuvem, tem latência maior por consultar muitas árvores profundas e obteve menor precisão em eventos raros que o boosting (`PR-AUC 0,1994` em Óbito)."
+            },
+            {
+                "title": "3. XGBoost *(Gradient Boosting — Histograma)*",
+                "how": "**Como funciona:** Treina árvores em sequência em que cada nova árvore corrige os erros residuais das anteriores, usando histogramas numéricos e regularização L1/L2 integrada.",
+                "pros": "**✅ Prós:** Empatou na liderança absoluta em separação (`ROC-AUC 0,8795` em Óbito e `0,8161` em Longa), obteve maior detecção de óbitos (`88,47%`) e maior `PR-AUC` numérico (`0,2114 / 0,3427`).",
+                "cons": "**⚠️ Contras:** Ligeiramente mais lento e pesado no treino de 900 mil linhas do que o LightGBM, e sensível à dupla penalização em classes desbalanceadas (como visto ao combinar SMOTE + peso na V1)."
+            },
+            {
+                "title": "4. LightGBM *(Gradient Boosting Leaf-Wise — Modelo Oficial V4)*",
+                "how": "**Como funciona:** Evolução de gradient boosting baseada em histogramas que expande as folhas de maior ganho de erro (*leaf-wise*), reduzindo cálculos e acelerando drasticamente o aprendizado.",
+                "pros": "**✅ Prós:** Empate técnico no topo com o XGBoost (`ROC-AUC 0,8793 / 0,8160`; `Brier 0,0329 / 0,0480` após calibração), maior sensibilidade em Longa Permanência (`83,92%`), baixíssimo uso de RAM e resposta em milissegundos na nuvem.",
+                "cons": "**⚠️ Contras:** Crescimento *leaf-wise* pode superajustar bases pequenas sem controle de profundidade/folhas e exige calibração isotônica (feita na V4) mais gráficos de importância para explicar cada decisão clínica."
+            },
+        ],
         "ml_evid": "#### 📈 Evidências Visuais e Explicabilidade (V4 Nacional)",
         "ml_img1": "Curvas ROC e PR: quanto mais perto do topo/canto, maior a precisão do modelo.",
         "ml_img2": "Calibração Isotônica: curvas coladas na linha pontilhada provam que o % previsto é realista.",
@@ -369,6 +397,8 @@ TEXTOS = {
 - **Produto Final & Portfólio:** Adicionamos tradução instantânea PT/EN, filtro cascata Região → UF, Dicionário completo das 113 colunas SIH/SUS e publicação gratuita no Streamlit Cloud.
 """,
         "j_evol_hdr": "#### 📊 Linha do Tempo Comparativa das Versões (V1 → V4)",
+        "j_tech_hdr": "#### 🛠️ Tecnologias Utilizadas & Por Que Cada Escolha Foi Feita",
+        "j_tech_sub": "Arquitetura pensada para processar mais de 13,5 milhões de registros em computador comum e rodar gratuitamente em nuvem com resposta em milissegundos:",
         "footer": "SUS Analytics Brasil 2024 • DuckDB + Parquet + LightGBM V4 Calibrado • Portfólio de Inteligência em Saúde",
     },
     "en": {
@@ -462,6 +492,34 @@ TEXTOS = {
         "ml_ob_sub": "##### 1. In-Hospital Mortality *(National Avg: 3.85%)*",
         "ml_lg_sub": "##### 2. Long Stay ≥ 15 Days *(National Avg: 6.17%)*",
         "ml_cols": {"Modelo": "Model", "ROC_AUC": "ROC-AUC", "PR_AUC": "PR-AUC", "Brier_Calibrado": "Brier Score", "Limiar_Otimo_Pct": "Alert Cut (%)", "Sensibilidade_Pct": "Recall (%)", "Especificidade_Pct": "Specif. (%)"},
+        "ml_models_hdr": "#### 🧠 How Each Model Works — Pros & Cons",
+        "ml_models_sub": "Concise breakdown of how each algorithm evaluated in the national benchmark scores admission risk:",
+        "ml_models_cards": [
+            {
+                "title": "1. Logistic Regression *(Linear Baseline)*",
+                "how": "**How it works:** Classical statistical model that sums fixed weights across intake features and passes the total through a sigmoid curve to estimate outcome odds.",
+                "pros": "**✅ Pros:** Very fast, transparent feature coefficients, near-zero RAM footprint, and naturally well calibrated out of the box (`Brier 0.0334 / 0.0493`).",
+                "cons": "**⚠️ Cons:** Assumes strictly linear additivity — misses complex clinical interactions (e.g., advanced age × ICD-10 chapter × urgency), yielding lower Long Stay discrimination (`ROC-AUC 0.7805`, `PR-AUC 0.2916`)."
+            },
+            {
+                "title": "2. Random Forest *(Bagging Ensemble)*",
+                "how": "**How it works:** Builds hundreds of independent decision trees on random data and feature subsamples, averaging predictions across the entire forest.",
+                "pros": "**✅ Pros:** Captures non-linear relationships naturally, resists outliers/noise well, and reached the highest test specificity (`74.94%` Mortality, `62.32%` Long Stay).",
+                "cons": "**⚠️ Cons:** Produces large serialized files in memory/cloud, has slower inference across deep trees, and trailed gradient boosting on rare-event precision (`PR-AUC 0.1994` Mortality)."
+            },
+            {
+                "title": "3. XGBoost *(Histogram Gradient Boosting)*",
+                "how": "**How it works:** Trains trees sequentially so each new tree corrects residual errors from prior trees, using histogram binning and built-in L1/L2 regularization.",
+                "pros": "**✅ Pros:** Co-leader in overall ranking accuracy (`ROC-AUC 0.8795` Mortality, `0.8161` Long Stay), highest Mortality recall (`88.47%`), and highest raw `PR-AUC` (`0.2114 / 0.3427`).",
+                "cons": "**⚠️ Cons:** Slightly heavier and slower to train on 900k rows than LightGBM, and sensitive to stacked imbalance penalties (seen in the V1 SMOTE + class-weight collapse)."
+            },
+            {
+                "title": "4. LightGBM *(Leaf-Wise Gradient Boosting — Production V4)*",
+                "how": "**How it works:** Fast histogram-based gradient boosting that expands tree leaves with the highest error reduction (*leaf-wise*), cutting compute overhead substantially.",
+                "pros": "**✅ Pros:** Statistical tie at the top with XGBoost (`ROC-AUC 0.8793 / 0.8160`; calibrated `Brier 0.0329 / 0.0480`), top Long Stay recall (`83.92%`), low RAM, and millisecond cloud latency.",
+                "cons": "**⚠️ Cons:** Leaf-wise growth can overfit small/noisy datasets without leaf constraints and relies on post-hoc isotonic calibration plus importance charts for clinical explainability."
+            },
+        ],
         "ml_evid": "#### 📈 Visual Diagnostics & Explainability (V4 National)",
         "ml_img1": "ROC & PR Curves: curves closer to the top-left (ROC) or top-right (PR) indicate stronger accuracy.",
         "ml_img2": "Isotonic Calibration: curves hugging the diagonal dashed line confirm true clinical probabilities.",
@@ -573,6 +631,8 @@ TEXTOS = {
 - **Portfolio Product:** Added PT/EN bilingual switcher, cascading Region → State filters, full 113-column audit, and Streamlit Cloud deployment (`13.2 MiB` Git repo).
 """,
         "j_evol_hdr": "#### 📊 Version Evolution Summary Table (V1 → V4)",
+        "j_tech_hdr": "#### 🛠️ Tech Stack Used & Architectural Rationale",
+        "j_tech_sub": "Every library was chosen to process 13.58M federal admissions on standard hardware and serve sub-second cloud triage for free:",
         "footer": "SUS Analytics Brazil 2024 • DuckDB + Parquet + Calibrated LightGBM V4 • Healthcare Intelligence Portfolio",
     },
     "es": {
@@ -666,6 +726,34 @@ TEXTOS = {
         "ml_ob_sub": "##### 1. Mortalidad Intrahospitalaria *(Promedio Nacional: 3,85%)*",
         "ml_lg_sub": "##### 2. Larga Estancia ≥ 15 Días *(Promedio Nacional: 6,17%)*",
         "ml_cols": {"Modelo": "Modelo", "ROC_AUC": "ROC-AUC", "PR_AUC": "PR-AUC", "Brier_Calibrado": "Brier Score", "Limiar_Otimo_Pct": "Corte Alerta (%)", "Sensibilidade_Pct": "Detección (%)", "Especificidade_Pct": "Especif. (%)"},
+        "ml_models_hdr": "#### 🧠 Cómo Funciona Cada Modelo — Pros y Contras",
+        "ml_models_sub": "Resumen claro de cómo cada algoritmo evaluado en el comparativo nacional calcula el riesgo al ingreso:",
+        "ml_models_cards": [
+            {
+                "title": "1. Regresión Logística *(Baseline Lineal)*",
+                "how": "**Cómo funciona:** Modelo estadístico clásico que suma pesos fijos por cada variable de ingreso y aplica una función sigmoide para estimar la probabilidad del evento.",
+                "pros": "**✅ Pros:** Muy rápida, coeficientes transparentes, consumo casi nulo de RAM y naturalmente bien calibrada (`Brier 0,0334 / 0,0493`).",
+                "cons": "**⚠️ Contras:** Asume linealidad simple — no captura interacciones clínicas complejas (ej.: edad avanzada × capítulo CIE × urgencia), quedando atrás en Larga Estancia (`ROC-AUC 0,7805` y `PR-AUC 0,2916`)."
+            },
+            {
+                "title": "2. Random Forest *(Ensemble Bagging)*",
+                "how": "**Cómo funciona:** Entrena cientos de árboles de decisión independientes sobre submuestras aleatorias de datos y variables, promediando el voto de todo el bosque.",
+                "pros": "**✅ Pros:** Captura relaciones no lineales de forma robusta frente a valores atípicos y logró la mayor especificidad nacional (`74,94%` en Mortalidad y `62,32%` en Larga Estancia).",
+                "cons": "**⚠️ Contras:** Genera modelos pesados en RAM y en la nube, responde más lento entre árboles profundos y obtuvo menor precisión en eventos poco frecuentes (`PR-AUC 0,1994` Mortalidad)."
+            },
+            {
+                "title": "3. XGBoost *(Gradient Boosting — Histograma)*",
+                "how": "**Cómo funciona:** Entrena árboles de forma secuencial donde cada árbol corrige los errores residuales anteriores, usando histogramas numéricos y regularización L1/L2.",
+                "pros": "**✅ Pros:** Colíder en capacidad de separación (`ROC-AUC 0,8795` Mortalidad y `0,8161` Larga Estancia), mayor detección en Mortalidad (`88,47%`) y mayor `PR-AUC` numérico (`0,2114 / 0,3427`).",
+                "cons": "**⚠️ Contras:** Ligeramente más lento y pesado al entrenar 900 mil filas que LightGBM, además de requerir cuidado con pesos por desbalance (evidenciado en el colapso con SMOTE en V1)."
+            },
+            {
+                "title": "4. LightGBM *(Gradient Boosting Leaf-Wise — Modelo Oficial V4)*",
+                "how": "**Cómo funciona:** Algoritmo rápido por histogramas que expande primero las hojas con mayor ganancia de error (*leaf-wise*), reduciendo cómputo y memoria.",
+                "pros": "**✅ Pros:** Empate técnico en la cima con XGBoost (`ROC-AUC 0,8793 / 0,8160`; `Brier 0,0329 / 0,0480` tras calibración), mayor sensibilidad en Larga Estancia (`83,92%`), mínima RAM y latencia en milisegundos.",
+                "cons": "**⚠️ Contras:** El crecimiento *leaf-wise* puede sobreajustar bases pequeñas sin límite de hojas y requiere calibración isotónica más gráficos de importancia para explicabilidad clínica."
+            },
+        ],
         "ml_evid": "#### 📈 Evidencias Visuales y Explicabilidad (V4 Nacional)",
         "ml_img1": "Curvas ROC y PR: cuanto más cerca de la esquina superior, mayor precisión discriminativa.",
         "ml_img2": "Calibración Isotónica: curvas pegadas a la diagonal punteada prueban probabilidades realistas.",
@@ -777,12 +865,17 @@ TEXTOS = {
 - **Producto Final:** Interfaz trilingüe (PT/EN/ES), filtros en cascada Región → Estado, diccionario completo de 113 columnas y despliegue online.
 """,
         "j_evol_hdr": "#### 📊 Tabla Resumen de Evolución de Versiones (V1 → V4)",
+        "j_tech_hdr": "#### 🛠️ Stack Tecnológico Utilizado y Por Qué Se Eligió",
+        "j_tech_sub": "Arquitectura diseñada para procesar más de 13,5 millones de registros en hardware estándar y operar gratis en la nube con latencia de milisegundos:",
         "footer": "SUS Analytics Brasil 2024 • DuckDB + Parquet + LightGBM V4 Calibrado • Portafolio de Inteligencia en Salud",
     },
 }
 
 
-from catalogo_sih import get_catalogo_completo_df
+try:
+    from catalogo_sih import get_catalogo_completo_df
+except ImportError:
+    from scripts.catalogo_sih import get_catalogo_completo_df
 
 
 def get_dicionario_df(lang: str) -> pd.DataFrame:
@@ -810,6 +903,76 @@ def get_evolucao_df(lang: str) -> pd.DataFrame:
         {"Versão": "V3 (IA Ética)", "Escopo": "Acre (56.459)", "Alvos": "Longa Perm. + Óbito", "Features": "8 (clínicas e éticas)", "Decisão / Marco Principal": "Remoção de `raca_cor` e `mes_internacao` da IA clínica (mantidas só na Aba 1 de Equidade)."},
         {"Versão": "V4 (Nacional Cloud)", "Escopo": "Brasil 27 UFs (13,58M)", "Alvos": "Longa Perm. + Óbito", "Features": "8 (LightGBM calibrado)", "Decisão / Marco Principal": "Lakehouse DuckDB/Parquet, amostra de 1,5M, Calibração Isotônica (Brier 0,033/0,048), app PT/EN/ES na nuvem."},
     ])
+
+
+_TECH_STACK = [
+    (
+        "Python 3.11+ & Joblib",
+        {"pt": "Linguagem Base & Serialização", "en": "Core Language & Serialization", "es": "Lenguaje Base y Serialización"},
+        {"pt": "Orquestra ETL, modelagem, calibração e app web; Joblib empacota pipelines V4 em .joblib com cache instantâneo.", "en": "Unifies ETL, modeling, calibration, and web UI; Joblib packages V4 pipelines into .joblib for instant caching.", "es": "Unifica ETL, modelado, calibración y app web; Joblib empaqueta los pipelines V4 en .joblib con caché instantánea."},
+        {"pt": "Evita fragmentação entre pesquisa e produção e garante reprodutibilidade determinística na nuvem.", "en": "Avoids research-to-production friction and ensures deterministic model loading in the cloud.", "es": "Evita fricción entre investigación y producción y garantiza carga determinística en la nube."},
+    ),
+    (
+        "datasuspy + FTP DataSUS",
+        {"pt": "Ingestão de Dados Públicos", "en": "Public Health Ingestion", "es": "Ingesta de Salud Pública"},
+        {"pt": "Baixa em paralelo (ThreadPoolExecutor) e descompacta os 324 arquivos .dbc oficiais das 27 UFs direto do Ministério da Saúde.", "en": "Downloads in parallel and decompresses all 324 official .dbc state files directly from the Ministry of Health FTP.", "es": "Descarga en paralelo y descomprime los 324 archivos .dbc oficiales de los 27 estados desde el FTP oficial."},
+        {"pt": "Elimina cliques manuais no TabNet/DataSUS e torna a coleta 100% automatizável e auditável.", "en": "Eliminates manual portal downloads and makes national data acquisition 100% reproducible.", "es": "Elimina descargas manuales y vuelve la recolección nacional 100% automatizable y reproducible."},
+    ),
+    (
+        "PyArrow & Parquet (Hive)",
+        {"pt": "Armazenamento Lakehouse", "en": "Lakehouse Storage", "es": "Almacenamiento Lakehouse"},
+        {"pt": "Converte e comprime ~20 GB brutos de 13,58M internações em apenas 186,06 MB particionados por ano/uf/mes (ZSTD).", "en": "Converts and compresses ~20 GB of 13.58M admissions into 186.06 MB partitioned by year/state/month (ZSTD).", "es": "Convierte y comprime ~20 GB de 13,58M ingresos en solo 186,06 MB particionados por año/estado/mes (ZSTD)."},
+        {"pt": "Leitura colunar até 100x menor que CSV, lendo só as colunas e estados filtrados sem estourar disco ou RAM.", "en": "Columnar compression reduces size ~100x vs CSV and prunes unread columns/partitions from RAM.", "es": "Compresión columnar ~100x menor que CSV; lee solo columnas y estados necesarios sin saturar RAM."},
+    ),
+    (
+        "DuckDB",
+        {"pt": "Motor Analítico OLAP", "en": "Embedded OLAP SQL Engine", "es": "Motor Analítico OLAP"},
+        {"pt": "Executa consultas SQL sobre partições Parquet locais ou sobre o Cubo de 3,99 MB com 100% de exatidão nos 13,58M registros.", "en": "Runs SQL queries over local Parquet partitions or the 3.99 MB Cube with 100% exact parity over 13.58M rows.", "es": "Ejecuta consultas SQL sobre Parquet local o el Cubo de 3,99 MB con 100% de exactitud sobre 13,58M filas."},
+        {"pt": "Dispensa servidor Postgres/BigQuery pago, roda embutido no Python e responde filtros em milissegundos.", "en": "Requires no paid external warehouse server, runs inside Python, and answers aggregations in milliseconds.", "es": "No requiere servidor externo pago, corre embebido en Python y responde agregaciones en milisegundos."},
+    ),
+    (
+        "Pandas & NumPy",
+        {"pt": "Manipulação & Auditoria", "en": "Data Wrangling & Audits", "es": "Transformación y Auditoría"},
+        {"pt": "Padroniza faixas etárias, capítulos CID-10, flags geográficas (transferido_intermun) e valida nulidade das 113 colunas.", "en": "Standardizes age brackets, ICD-10 chapters, geographic flags (transferido_intermun), and nulls across all 113 columns.", "es": "Estandariza rangos etarios, capítulos CIE-10, variables geográficas y auditoría de nulos de las 113 columnas."},
+        {"pt": "Integração nativa com PyArrow, DuckDB e Scikit-Learn para pré-processamento tabular expresso.", "en": "Seamless interoperability with PyArrow, DuckDB, and Scikit-Learn for clean tabular preprocessing.", "es": "Interoperabilidad directa con PyArrow, DuckDB y Scikit-Learn para preprocesamiento tabular limpio."},
+    ),
+    (
+        "Scikit-Learn",
+        {"pt": "Pipelines, Baselines & Calibração", "en": "Pipelines, Baselines & Calibration", "es": "Pipelines, Baselines y Calibración"},
+        {"pt": "Isola OneHotEncoder + StandardScaler em Pipeline, treina baselines (Logística/RF) e aplica CalibratedClassifierCV isotônica.", "en": "Wraps OneHotEncoder + StandardScaler in Pipeline, runs baselines (Logistic/RF), and fits isotonic calibration.", "es": "Encapsula OneHotEncoder + StandardScaler en Pipeline, entrena baselines y ajusta Calibración Isotónica."},
+        {"pt": "Impede data leakage no pré-processamento e derrubou o Brier Score de 0,12–0,16 para 0,0329 / 0,0480.", "en": "Prevents preprocessing leakage and cut probability error (Brier Score) down to 0.0329 / 0.0480.", "es": "Evita fugas en preprocesamiento y bajó el Brier Score de 0,12–0,16 a 0,0329 / 0,0480."},
+    ),
+    (
+        "LightGBM & XGBoost",
+        {"pt": "Gradient Boosting em Produção", "en": "Gradient Boosting Models", "es": "Gradient Boosting en Producción"},
+        {"pt": "Modelos comparados em 1,5M internações estratificadas; LightGBM foi escolhido para servir as previsões duplas na Aba 3.", "en": "Benchmarked side-by-side on 1.5M stratified admissions; LightGBM was selected for dual triage inference in Tab 3.", "es": "Comparados en 1,5M ingresos estratificados; LightGBM fue elegido para servir la doble predicción en Pestaña 3."},
+        {"pt": "LightGBM empatou no topo em ROC-AUC (0,879 / 0,816), liderou detecção longa (83,9%) e cabe leve na nuvem.", "en": "LightGBM matched top ROC-AUC (0.879 / 0.816), led Long Stay recall (83.9%), and runs lean in cloud RAM.", "es": "LightGBM empató en la cima de ROC-AUC (0,879 / 0,816), lideró sensibilidad (83,9%) y consume mínima RAM."},
+    ),
+    (
+        "Plotly & Matplotlib",
+        {"pt": "Visualização & Evidências", "en": "Interactive & Scientific Charts", "es": "Gráficos Interactivos y Científicos"},
+        {"pt": "Plotly gera gráficos interativos filtráveis na Aba 1; Matplotlib gera figuras estáticas 300 DPI (ROC/PR, calibração e pesos).", "en": "Plotly powers interactive Tab 1 exploration; Matplotlib exports 300-DPI ROC/PR, calibration, and feature-importance plots.", "es": "Plotly crea gráficos interactivos en Pestaña 1; Matplotlib exporta curvas ROC/PR, calibración e importancias a 300 DPI."},
+        {"pt": "Une exploração clínica interativa no navegador com transparência científica auditável no repositório.", "en": "Combines interactive browser exploration for clinicians with publication-grade model diagnostics.", "es": "Combina exploración clínica interactiva en la web con diagnóstico científico auditable del modelo."},
+    ),
+    (
+        "Streamlit (+ Cloud)",
+        {"pt": "Aplicação Web & Deploy", "en": "Web App & Cloud Hosting", "es": "Aplicación Web y Nube"},
+        {"pt": "Interface web em Python puro com cache (st.cache_data), seletores PT/EN/ES, simulador de admissão e cockpit de leitos.", "en": "Pure-Python web app with caching (st.cache_data), PT/EN/ES switcher, admission simulator, and ward cockpit.", "es": "Interfaz web en Python con caché (st.cache_data), selector PT/EN/ES, simulador de ingreso y panel de camas."},
+        {"pt": "Permite deploy gratuito contínuo via GitHub e prototipagem clínica ágil sem necessidade de frontend separado.", "en": "Enables free continuous GitHub deployment and rapid clinical prototyping without a separate frontend stack.", "es": "Permite despliegue gratuito continuo desde GitHub y prototipado clínico rápido sin otro frontend."},
+    ),
+]
+
+
+def get_tecnologias_df(lang: str) -> pd.DataFrame:
+    cols_map = {
+        "pt": ("Tecnologia", "Papel na Arquitetura", "O Que Faz no Projeto", "Por Que Foi Escolhida"),
+        "en": ("Technology", "Architecture Role", "What It Does Here", "Why We Chose It"),
+        "es": ("Tecnología", "Rol en la Arquitectura", "Qué Hace en el Proyecto", "Por Qué Se Eligió"),
+    }
+    cols = cols_map.get(lang, cols_map["pt"])
+    key = lang if lang in ("pt", "en", "es") else "pt"
+    rows = [{cols[0]: name, cols[1]: role[key], cols[2]: what[key], cols[3]: why[key]} for name, role, what, why in _TECH_STACK]
+    return pd.DataFrame(rows)
 
 
 def get_glossario_df(lang: str) -> pd.DataFrame:

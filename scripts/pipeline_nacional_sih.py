@@ -393,15 +393,128 @@ def _consolidar_totais_banco(particoes: dict) -> dict:
     }
 
 
+def _auditar_lote_base_2024(historico: dict) -> dict | None:
+    """Consolida métricas reais da carga base 2024 a partir das partições locais para compor histórico."""
+    parts_2024 = [v for v in historico.get("particoes", {}).values() if int(v.get("ano", 0)) == 2024]
+    if not parts_2024:
+        return None
+    dir_2024 = PARQUET_DIR / "ano=2024"
+    pct_raca, pct_esp, pct_cid, bad_sexo = 0.0, 0.0, 0.0, 0
+    if dir_2024.exists():
+        glob_24 = str(dir_2024 / "**" / "*.parquet").replace("\\", "/")
+        con = duckdb.connect(database=":memory:")
+        r = con.execute(
+            f"""
+            SELECT
+                COALESCE(AVG(CASE WHEN raca_cor_desc = 'Nao_Declarada' THEN 100.0 ELSE 0.0 END), 0.0),
+                COALESCE(AVG(CASE WHEN especialidade_leito = 'Outras' THEN 100.0 ELSE 0.0 END), 0.0),
+                COALESCE(AVG(CASE WHEN capitulo_cid = 'Ignorado' THEN 100.0 ELSE 0.0 END), 0.0),
+                CAST(COALESCE(SUM(CASE WHEN sexo NOT IN ('1', '3') THEN 1 ELSE 0 END), 0) AS BIGINT)
+            FROM read_parquet('{glob_24}', hive_partitioning=true)
+            """
+        ).fetchone()
+        con.close()
+        pct_raca, pct_esp, pct_cid, bad_sexo = round(float(r[0]), 3), round(float(r[1]), 3), round(float(r[2]), 4), int(r[3])
+
+    aceitos = sum(int(v.get("n_aceito", 0)) for v in parts_2024)
+    obitos = sum(int(v.get("obitos", 0)) for v in parts_2024)
+    longas = sum(int(v.get("longas", 0)) for v in parts_2024)
+    brutos = sum(int(v.get("n_bruto", v.get("n_aceito", 0))) for v in parts_2024)
+    desc = sum(int(v.get("n_descartado_filtro", 0)) for v in parts_2024)
+    dedup = sum(int(v.get("n_dedup", 0)) for v in parts_2024)
+    datas = sorted(str(v.get("data_ingestao_utc", ""))[:10] for v in parts_2024 if v.get("data_ingestao_utc"))
+    dt_lbl = f"{datas[0]} 00:00:00" if datas else "2026-11-24 00:00:00"
+    n_ac = max(aceitos, 1)
+    return {
+        "data_execucao_local": dt_lbl,
+        "anos_novos": [2024],
+        "ufs_novas_count": len({v.get("uf") for v in parts_2024}),
+        "competencias_novas_count": len({int(v.get("mes", 0)) for v in parts_2024}),
+        "range_lote_novo": "2024/01 → 2024/12",
+        "qtd_particoes_novas": len(parts_2024),
+        "registros_brutos": brutos,
+        "registros_aceitos": aceitos,
+        "registros_descartados_filtro": desc,
+        "registros_deduplicados": dedup,
+        "obitos_lote": obitos,
+        "longas_lote": longas,
+        "taxa_obito_lote_pct": round(obitos * 100.0 / n_ac, 2),
+        "taxa_longa_lote_pct": round(longas * 100.0 / n_ac, 2),
+        "qualidade_lote": {
+            "pct_raca_nd": pct_raca,
+            "pct_esp_outras": pct_esp,
+            "pct_cid_ign": pct_cid,
+            "bad_sexo_pos_filtro": bad_sexo,
+            "bad_idade_pre_filtro": 0,
+            "bad_diarias_pre_filtro": desc,
+        },
+        "origem": "Carga Base Nacional 2024",
+    }
+
+
+def _compactar_lote_historico(ev: dict) -> dict:
+    aceitos = int(ev.get("registros_aceitos", 0))
+    n_ac = max(aceitos, 1)
+    ob = int(ev.get("obitos_lote", 0))
+    lg = int(ev.get("longas_lote", 0))
+    return {
+        "data_execucao_local": ev.get("data_execucao_local", "-"),
+        "anos_novos": ev.get("anos_novos", []),
+        "ufs_novas_count": int(ev.get("ufs_novas_count", 0)),
+        "competencias_novas_count": int(ev.get("competencias_novas_count", 0)),
+        "range_lote_novo": ev.get("range_lote_novo", "-"),
+        "qtd_particoes_novas": int(ev.get("qtd_particoes_novas", 0)),
+        "registros_brutos": int(ev.get("registros_brutos", 0)),
+        "registros_aceitos": aceitos,
+        "registros_descartados_filtro": int(ev.get("registros_descartados_filtro", 0)),
+        "registros_deduplicados": int(ev.get("registros_deduplicados", 0)),
+        "obitos_lote": ob,
+        "longas_lote": lg,
+        "taxa_obito_lote_pct": ev.get("taxa_obito_lote_pct", round(ob * 100.0 / n_ac, 2)),
+        "taxa_longa_lote_pct": ev.get("taxa_longa_lote_pct", round(lg * 100.0 / n_ac, 2)),
+        "qualidade_lote": ev.get("qualidade_lote", {}),
+        "origem": ev.get("origem", "Incremental FTP DataSUS"),
+    }
+
+
+def _montar_historico_cargas_deploy(historico: dict, resumo_previo: dict) -> list[dict]:
+    itens = []
+    vistos = set()
+    candidatos = []
+
+    base_24 = _auditar_lote_base_2024(historico)
+    if base_24:
+        candidatos.append(base_24)
+
+    for prev_item in resumo_previo.get("historico_cargas", []):
+        if int(prev_item.get("qtd_particoes_novas", 0)) > 0:
+            candidatos.append(prev_item)
+
+    for ev in historico.get("execucoes", []):
+        if int(ev.get("qtd_particoes_novas", 0)) > 0:
+            candidatos.append(_compactar_lote_historico(ev))
+
+    for item in candidatos:
+        chave = (item.get("range_lote_novo"), int(item.get("qtd_particoes_novas", 0)), int(item.get("registros_aceitos", 0)))
+        if chave not in vistos:
+            vistos.add(chave)
+            itens.append(_compactar_lote_historico(item))
+
+    itens.sort(key=lambda x: (str(x.get("data_execucao_local", "")), str(x.get("range_lote_novo", ""))))
+    return itens[-50:]
+
+
 def main():
+    anos_padrao = list(range(2024, max(2026, datetime.now().year) + 1))
     parser = argparse.ArgumentParser(description="Pipeline Incremental Multi-Ano SIH/SUS -> Parquet Hive")
     parser.add_argument("--ufs", nargs="+", default=TODAS_UFS, help="Lista de siglas de UFs (padrão: 27)")
-    parser.add_argument("--anos", nargs="+", type=int, default=[2024, 2025, 2026], help="Anos alvo")
+    parser.add_argument("--anos", nargs="+", type=int, default=anos_padrao, help="Anos alvo")
     parser.add_argument("--ano", type=int, default=None, help="Alias opcional para um único ano")
     parser.add_argument("--meses", nargs="+", type=int, default=list(range(1, 13)), help="Meses 1..12")
     parser.add_argument("--workers", type=int, default=6, help="Downloads/conversões em paralelo")
     parser.add_argument("--manter-dbc", action="store_true", help="Manter arquivos .dbc baixados após conversão")
     parser.add_argument("--reindexar-manifesto", action="store_true", help="Apenas sincronizar manifesto com o disco sem acessar FTP")
+    parser.add_argument("--atualizar-resumo", action="store_true", help="Regerar resumo_ultima_carga.json com historico completo sem acessar FTP")
     args = parser.parse_args()
 
     anos = [args.ano] if args.ano is not None else sorted(set(args.anos))
@@ -413,8 +526,29 @@ def main():
     if idx_novas:
         print(f"Manifesto sincronizado com {idx_novas} partições já existentes no disco.", flush=True)
 
-    if args.reindexar_manifesto:
+    if args.reindexar_manifesto or args.atualizar_resumo:
         _write_json_atomic(HISTORICO_PATH, historico)
+        if args.atualizar_resumo:
+            resumo_previo = {}
+            if RESUMO_CARGA_PATH.exists():
+                try:
+                    with open(RESUMO_CARGA_PATH, "r", encoding="utf-8") as f:
+                        resumo_previo = json.load(f)
+                except Exception:
+                    resumo_previo = {}
+            totais_banco = _consolidar_totais_banco(historico["particoes"])
+            hist_deploy = _montar_historico_cargas_deploy(historico, resumo_previo)
+            ultimo_lote = hist_deploy[-1] if hist_deploy else resumo_previo.get("ultimo_lote_com_dados", {})
+            payload_resumo = {
+                "ultima_verificacao_local": resumo_previo.get("ultima_verificacao_local", datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+                "ultima_verificacao_particoes_puladas": int(resumo_previo.get("ultima_verificacao_particoes_puladas", totais_banco["total_particoes"])),
+                "ultima_verificacao_particoes_novas": int(resumo_previo.get("ultima_verificacao_particoes_novas", 0)),
+                "ultimo_lote_com_dados": ultimo_lote,
+                "historico_cargas": hist_deploy,
+                "totais_banco": totais_banco,
+            }
+            _write_json_atomic(RESUMO_CARGA_PATH, payload_resumo)
+            print(f"Resumo deploy atualizado ({len(hist_deploy)} lotes em historico_cargas).", flush=True)
         print(f"Manifesto salvo ({len(historico['particoes'])} partições). Saindo.", flush=True)
         return
 
@@ -523,6 +657,8 @@ def main():
         "registros_deduplicados": lote_regs["dedup"],
         "obitos_lote": lote_regs["obitos"],
         "longas_lote": lote_regs["longas"],
+        "taxa_obito_lote_pct": round(lote_regs["obitos"] * 100.0 / n_ac, 2) if lote_regs["aceitos"] else 0.0,
+        "taxa_longa_lote_pct": round(lote_regs["longas"] * 100.0 / n_ac, 2) if lote_regs["aceitos"] else 0.0,
         "qualidade_lote": {
             "pct_raca_nd": round(lote_regs["qtd_raca_nd"] * 100.0 / n_ac, 3) if lote_regs["aceitos"] else 0.0,
             "pct_esp_outras": round(lote_regs["qtd_esp_outras"] * 100.0 / n_ac, 3) if lote_regs["aceitos"] else 0.0,
@@ -531,14 +667,15 @@ def main():
             "bad_idade_pre_filtro": lote_regs["bad_idade_pre"],
             "bad_diarias_pre_filtro": lote_regs["bad_diarias_pre"],
         },
+        "origem": "Incremental FTP DataSUS",
         "totais_banco": totais_banco,
     }
 
     historico["execucoes"].append(resumo_exec)
-    historico["execucoes"] = historico["execucoes"][-30:]
+    historico["execucoes"] = historico["execucoes"][-50:]
     _write_json_atomic(HISTORICO_PATH, historico)
 
-    # Preserva métricas do último lote que realmente adicionou dados caso esta execução tenha tido 0 arquivos novos
+    # Preserva métricas e histórico dos lotes reais para exibição auditável na Aba 2
     resumo_previo = {}
     if RESUMO_CARGA_PATH.exists():
         try:
@@ -547,12 +684,14 @@ def main():
         except Exception:
             resumo_previo = {}
 
-    ultimo_lote_efetivo = resumo_exec if stats["OK"] > 0 else resumo_previo.get("ultimo_lote_com_dados", resumo_exec)
+    hist_deploy = _montar_historico_cargas_deploy(historico, resumo_previo)
+    ultimo_lote_efetivo = hist_deploy[-1] if hist_deploy else resumo_previo.get("ultimo_lote_com_dados", resumo_exec)
     payload_resumo = {
         "ultima_verificacao_local": resumo_exec["data_execucao_local"],
         "ultima_verificacao_particoes_puladas": stats["PULADO"],
         "ultima_verificacao_particoes_novas": stats["OK"],
         "ultimo_lote_com_dados": ultimo_lote_efetivo,
+        "historico_cargas": hist_deploy,
         "totais_banco": totais_banco,
     }
     _write_json_atomic(RESUMO_CARGA_PATH, payload_resumo)

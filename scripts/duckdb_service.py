@@ -22,6 +22,7 @@ CUBO_PATH = DEPLOY_DIR / "cubo_epidemiologico_brasil_2024.parquet"
 AMOSTRA_PATH = DEPLOY_DIR / "amostra_cockpit_brasil_2024.parquet"
 RESUMO_CARGA_PATH = DEPLOY_DIR / "resumo_ultima_carga.json"
 REGISTRO_MODELOS_PATH = BASE_DIR / "modelos" / "registro_modelos_v5.json"
+POLITICA_MLOPS_PATH = BASE_DIR / "modelos" / "politica_mlops.json"
 
 
 def parquet_bruto_disponivel() -> bool:
@@ -653,6 +654,16 @@ def obter_registro_modelos() -> dict | None:
     if REGISTRO_MODELOS_PATH.exists():
         try:
             with open(REGISTRO_MODELOS_PATH, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return None
+    return None
+
+
+def obter_politica_mlops() -> dict | None:
+    if POLITICA_MLOPS_PATH.exists():
+        try:
+            with open(POLITICA_MLOPS_PATH, "r", encoding="utf-8") as f:
                 return json.load(f)
         except Exception:
             return None

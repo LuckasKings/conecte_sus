@@ -1,0 +1,90 @@
+name: SIH/SUS Pipeline Contínuo & MLOps
+
+on:
+  schedule:
+    # Roda automaticamente todo dia 5 e dia 20 às 06:00 UTC (~03:00 BRT)
+    - cron: "0 6 5,20 * *"
+  workflow_dispatch:
+    inputs:
+      forcar_retreino:
+        description: "Forçar retreinamento Champion vs. Challenger mesmo antes de acumular 3 novas competências"
+        required: false
+        default: false
+        type: boolean
+      forcar_deploy:
+        description: "Forçar reconstrução da camada deploy"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sih-mlops-continuo
+  cancel-in-progress: false
+
+jobs:
+  atualizar-dados-e-modelos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout repositório
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: "requirements-pipeline.txt"
+
+      - name: Instalar dependências do pipeline & IA
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-pipeline.txt
+
+      - name: Restaurar Data Lake histórico (GitHub Release lakehouse-data)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python -u scripts/sync_lakehouse_release.py download --tag lakehouse-data
+
+      - name: Executar Orquestrador Contínuo (Ingestão FTP + Deploy + Gatilho Híbrido MLOps)
+        run: |
+          FLAGS=""
+          if [ "${{ inputs.forcar_retreino }}" = "true" ]; then
+            FLAGS="$FLAGS --forcar-retreino"
+          fi
+          if [ "${{ inputs.forcar_deploy }}" = "true" ]; then
+            FLAGS="$FLAGS --forcar-deploy"
+          fi
+          python -u scripts/orquestrador_continuo.py --workers 6 $FLAGS
+
+      - name: Atualizar GitHub Release caso tenham chegado novos dados
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ANOS_NOVOS=$(python -c "import json; d=json.load(open('dados/deploy/resumo_ultima_carga.json', encoding='utf-8')); print(' '.join(str(a) for a in (d.get('ultimo_lote_com_dados', {}).get('anos_novos', []) if d.get('ultima_verificacao_particoes_novas', 0) > 0 else [])))")
+          if [ -n "$ANOS_NOVOS" ]; then
+            echo "Sincronizando anos atualizados na Release: $ANOS_NOVOS"
+            python -u scripts/sync_lakehouse_release.py upload --tag lakehouse-data --anos $ANOS_NOVOS
+          else
+            echo "Nenhuma partição nova baixada nesta janela; Release preservada sem upload."
+          fi
+
+      - name: Commitar e enviar camada deploy/modelos/figuras atualizados (Auto-deploy Streamlit Cloud)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dados/deploy/ modelos/ figuras/
+          if git diff --cached --quiet; then
+            echo "Nenhuma alteração nos artefatos versionados."
+          else
+            git commit -m "chore(mlops): atualizacao automatica incremental SIH/SUS [skip ci]"
+            git push
+          fi

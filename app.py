@@ -248,6 +248,11 @@ def get_registro_modelos():
     return ds.obter_registro_modelos()
 
 
+@st.cache_data(ttl=60)
+def get_politica_mlops():
+    return ds.obter_politica_mlops()
+
+
 if not ds.parquet_disponivel():
     st.error("Nenhuma partição Parquet encontrada em `dados/`. Execute `scripts/gerar_camada_deploy.py` primeiro.")
     st.stop()
@@ -572,6 +577,46 @@ with tab_qual:
                 unsafe_allow_html=True,
             )
         st.write("")
+        hist_cargas = resumo_carga.get("historico_cargas", [])
+        if hist_cargas:
+            st.markdown(t["dq_hist_hdr"])
+            st.caption(t["dq_hist_sub"])
+            linhas_hist = []
+            for item in reversed(hist_cargas):
+                ql_h = item.get("qualidade_lote", {})
+                linhas_hist.append({
+                    "data": item.get("data_execucao_local", "-"),
+                    "periodo": item.get("range_lote_novo", "-"),
+                    "particoes": int(item.get("qtd_particoes_novas", 0)),
+                    "brutos": int(item.get("registros_brutos", 0)),
+                    "aceitos": int(item.get("registros_aceitos", 0)),
+                    "descartados": int(item.get("registros_descartados_filtro", 0)),
+                    "dedup": int(item.get("registros_deduplicados", 0)),
+                    "raca_nd": float(ql_h.get("pct_raca_nd", 0.0)),
+                    "cid_ign": float(ql_h.get("pct_cid_ign", 0.0)),
+                    "esp_outras": float(ql_h.get("pct_esp_outras", 0.0)),
+                    "bad_sexo": int(ql_h.get("bad_sexo_pos_filtro", 0)),
+                    "origem": item.get("origem", "-"),
+                })
+            cols_h = t["dq_hist_cols"]
+            df_hist = pd.DataFrame(linhas_hist).rename(columns=cols_h)
+            st.dataframe(
+                df_hist,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    cols_h["particoes"]: st.column_config.NumberColumn(format="%d"),
+                    cols_h["brutos"]: st.column_config.NumberColumn(format="%d"),
+                    cols_h["aceitos"]: st.column_config.NumberColumn(format="%d"),
+                    cols_h["descartados"]: st.column_config.NumberColumn(format="%d"),
+                    cols_h["dedup"]: st.column_config.NumberColumn(format="%d"),
+                    cols_h["raca_nd"]: st.column_config.NumberColumn(format="%.3f%%"),
+                    cols_h["cid_ign"]: st.column_config.NumberColumn(format="%.4f%%"),
+                    cols_h["esp_outras"]: st.column_config.NumberColumn(format="%.3f%%"),
+                    cols_h["bad_sexo"]: st.column_config.NumberColumn(format="%d"),
+                },
+            )
+            st.write("")
     else:
         st.info(t["dq_load_empty"])
 
@@ -771,6 +816,97 @@ with tab_ml:
         if linhas_ops:
             df_ops = pd.DataFrame(linhas_ops).rename(columns=t["ml_ops_cols"])
             st.dataframe(df_ops, use_container_width=True, hide_index=True)
+
+        politica_cfg = get_politica_mlops() or {}
+        pol_est = reg_ml.get("politica_estado") or {}
+        if politica_cfg or pol_est:
+            st.write("")
+            st.markdown(t["ml_pol_hdr"])
+            desc_ag = politica_cfg.get("descricao_agenda", {})
+            regra_pr = politica_cfg.get("regra_principal", {})
+            st.caption(regra_pr.get(idioma, "") if isinstance(regra_pr, dict) else str(regra_pr))
+            pc1, pc2, pc3, pc4 = st.columns(4)
+            with pc1:
+                cron_txt = politica_cfg.get("agenda_cron_utc", "0 6 5,20 * *")
+                ag_sub = desc_ag.get(idioma, cron_txt) if isinstance(desc_ag, dict) else cron_txt
+                st.markdown(
+                    f'<div class="metric-card"><h3>{t["ml_pol_k1"]}</h3>'
+                    f'<p style="color:#1e3a8a; font-size:1.25rem;">{cron_txt}</p>'
+                    f'<small>{ag_sub}</small></div>',
+                    unsafe_allow_html=True,
+                )
+            with pc2:
+                nc_ac = int(pol_est.get("novas_competencias_acumuladas", 0))
+                nc_meta = int(pol_est.get("meta_competencias", politica_cfg.get("min_novas_competencias", 3)))
+                nr_ac = int(pol_est.get("novos_registros_acumulados", 0))
+                nr_meta = int(pol_est.get("meta_registros", politica_cfg.get("min_novos_registros", 3_000_000)))
+                st.markdown(
+                    f'<div class="metric-card"><h3>{t["ml_pol_k2"]}</h3>'
+                    f'<p style="color:#1e3a8a;">{nc_ac} / {nc_meta}</p>'
+                    f'<small>{fmt_num(nr_ac, idioma)} / {fmt_num(nr_meta, idioma)}</small></div>',
+                    unsafe_allow_html=True,
+                )
+            with pc3:
+                dias_ac = int(pol_est.get("dias_desde_retreino", 0))
+                dias_meta = int(pol_est.get("meta_dias", politica_cfg.get("min_dias_entre_retreinos", 30)))
+                st.markdown(
+                    f'<div class="metric-card amber"><h3>{t["ml_pol_k3"]}</h3>'
+                    f'<p style="color:#d97706;">{dias_ac}d / {dias_meta}d</p>'
+                    f'<small>{pol_est.get("decisao_politica", "-")}</small></div>',
+                    unsafe_allow_html=True,
+                )
+            with pc4:
+                drift_on = bool(pol_est.get("drift_detectado", False))
+                tele_m = pol_est.get("telemetria_monitorada", {})
+                cor_dr = "#dc2626" if drift_on else "#059669"
+                cls_dr = "red" if drift_on else "green"
+                st_dr = "ALERTA" if drift_on else "OK"
+                sub_dr = (
+                    f"{tele_m.get('janela_monitorada', '-')} • ROC {tele_m.get('roc_obito', 0):.3f}/{tele_m.get('roc_longa', 0):.3f}"
+                    if tele_m.get("amostra_n")
+                    else pol_est.get("ultima_checagem_local", "-")
+                )
+                st.markdown(
+                    f'<div class="metric-card {cls_dr}"><h3>{t["ml_pol_k4"]}</h3>'
+                    f'<p style="color:{cor_dr};">{st_dr}</p>'
+                    f'<small>{sub_dr}</small></div>',
+                    unsafe_allow_html=True,
+                )
+
+        hist_modelos = reg_ml.get("historico_execucoes", [])
+        if hist_modelos:
+            st.write("")
+            st.markdown(t["ml_hist_hdr"])
+            st.caption(t["ml_hist_sub"])
+            linhas_m = []
+            for h_run in reversed(hist_modelos):
+                c_run = h_run.get("comparativo", {})
+                ob_ch = c_run.get("Obito", {}).get("champion", {})
+                ob_cl = c_run.get("Obito", {}).get("challenger", {})
+                lg_ch = c_run.get("Longa_Permanencia", {}).get("champion", {})
+                lg_cl = c_run.get("Longa_Permanencia", {}).get("challenger", {})
+                linhas_m.append({
+                    "data": h_run.get("data_local", "-"),
+                    "versao": h_run.get("versao_resultante", "V5 Contínuo" if h_run.get("promovido") else "V5 Mantido"),
+                    "estrategia": h_run.get("estrategia", "-"),
+                    "janela_treino": h_run.get("janela_treino_cal", "-"),
+                    "janela_teste": h_run.get("janela_teste_temporal", "-"),
+                    "n_teste": int(h_run.get("n_teste_temporal", 0)),
+                    "obito_comp": f"{ob_ch.get('roc_auc', 0):.4f}/{ob_ch.get('pr_auc', 0):.4f} → {ob_cl.get('roc_auc', 0):.4f}/{ob_cl.get('pr_auc', 0):.4f}",
+                    "longa_comp": f"{lg_ch.get('roc_auc', 0):.4f}/{lg_ch.get('pr_auc', 0):.4f} → {lg_cl.get('roc_auc', 0):.4f}/{lg_cl.get('pr_auc', 0):.4f}",
+                    "decisao": h_run.get("decisao", "-"),
+                    "motivo": h_run.get("motivo", "-"),
+                })
+            m_cols = t["ml_hist_cols"]
+            df_m_hist = pd.DataFrame(linhas_m).rename(columns=m_cols)
+            st.dataframe(
+                df_m_hist,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    m_cols["n_teste"]: st.column_config.NumberColumn(format="%d"),
+                },
+            )
     else:
         st.info(t["ml_ops_empty"])
 

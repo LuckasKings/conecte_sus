@@ -1,0 +1,24 @@
+{
+  "agenda_cron_utc": "0 6 5,20 * *",
+  "descricao_agenda": {
+    "pt": "Quinzenal automático (dias 5 e 20 às 06:00 UTC)",
+    "en": "Automated biweekly run (5th & 20th at 06:00 UTC)",
+    "es": "Quincenal automático (días 5 y 20 a las 06:00 UTC)"
+  },
+  "regra_principal": {
+    "pt": "Híbrido: Ingestão quinzenal no DataSUS + Retreino ao acumular >= 3 competências inéditas (ou >= 3M registros) após 30d de cooldown, ou antecipado se houver drift clínico",
+    "en": "Hybrid: Biweekly DataSUS scan + Retrain when >= 3 new months (or >= 3M rows) accumulate after 30d cooldown, or early trigger on clinical drift",
+    "es": "Híbrido: Escaneo quincenal DataSUS + Reentreno al acumular >= 3 meses nuevos (o >= 3M casos) tras 30d de espera, o anticipado por drift clínico"
+  },
+  "min_novas_competencias": 3,
+  "min_novos_registros": 3000000,
+  "min_dias_entre_retreinos": 30,
+  "drift_max_delta_pp_obito": 0.50,
+  "drift_max_delta_pp_longa": 0.80,
+  "drift_roc_min_obito": 0.8950,
+  "drift_roc_min_longa": 0.8300,
+  "drift_brier_max_obito": 0.0330,
+  "drift_brier_max_longa": 0.0500,
+  "estrategia_retreino": "acumulado",
+  "teste_meses": 3
+}

@@ -533,6 +533,7 @@ def main():
         "n_teste_temporal": int(len(X_test)),
         "decisao": status_acao,
         "promovido": bool(promover and not args.dry_run),
+        "versao_resultante": "V5 Contínuo" if (promover and not args.dry_run) else reg_prev.get("champion_atual", {}).get("versao", "V5 Nacional (2024)"),
         "motivo": motivo,
         "comparativo": comparativo,
         "duracao_segundos": round(time.time() - t0, 1),
@@ -540,7 +541,7 @@ def main():
 
     historico_runs = reg_prev.get("historico_execucoes", [])
     historico_runs.append(run_entry)
-    historico_runs = historico_runs[-15:]
+    historico_runs = historico_runs[-30:]
 
     champion_atual = (
         {
@@ -555,6 +556,7 @@ def main():
     payload_reg = {
         "champion_atual": champion_atual,
         "ultima_avaliacao": run_entry,
+        "politica_estado": reg_prev.get("politica_estado"),
         "historico_execucoes": historico_runs,
     }
     tmp_reg = REGISTRO_PATH.with_suffix(".json.tmp")

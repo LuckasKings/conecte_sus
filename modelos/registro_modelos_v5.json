@@ -58,6 +58,59 @@
   },
   "historico_execucoes": [
     {
+      "data_local": "2026-11-24 18:00:00",
+      "data_utc": "2026-11-24T21:00:00+00:00",
+      "estrategia": "baseline_v5_cid3",
+      "janela_treino_cal": "2024/01 → 2024/12",
+      "janela_teste_temporal": "2024/01 → 2024/12 (Teste Cego Estrat.)",
+      "n_treino": 2400000,
+      "n_cal": 300000,
+      "n_teste_temporal": 300000,
+      "decisao": "BASELINE_INICIAL",
+      "promovido": true,
+      "versao_resultante": "V5 Nacional (Base 2024)",
+      "motivo": "Modelo V5 inaugural com cid3 Bayesiano (m=50) e calibração isotônica colocado em produção.",
+      "comparativo": {
+        "Longa_Permanencia": {
+          "champion": {
+            "roc_auc": 0.8481,
+            "pr_auc": 0.3663,
+            "brier_cal": 0.0471,
+            "limiar": 0.0627,
+            "sens": 0.8532,
+            "spec": 0.666
+          },
+          "challenger": {
+            "roc_auc": 0.8481,
+            "pr_auc": 0.3663,
+            "brier_cal": 0.0471,
+            "limiar": 0.0627,
+            "sens": 0.8532,
+            "spec": 0.666
+          }
+        },
+        "Obito": {
+          "champion": {
+            "roc_auc": 0.9082,
+            "pr_auc": 0.3035,
+            "brier_cal": 0.0306,
+            "limiar": 0.0409,
+            "sens": 0.8958,
+            "spec": 0.7714
+          },
+          "challenger": {
+            "roc_auc": 0.9082,
+            "pr_auc": 0.3035,
+            "brier_cal": 0.0306,
+            "limiar": 0.0409,
+            "sens": 0.8958,
+            "spec": 0.7714
+          }
+        }
+      },
+      "duracao_segundos": 0.0
+    },
+    {
       "data_local": "2026-11-25 08:14:31",
       "data_utc": "2026-11-25T11:14:31.799204+00:00",
       "estrategia": "acumulado",
@@ -68,6 +121,7 @@
       "n_teste_temporal": 300000,
       "decisao": "PROMOVIDO",
       "promovido": true,
+      "versao_resultante": "V5 Contínuo",
       "motivo": "Challenger promovido com melhoria significativa em 2/2 desfechos sem regressões.",
       "comparativo": {
         "Longa_Permanencia": {
@@ -109,5 +163,32 @@
       },
       "duracao_segundos": 577.5
     }
-  ]
+  ],
+  "politica_estado": {
+    "ultima_checagem_local": "2026-11-25 16:56:27",
+    "cutoff_ultima_avaliacao": "2026/09",
+    "novas_competencias_acumuladas": 0,
+    "meta_competencias": 3,
+    "novos_registros_acumulados": 0,
+    "meta_registros": 3000000,
+    "dias_desde_retreino": 0,
+    "meta_dias": 30,
+    "drift_detectado": false,
+    "decisao_politica": "MONITORANDO_ESTAVEL",
+    "motivo_politica": "Aguardando acúmulo pós 2026/09: 0/3 competências inéditas (0/3,000,000 casos) • Sem drift.",
+    "telemetria_monitorada": {
+      "janela_monitorada": "2026/07 → 2026/09",
+      "amostra_n": 60000,
+      "taxa_obito_pct": 3.89,
+      "taxa_longa_pct": 6.13,
+      "delta_obito_pp": 0.12,
+      "delta_longa_pp": 0.07,
+      "roc_obito": 0.9098,
+      "roc_longa": 0.8477,
+      "brier_obito": 0.0309,
+      "brier_longa": 0.0472,
+      "drift_detectado": false,
+      "motivos_drift": []
+    }
+  }
 }

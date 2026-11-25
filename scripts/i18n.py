@@ -943,12 +943,6 @@ _TECH_STACK = [
         {"pt": "Impede data leakage no pré-processamento e derrubou o Brier Score de 0,12–0,16 para 0,0329 / 0,0480.", "en": "Prevents preprocessing leakage and cut probability error (Brier Score) down to 0.0329 / 0.0480.", "es": "Evita fugas en preprocesamiento y bajó el Brier Score de 0,12–0,16 a 0,0329 / 0,0480."},
     ),
     (
-        "LightGBM & XGBoost",
-        {"pt": "Gradient Boosting em Produção", "en": "Gradient Boosting Models", "es": "Gradient Boosting en Producción"},
-        {"pt": "Modelos comparados em 1,5M internações estratificadas; LightGBM foi escolhido para servir as previsões duplas na Aba 3.", "en": "Benchmarked side-by-side on 1.5M stratified admissions; LightGBM was selected for dual triage inference in Tab 3.", "es": "Comparados en 1,5M ingresos estratificados; LightGBM fue elegido para servir la doble predicción en Pestaña 3."},
-        {"pt": "LightGBM empatou no topo em ROC-AUC (0,879 / 0,816), liderou detecção longa (83,9%) e cabe leve na nuvem.", "en": "LightGBM matched top ROC-AUC (0.879 / 0.816), led Long Stay recall (83.9%), and runs lean in cloud RAM.", "es": "LightGBM empató en la cima de ROC-AUC (0,879 / 0,816), lideró sensibilidad (83,9%) y consume mínima RAM."},
-    ),
-    (
         "Plotly & Matplotlib",
         {"pt": "Visualização & Evidências", "en": "Interactive & Scientific Charts", "es": "Gráficos Interactivos y Científicos"},
         {"pt": "Plotly gera gráficos interativos filtráveis na Aba 1; Matplotlib gera figuras estáticas 300 DPI (ROC/PR, calibração e pesos).", "en": "Plotly powers interactive Tab 1 exploration; Matplotlib exports 300-DPI ROC/PR, calibration, and feature-importance plots.", "es": "Plotly crea gráficos interactivos en Pestaña 1; Matplotlib exporta curvas ROC/PR, calibración e importancias a 300 DPI."},

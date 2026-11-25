@@ -803,10 +803,14 @@ with tab_gestao:
             if h_ob ^ h_lg:
                 tgt = mt["short_ob"] if not h_ob else mt["short_lg"]
                 is_fp = p_ob_al if not h_ob else p_lg_al
-                return f"🔔 {tgt}: {mt['fp']}" if is_fp else f"🔕 {tgt}: {mt['fn']}"
+                return f"🛡️ {tgt}: {mt['fp_ok']}" if is_fp else f"🔕 {tgt}: {mt['fn']}"
+            if p_lg_al and p_ob_al:
+                return f"🛡️ {mt['both_fp']}"
+            if not p_lg_al and not p_ob_al:
+                return f"❌ {mt['both_fn']}"
             lg_lbl = mt["fp_short"] if p_lg_al else mt["fn_short"]
             ob_lbl = mt["fp_short"] if p_ob_al else mt["fn_short"]
-            return f"❌ {mt['short_lg']} {lg_lbl} | {mt['short_ob']} {ob_lbl}"
+            return f"⚠️ {mt['short_lg']} {lg_lbl} | {mt['short_ob']} {ob_lbl}"
 
         amostra["desfecho_real"] = [mt["obito"] if r_ob else mt["alta"] for r_ob in real_ob_s]
         amostra["desfecho_match"] = [

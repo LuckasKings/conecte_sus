@@ -165,7 +165,7 @@
     }
   ],
   "politica_estado": {
-    "ultima_checagem_local": "2026-11-25 16:56:27",
+    "ultima_checagem_local": "2026-11-25 20:27:22",
     "cutoff_ultima_avaliacao": "2026/09",
     "novas_competencias_acumuladas": 0,
     "meta_competencias": 3,
@@ -179,14 +179,14 @@
     "telemetria_monitorada": {
       "janela_monitorada": "2026/07 → 2026/09",
       "amostra_n": 60000,
-      "taxa_obito_pct": 3.89,
-      "taxa_longa_pct": 6.13,
-      "delta_obito_pp": 0.12,
-      "delta_longa_pp": 0.07,
-      "roc_obito": 0.9098,
-      "roc_longa": 0.8477,
-      "brier_obito": 0.0309,
-      "brier_longa": 0.0472,
+      "taxa_obito_pct": 3.81,
+      "taxa_longa_pct": 6.12,
+      "delta_obito_pp": 0.04,
+      "delta_longa_pp": 0.06,
+      "roc_obito": 0.9109,
+      "roc_longa": 0.8491,
+      "brier_obito": 0.0302,
+      "brier_longa": 0.0468,
       "drift_detectado": false,
       "motivos_drift": []
     }

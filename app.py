@@ -4,13 +4,14 @@
 Aplicação Streamlit Multi-Abas Conectada ao Data Lake Parquet + DuckDB:
 - Aba 1: Perfil Epidemiológico & Equidade em Saúde (27 UFs / 13,58M internações)
 - Aba 2: Qualidade dos Dados & Contrato de Integridade
-- Aba 3: Como a IA Funciona (Modelos V4 Calibrados, Benchmarks, Prós & Contras)
-- Aba 4: Painel de Gestão Clínica & Leitos (Simulador + Flags Calibradas)
-- Aba 5: Dicionário Completo SIH/SUS (113 Colunas + Derivadas) & Glossário
+- Aba 3: Como a IA Funciona (Modelos V5 Calibrados com CID3 Híbrido, Benchmarks, Prós & Contras)
+- Aba 4: Painel de Gestão Clínica & Leitos (Simulador CID3 + Flags Calibradas)
+- Aba 5: Dicionário Completo SIH/SUS (113 Colunas + 13 Derivadas) & Glossário
 - Aba 6: Jornada, Decisões, Arquitetura & Stack Tecnológica
 """
 
 import html as _html
+import json
 import os
 import sys
 import joblib
@@ -139,21 +140,33 @@ st.markdown("""
 # ==========================================
 # 2. Carregamento via DuckDB (Cacheado) e Modelos
 # ==========================================
+import features_v5  # Necessário para desserializar AdmissionV5Preprocessor dos artefatos .joblib
+
+
 @st.cache_resource
 def carregar_modelos():
-    caminho_longa = os.path.join(BASE_DIR, "modelos", "modelo_admissao_longa_lightgbm_v4.joblib")
-    caminho_obito = os.path.join(BASE_DIR, "modelos", "modelo_admissao_obito_lightgbm_v4.joblib")
+    caminho_longa = os.path.join(BASE_DIR, "modelos", "modelo_admissao_longa_lightgbm_v5.joblib")
+    caminho_obito = os.path.join(BASE_DIR, "modelos", "modelo_admissao_obito_lightgbm_v5.joblib")
     modelo_longa = joblib.load(caminho_longa) if os.path.exists(caminho_longa) else None
     modelo_obito = joblib.load(caminho_obito) if os.path.exists(caminho_obito) else None
     return modelo_longa, modelo_obito
 
 
 @st.cache_data(ttl=300)
-def carregar_metricas_v4():
-    caminho_csv = os.path.join(BASE_DIR, "modelos", "metricas_v4_nacional.csv")
+def carregar_metricas_v5():
+    caminho_csv = os.path.join(BASE_DIR, "modelos", "metricas_v5_nacional.csv")
     if os.path.exists(caminho_csv):
         return pd.read_csv(caminho_csv)
     return pd.DataFrame()
+
+
+@st.cache_data(ttl=300)
+def carregar_top_cid3():
+    caminho_json = os.path.join(BASE_DIR, "modelos", "top_cid3_por_capitulo_v5.json")
+    if os.path.exists(caminho_json):
+        with open(caminho_json, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
 
 
 UFS_POR_REGIAO_BR = {
@@ -230,6 +243,7 @@ if not ds.parquet_disponivel():
     st.stop()
 
 modelo_longa, modelo_obito = carregar_modelos()
+top_cid3_por_cap = carregar_top_cid3()
 filtros = get_filtros_v2()
 kpis_gerais = get_kpis("Todas", "Todas")
 
@@ -319,7 +333,7 @@ with kpi4:
     lg_str = f"{kpis_gerais['taxa_longa']:.2f}%" if idioma == "en" else f"{kpis_gerais['taxa_longa']:.2f}%".replace(".", ",")
     st.markdown(f'<div class="metric-card amber"><h3>{t["kpi4_lbl"]}</h3><p style="color:#d97706;">{lg_str}</p><small>{t["kpi4_sub"]}</small></div>', unsafe_allow_html=True)
 with kpi5:
-    roc_str = "0.879 / 0.816" if idioma == "en" else "0,879 / 0,816"
+    roc_str = "0.908 / 0.848" if idioma == "en" else "0,908 / 0,848"
     st.markdown(f'<div class="metric-card green"><h3>{t["kpi5_lbl"]}</h3><p style="color:#059669;">{roc_str}</p><small>{t["kpi5_sub"]}</small></div>', unsafe_allow_html=True)
 
 st.write("")
@@ -610,17 +624,17 @@ with tab_ml:
         st.info(t["ml_guide"])
 
     st.markdown(t["ml_bench"])
-    df_m_v4 = carregar_metricas_v4()
-    if not df_m_v4.empty:
+    df_m_v5 = carregar_metricas_v5()
+    if not df_m_v5.empty:
         col_m1, col_m2 = st.columns(2)
         cols_sel = ["Modelo", "ROC_AUC", "PR_AUC", "Brier_Calibrado", "Limiar_Otimo_Pct", "Sensibilidade_Pct", "Especificidade_Pct"]
         with col_m1:
             st.markdown(t["ml_ob_sub"])
-            df_ob_m = df_m_v4[df_m_v4["Desfecho"] == "Óbito Intra-hospitalar"][cols_sel].rename(columns=t["ml_cols"])
+            df_ob_m = df_m_v5[df_m_v5["Desfecho"] == "Óbito Intra-hospitalar"][cols_sel].rename(columns=t["ml_cols"])
             st.dataframe(df_ob_m, use_container_width=True, hide_index=True)
         with col_m2:
             st.markdown(t["ml_lg_sub"])
-            df_lg_m = df_m_v4[df_m_v4["Desfecho"] == "Longa Permanência"][cols_sel].rename(columns=t["ml_cols"])
+            df_lg_m = df_m_v5[df_m_v5["Desfecho"] == "Longa Permanência"][cols_sel].rename(columns=t["ml_cols"])
             st.dataframe(df_lg_m, use_container_width=True, hide_index=True)
 
     st.markdown("---")
@@ -641,15 +655,15 @@ with tab_ml:
     st.markdown(t["ml_evid"])
     col_img1, col_img2, col_img3 = st.columns(3)
     with col_img1:
-        img_roc = os.path.join(BASE_DIR, "figuras", "fig_roc_pr_curvas_v4.png")
+        img_roc = os.path.join(BASE_DIR, "figuras", "fig_roc_pr_curvas_v5.png")
         if os.path.exists(img_roc):
             st.image(img_roc, caption=t["ml_img1"], use_container_width=True)
     with col_img2:
-        img_cal = os.path.join(BASE_DIR, "figuras", "fig_calibracao_probabilidade_v4.png")
+        img_cal = os.path.join(BASE_DIR, "figuras", "fig_calibracao_probabilidade_v5.png")
         if os.path.exists(img_cal):
             st.image(img_cal, caption=t["ml_img2"], use_container_width=True)
     with col_img3:
-        img_imp = os.path.join(BASE_DIR, "figuras", "fig_importancias_admissao_v4.png")
+        img_imp = os.path.join(BASE_DIR, "figuras", "fig_importancias_admissao_v5.png")
         if os.path.exists(img_imp):
             st.image(img_imp, caption=t["ml_img3"], use_container_width=True)
 
@@ -664,9 +678,9 @@ with tab_gestao:
         st.caption(t["cli_exp_txt"])
         sl_col1, sl_col2 = st.columns(2)
         with sl_col1:
-            corte_obito = st.slider(t["sl_ob"], min_value=1.0, max_value=50.0, value=(4.0, 15.0), step=0.5, format="%.1f%%")
+            corte_obito = st.slider(t["sl_ob"], min_value=1.0, max_value=50.0, value=(4.1, 15.0), step=0.1, format="%.1f%%")
         with sl_col2:
-            corte_longa = st.slider(t["sl_lg"], min_value=1.0, max_value=50.0, value=(6.4, 20.0), step=0.5, format="%.1f%%")
+            corte_longa = st.slider(t["sl_lg"], min_value=1.0, max_value=50.0, value=(6.3, 20.0), step=0.1, format="%.1f%%")
 
     ob_med, ob_crit = corte_obito[0] / 100.0, corte_obito[1] / 100.0
     lg_med, lg_crit = corte_longa[0] / 100.0, corte_longa[1] / 100.0
@@ -691,6 +705,15 @@ with tab_gestao:
                 "V - Mentais", "XV - Gravidez/Parto", "XIX - Lesoes"
             ]
             sim_cid = st.selectbox(t["sim_cid"], capitulos_cid, index=0, format_func=lambda x: tr_val(x, idioma))
+            opcoes_cid3 = ["_CAPITULO_"] + [item["cid3"] for item in top_cid3_por_cap.get(sim_cid, [])]
+            counts_cid3 = {item["cid3"]: item["n"] for item in top_cid3_por_cap.get(sim_cid, [])}
+            sim_cid3 = st.selectbox(
+                t["sim_cid3"],
+                opcoes_cid3,
+                index=0,
+                format_func=lambda x: t["sim_cid3_default"] if x == "_CAPITULO_" else f"{x} ({fmt_num(counts_cid3.get(x, 0), idioma)})",
+                key="sim_cid3_sel",
+            )
             sim_complex = st.selectbox(t["sim_comp"], ["Media_Complexidade", "Alta_Complexidade"], index=0, format_func=lambda x: tr_val(x, idioma))
         with c_sim4:
             sim_transf = st.radio(t["sim_transf"], [t["sim_nao"], t["sim_sim"]], index=1)
@@ -701,6 +724,7 @@ with tab_gestao:
                 "idade_anos": sim_idade,
                 "sexo": "1" if sim_sexo == "Masculino" else "3",
                 "capitulo_cid": sim_cid,
+                "cid3": sim_cid3,
                 "especialidade_leito": sim_espec,
                 "carater_internacao": sim_carater,
                 "complexidade": sim_complex,
@@ -772,6 +796,10 @@ with tab_gestao:
         amostra = amostra.copy()
         df_mod = pd.DataFrame()
         df_mod["idade_anos"] = amostra["idade_anos"]
+        df_mod["cid3"] = (
+            amostra["diag_princ"].fillna("_CAPITULO_").astype(str).str.strip().str[:3]
+            .replace({"": "_CAPITULO_", "nan": "_CAPITULO_", "None": "_CAPITULO_", "IGN": "_CAPITULO_"})
+        )
         for c in ["sexo", "capitulo_cid", "especialidade_leito", "carater_internacao", "complexidade", "transferido_intermun", "internacao_fim_de_semana"]:
             df_mod[c] = amostra[c].astype(str)
 
@@ -848,7 +876,7 @@ with tab_dic:
     n_alvo = int((df_dicionario["_status_key"] == "alvo_painel").sum())
     n_nao = int(df_dicionario["_status_key"].isin(["nao_leakage", "nao_admin"]).sum())
     with c_d1:
-        st.metric("Total (113 SIH + 12 Deriv.)", len(df_dicionario))
+        st.metric("Total (113 SIH + 13 Deriv.)", len(df_dicionario))
     with c_d2:
         lbl_ia = {"pt": "✅ IA + Epidemio", "en": "✅ AI + Epidemiology", "es": "✅ IA + Epidemiología"}[idioma]
         st.metric(lbl_ia, n_ia)
@@ -929,6 +957,10 @@ with tab_jornada:
         with st.container(border=True):
             st.markdown(f"#### {t['j_v4_tit']}")
             st.markdown(t["j_v4_txt"])
+
+    with st.container(border=True):
+        st.markdown(f"#### {t['j_v5_tit']}")
+        st.markdown(t["j_v5_txt"])
 
     st.markdown(t["j_evol_hdr"])
     df_evol = get_evolucao_df(idioma)

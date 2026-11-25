@@ -35,6 +35,7 @@ DOMAINS_ES = {
 DESCS_ES = {
     "idade_anos": "Edad continua en años calculada a partir de `idade` y `cod_idade` (incluye fracciones para recién nacidos).",
     "capitulo_cid": "Gran capítulo clínico de la CIE-10 (20 grupos) extraído de la letra inicial de `diag_princ`.",
+    "cid3": "Categoría específica CIE-10 de 3 dígitos extraída de `diag_princ` (1.665 categorías). Modela gravedad diferenciada vía Top-200 OHE + Target Encoding Bayesiano con respaldo en `capitulo_cid` (V5).",
     "especialidade_leito": "Especialidad de la cama mapeada desde `espec` (Medicina Interna, Cirugía, Obstetricia, Pediatría, etc.).",
     "carater_internacao": "Agrupación de `car_int` que separa ingresos programados (Electivo) de entradas agudas (Urgencia/Emergencia).",
     "complexidade": "Nivel tecnológico mapeado de `complex` (Complejidad Media vs. Alta Complejidad).",
@@ -85,7 +86,7 @@ DESCS_ES = {
     "us_tot": "Importe total convertido en Unidades de Servicio históricas (post-ingreso).",
     "dt_inter": "Fecha de ingreso hospitalario (AAAAMMDD). Origen de `mes_internacao` y `internacao_fim_de_semana`.",
     "dt_saida": "Fecha de salida/alta o fallecimiento (AAAAMMDD) — conocida solo al final (*data leakage*).",
-    "diag_princ": "Código exacto CIE-10 del diagnóstico principal al ingreso. Origen de `capitulo_cid` (IA) y mostrado en la Pestaña 4.",
+    "diag_princ": "Código exacto CIE-10 del diagnóstico principal al ingreso. Origen de `capitulo_cid` y `cid3` (IA V5) y mostrado en la Pestaña 4.",
     "diag_secun": "Campo heredado de diagnóstico secundario (generalmente 0000; sustituido por diagsec1-9).",
     "cobranca": "Motivo de cierre/facturación (ej.: 21/22 = prórroga larga; 41/42 = óbito). Eliminado en V2 por **Data Leakage Crítico**.",
     "natureza": "Código antiguo de naturaleza jurídica del hospital (descontinuado/constante).",
@@ -144,13 +145,16 @@ DESCS_ES = {
 
 # Lista oficial: (coluna, bloco_pt, bloco_en, desc_pt, desc_en, status_key)
 CATALOGO_SIH_COMPLETO = [
-    # --- COLUNAS DERIVADAS DO PROJETO (12) ---
+    # --- COLUNAS DERIVADAS DO PROJETO (13) ---
     ("idade_anos", "Derivada (Projeto)", "Derived (Project)",
      "Idade contínua em anos calculada a partir de `idade` e `cod_idade` (incluindo frações para recém-nascidos).",
      "Continuous age in years computed from `idade` and `cod_idade` (including newborn fractions).", "ia_epi"),
     ("capitulo_cid", "Derivada (Projeto)", "Derived (Project)",
      "Grande capítulo clínico da CID-10 (20 grupos) extraído da letra inicial de `diag_princ`.",
      "Major ICD-10 clinical chapter (20 groups) extracted from the first letter of `diag_princ`.", "ia_epi"),
+    ("cid3", "Derivada (Projeto)", "Derived (Project)",
+     "Categoria específica CID-10 de 3 dígitos extraída de `diag_princ` (1.665 categorias). Modela gravidade diferenciada via Top-200 OHE + Target Encoding Bayesiano com fallback em `capitulo_cid` (V5).",
+     "Specific 3-character ICD-10 category from `diag_princ` (1,665 categories). Encodes disease severity via Top-200 OHE + Hierarchical Bayesian Target Encoding with `capitulo_cid` fallback (V5).", "ia_epi"),
     ("especialidade_leito", "Derivada (Projeto)", "Derived (Project)",
      "Descrição legível da especialidade do leito mapeada de `espec` (Clínica Médica, Cirúrgica, Obstétrica, Pediátrica, etc.).",
      "Readable ward specialty mapped from `espec` (Internal Medicine, Surgical, Obstetrics, Pediatrics, etc.).", "ia_epi"),
@@ -304,8 +308,8 @@ CATALOGO_SIH_COMPLETO = [
      "Data da saída/alta ou óbito (AAAAMMDD) — conhecida apenas ao fim da internação (*data leakage*).",
      "Discharge/death date (YYYYMMDD) — known only at hospitalization end (*data leakage*).", "nao_leakage"),
     ("diag_princ", "Diagnósticos CID-10", "ICD-10 Diagnoses",
-     "Código exato da CID-10 do diagnóstico principal na admissão. Origem de `capitulo_cid` (IA) e exibido detalhado na Aba 4.",
-     "Exact ICD-10 primary diagnosis code at admission. Source for `capitulo_cid` (AI) and displayed in Tab 4.", "ia_epi"),
+     "Código exato da CID-10 do diagnóstico principal na admissão. Origem de `capitulo_cid` e `cid3` (IA V5) e exibido detalhado na Aba 4.",
+     "Exact ICD-10 primary diagnosis code at admission. Source for `capitulo_cid` and `cid3` (AI V5) and displayed in Tab 4.", "ia_epi"),
     ("diag_secun", "Diagnósticos CID-10", "ICD-10 Diagnoses",
      "Campo legado de diagnóstico secundário (geralmente preenchido como 0000; substituído por diagsec1-9).",
      "Legacy secondary diagnosis field (usually 0000; superseded by diagsec1-9).", "nao_admin"),

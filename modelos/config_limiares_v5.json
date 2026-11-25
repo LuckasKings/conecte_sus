@@ -1,0 +1,16 @@
+{
+  "Longa_Permanencia": {
+    "limiar_youden": 0.0627,
+    "prevalencia_nacional": 0.0619,
+    "roc_auc": 0.8481,
+    "pr_auc": 0.3663,
+    "brier_cal": 0.0471
+  },
+  "Obito": {
+    "limiar_youden": 0.0409,
+    "prevalencia_nacional": 0.0383,
+    "roc_auc": 0.9082,
+    "pr_auc": 0.3035,
+    "brier_cal": 0.0306
+  }
+}

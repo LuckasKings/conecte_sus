@@ -803,9 +803,9 @@ with tab_gestao:
             if h_ob ^ h_lg:
                 tgt = mt["short_ob"] if not h_ob else mt["short_lg"]
                 is_fp = p_ob_al if not h_ob else p_lg_al
-                return f"🛡️ {tgt}: {mt['fp_ok']}" if is_fp else f"🔕 {tgt}: {mt['fn']}"
+                return f"✅ {mt['alert_ok']} ({tgt} {mt['fp_short']})" if is_fp else f"🔕 {tgt}: {mt['fn']}"
             if p_lg_al and p_ob_al:
-                return f"🛡️ {mt['both_fp']}"
+                return f"✅ {mt['alert_ok']} ({mt['both_fp']})"
             if not p_lg_al and not p_ob_al:
                 return f"❌ {mt['both_fn']}"
             lg_lbl = mt["fp_short"] if p_lg_al else mt["fn_short"]

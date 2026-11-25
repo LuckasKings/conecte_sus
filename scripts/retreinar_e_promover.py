@@ -138,6 +138,21 @@ def _deve_promover(cmp: dict) -> tuple[bool, str]:
     return False, "Champion mantido: diferença dentro da margem de empate técnico (sem ganho suficiente para troca)."
 
 
+def _extrair_pipeline_base(modelo):
+    """Desembrulha CalibratedClassifierCV / FrozenEstimator até o Pipeline subjacente."""
+    cur = modelo
+    visitados = set()
+    while cur is not None and id(cur) not in visitados:
+        visitados.add(id(cur))
+        if hasattr(cur, "named_steps"):
+            return cur
+        nxt = getattr(cur, "estimator", None)
+        if nxt is None and hasattr(cur, "calibrated_classifiers_") and cur.calibrated_classifiers_:
+            nxt = getattr(cur.calibrated_classifiers_[0], "estimator", None)
+        cur = nxt
+    return None
+
+
 def _treinar_challenger_target(
     t_id: str,
     estrategia: str,
@@ -148,16 +163,14 @@ def _treinar_challenger_target(
     y_cal: pd.Series,
 ):
     if estrategia == "recalibrar" and champion_model is not None:
-        base = getattr(champion_model, "estimator", None)
-        if base is None and hasattr(champion_model, "calibrated_classifiers_") and champion_model.calibrated_classifiers_:
-            base = champion_model.calibrated_classifiers_[0].estimator
-        if base is not None:
-            calibrator = CalibratedClassifierCV(FrozenEstimator(base), method="isotonic")
+        pipe_base = _extrair_pipeline_base(champion_model)
+        if pipe_base is not None:
+            calibrator = CalibratedClassifierCV(FrozenEstimator(pipe_base), method="isotonic")
             calibrator.fit(X_cal, y_cal)
             p_cal = calibrator.predict_proba(X_cal)[:, 1]
             fpr_c, tpr_c, thr_c = roc_curve(y_cal, p_cal)
             limiar = float(thr_c[np.argmax(tpr_c - fpr_c)])
-            return calibrator, limiar, np.zeros(len(X_cal)), 0.0
+            return calibrator, limiar, pipe_base, 0.0
 
     clf = LGBMClassifier(
         n_estimators=220, learning_rate=0.07, num_leaves=63, min_child_samples=100,
@@ -185,6 +198,8 @@ def _gerar_benchmark_e_figuras_promocao(
     estrato_tr: pd.Series,
     top_cid3_por_cap: dict,
     range_desc: str,
+    versao_label: str = "V6 Contínuo",
+    atualizar_pesos_lgbm: bool = True,
 ):
     """Atualiza benchmark 4 modelos, metricas_v5_nacional.csv, limiares e as 3 figuras do dashboard."""
     _, idx_rf = train_test_split(np.arange(len(X_train)), test_size=min(250_000, len(X_train) - 1), stratify=estrato_tr, random_state=42)
@@ -235,8 +250,9 @@ def _gerar_benchmark_e_figuras_promocao(
             print(f"       {mod_name} concluído em {time.time()-t_m:.1f}s (ROC={ev['roc_auc']:.4f} | PR={ev['pr_auc']:.4f})", flush=True)
             all_results.append((mod_name, ev, pipe))
 
-        # LightGBM Challenger já treinado
-        chall_cal, chall_lim, chall_pipe = challengers[t_id]["model"], challengers[t_id]["limiar"], challengers[t_id]["pipe"]
+        # LightGBM vencedor (ou Champion ativo ao regenerar gráficos)
+        chall_cal = challengers[t_id]["model"]
+        chall_pipe = challengers[t_id]["pipe"] or _extrair_pipeline_base(chall_cal)
         if chall_pipe is not None and hasattr(chall_pipe, "predict_proba"):
             brier_raw_lgbm = float(brier_score_loss(y_te, chall_pipe.predict_proba(X_test)[:, 1]))
         else:
@@ -276,67 +292,68 @@ def _gerar_benchmark_e_figuras_promocao(
                 "TN": ev["tn"], "FP": ev["fp"], "FN": ev["fn"], "TP": ev["tp"],
             })
 
-    pd.DataFrame(metricas_rows).to_csv(MODELOS_DIR / "metricas_v5_nacional.csv", index=False)
-    with open(MODELOS_DIR / "config_limiares_v5.json", "w", encoding="utf-8") as f:
-        json.dump(limiares_producao, f, indent=2, ensure_ascii=False)
-    with open(MODELOS_DIR / "top_cid3_por_capitulo_v5.json", "w", encoding="utf-8") as f:
-        json.dump(top_cid3_por_cap, f, indent=2, ensure_ascii=False)
+    if atualizar_pesos_lgbm:
+        pd.DataFrame(metricas_rows).to_csv(MODELOS_DIR / "metricas_v5_nacional.csv", index=False)
+        with open(MODELOS_DIR / "config_limiares_v5.json", "w", encoding="utf-8") as f:
+            json.dump(limiares_producao, f, indent=2, ensure_ascii=False)
+        with open(MODELOS_DIR / "top_cid3_por_capitulo_v5.json", "w", encoding="utf-8") as f:
+            json.dump(top_cid3_por_cap, f, indent=2, ensure_ascii=False)
 
-    # Salvar LightGBM Challengers promovidos
-    joblib.dump(challengers["Longa_Permanencia"]["model"], MODELOS_DIR / "modelo_admissao_longa_lightgbm_v5.joblib", compress=3)
-    joblib.dump(challengers["Obito"]["model"], MODELOS_DIR / "modelo_admissao_obito_lightgbm_v5.joblib", compress=3)
+        # Salvar LightGBM Challengers promovidos
+        joblib.dump(challengers["Longa_Permanencia"]["model"], MODELOS_DIR / "modelo_admissao_longa_lightgbm_v5.joblib", compress=3)
+        joblib.dump(challengers["Obito"]["model"], MODELOS_DIR / "modelo_admissao_obito_lightgbm_v5.joblib", compress=3)
 
     # Figura 1: ROC / PR
-    fig, axes = plt.subplots(2, 2, figsize=(14, 11))
+    fig, axes = plt.subplots(2, 2, figsize=(15, 11.5))
     for row_idx, (t_id, t_nome) in enumerate([("Obito", "Óbito Intra-hospitalar"), ("Longa_Permanencia", "Longa Permanência (≥15d)")]):
         ax_roc, ax_pr = axes[row_idx, 0], axes[row_idx, 1]
         for mod_name, c_data in curvas[t_id].items():
             ax_roc.plot(c_data["fpr"], c_data["tpr"], lw=2.2, color=cores[mod_name], label=f"{mod_name} (AUC = {c_data['roc_auc']:.4f})")
             ax_pr.plot(c_data["rec_curve"], c_data["prec_curve"], lw=2.2, color=cores[mod_name], label=f"{mod_name} (PR-AUC = {c_data['pr_auc']:.4f})")
         ax_roc.plot([0, 1], [0, 1], "k--", lw=1.2, alpha=0.6)
-        ax_roc.set_title(f"Curva ROC V6 Contínuo — {t_nome} ({range_desc})", fontweight="bold")
+        ax_roc.set_title(f"Curva ROC {versao_label} — {t_nome}\n({range_desc})", fontweight="bold", fontsize=11.5, pad=10)
         ax_roc.set_xlabel("Taxa de Falso Positivo (1 - Especificidade)")
         ax_roc.set_ylabel("Sensibilidade (Recall)")
         ax_roc.legend(loc="lower right", frameon=True, fontsize=9)
 
         prev_rate = float(desfechos[t_id]["y_test"].mean())
         ax_pr.axhline(prev_rate, color="black", linestyle="--", lw=1.2, alpha=0.6, label=f"Baseline ({prev_rate:.2%})")
-        ax_pr.set_title(f"Curva Precision-Recall V6 Contínuo — {t_nome} ({range_desc})", fontweight="bold")
+        ax_pr.set_title(f"Curva Precision-Recall {versao_label} — {t_nome}\n({range_desc})", fontweight="bold", fontsize=11.5, pad=10)
         ax_pr.set_xlabel("Sensibilidade (Recall)")
         ax_pr.set_ylabel("Precisão (VPP)")
         ax_pr.legend(loc="upper right", frameon=True, fontsize=9)
-    plt.tight_layout()
+    plt.tight_layout(h_pad=2.4, w_pad=2.2)
     plt.savefig(FIGURAS_DIR / "fig_roc_pr_curvas_v5.png")
     plt.close()
 
     # Figura 2: Calibração
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+    fig, axes = plt.subplots(1, 2, figsize=(14.5, 6.2))
     for idx, (t_id, t_nome) in enumerate([("Obito", "Óbito Intra-hospitalar"), ("Longa_Permanencia", "Longa Permanência (≥15d)")]):
         ax = axes[idx]
         ax.plot([0, 1], [0, 1], "k--", lw=1.5, label="Calibração Perfeita")
         for mod_name, c_data in curvas[t_id].items():
             ax.plot(c_data["prob_pred_cal"], c_data["prob_true_cal"], marker="o", lw=2.2, color=cores[mod_name], label=f"{mod_name} (Brier = {c_data['brier_cal']:.4f})")
-        ax.set_title(f"Calibração Isotônica V6 Contínuo — {t_nome}", fontweight="bold")
+        ax.set_title(f"Calibração Isotônica {versao_label}\n{t_nome}", fontweight="bold", fontsize=11.5, pad=10)
         ax.set_xlabel("Probabilidade Média Prevista")
         ax.set_ylabel("Fração Real Observada")
         ax.legend(loc="upper left", frameon=True, fontsize=9)
         ax.set_xlim(0, 0.75)
         ax.set_ylim(0, 0.75)
-    plt.tight_layout()
+    plt.tight_layout(w_pad=2.2)
     plt.savefig(FIGURAS_DIR / "fig_calibracao_probabilidade_v5.png")
     plt.close()
 
     # Figura 3: Importâncias
     if "LightGBM" in importancias["Obito"] and "LightGBM" in importancias["Longa_Permanencia"]:
-        fig, axes = plt.subplots(1, 2, figsize=(15, 7))
+        fig, axes = plt.subplots(1, 2, figsize=(15.5, 7.2))
         for idx, (t_id, t_nome) in enumerate([("Obito", "Óbito Intra-hospitalar"), ("Longa_Permanencia", "Longa Permanência (≥15d)")]):
             ax = axes[idx]
             fnames, imps = importancias[t_id]["LightGBM"]
             df_imp = pd.DataFrame({"Feature": fnames, "Importance": imps}).sort_values("Importance", ascending=True).tail(15)
             ax.barh(df_imp["Feature"], df_imp["Importance"], color="#2563eb" if idx == 1 else "#dc2626", alpha=0.88)
-            ax.set_title(f"Top 15 Variáveis (LightGBM V6 Contínuo) — {t_nome}", fontweight="bold")
+            ax.set_title(f"Top 15 Variáveis (LightGBM {versao_label})\n{t_nome}", fontweight="bold", fontsize=11.5, pad=10)
             ax.set_xlabel("Importância (Splits)")
-        plt.tight_layout()
+        plt.tight_layout(w_pad=2.6)
         plt.savefig(FIGURAS_DIR / "fig_importancias_admissao_v5.png")
         plt.close()
 
@@ -350,6 +367,7 @@ def main():
     parser.add_argument("--max-cal", type=int, default=300_000)
     parser.add_argument("--max-teste", type=int, default=300_000)
     parser.add_argument("--dry-run", action="store_true", help="Avalia sem substituir os artefatos de produção")
+    parser.add_argument("--regenerar-figuras-champion", action="store_true", help="Regenera as 3 figuras da Aba 3 a partir dos modelos Champion ativos sem alterar pesos")
     args = parser.parse_args()
 
     t0 = time.time()
@@ -464,6 +482,37 @@ def main():
 
     comparativo = {}
     challengers = {}
+
+    if args.regenerar_figuras_champion:
+        reg_info = {}
+        if REGISTRO_PATH.exists():
+            try:
+                with open(REGISTRO_PATH, "r", encoding="utf-8") as f:
+                    reg_info = json.load(f)
+            except Exception:
+                reg_info = {}
+        champ_versao = reg_info.get("champion_atual", {}).get("versao", "V6 Contínuo")
+        ativos = {}
+        for t_id, t_cfg in desfechos.items():
+            m_champ = joblib.load(champ_paths[t_id])
+            lim_champ = float(cfg_champ[t_id]["limiar_youden"])
+            ev_champ = _avaliar_classificador(m_champ, X_test, t_cfg["y_test"], lim_champ)
+            pipe_champ = _extrair_pipeline_base(m_champ)
+            ativos[t_id] = {"model": m_champ, "limiar": lim_champ, "pipe": pipe_champ, "eval": ev_champ}
+            print(
+                f"  [Champion Ativo: {champ_versao}] {t_id} -> "
+                f"ROC={ev_champ['roc_auc']:.4f} | PR={ev_champ['pr_auc']:.4f} | Brier={ev_champ['brier_cal']:.4f}",
+                flush=True,
+            )
+        _gerar_benchmark_e_figuras_promocao(
+            ativos, X_train, X_cal, X_test, desfechos,
+            estrato_tc.iloc[idx_tr], top_cid3_por_cap,
+            f"Brasil {fmt_rng(todas_comps)}",
+            versao_label=champ_versao,
+            atualizar_pesos_lgbm=False,
+        )
+        print(f"Figuras do Champion atual ({champ_versao}) regeneradas em {FIGURAS_DIR} ({time.time()-t0:.1f}s)!", flush=True)
+        return
 
     for t_id, t_cfg in desfechos.items():
         m_champ = joblib.load(champ_paths[t_id])

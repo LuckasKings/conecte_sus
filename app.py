@@ -144,7 +144,7 @@ import features_v5  # Necessário para desserializar AdmissionV5Preprocessor dos
 
 
 @st.cache_resource
-def carregar_modelos():
+def _load_modelos_por_mtime(_mtime_key: tuple[float, float]):
     caminho_longa = os.path.join(BASE_DIR, "modelos", "modelo_admissao_longa_lightgbm_v5.joblib")
     caminho_obito = os.path.join(BASE_DIR, "modelos", "modelo_admissao_obito_lightgbm_v5.joblib")
     modelo_longa = joblib.load(caminho_longa) if os.path.exists(caminho_longa) else None
@@ -152,21 +152,41 @@ def carregar_modelos():
     return modelo_longa, modelo_obito
 
 
+def carregar_modelos():
+    p_lg = os.path.join(BASE_DIR, "modelos", "modelo_admissao_longa_lightgbm_v5.joblib")
+    p_ob = os.path.join(BASE_DIR, "modelos", "modelo_admissao_obito_lightgbm_v5.joblib")
+    m_key = (
+        os.path.getmtime(p_lg) if os.path.exists(p_lg) else 0.0,
+        os.path.getmtime(p_ob) if os.path.exists(p_ob) else 0.0,
+    )
+    return _load_modelos_por_mtime(m_key)
+
+
 @st.cache_data(ttl=300)
-def carregar_metricas_v5():
+def _load_metricas_por_mtime(_mtime: float):
     caminho_csv = os.path.join(BASE_DIR, "modelos", "metricas_v5_nacional.csv")
     if os.path.exists(caminho_csv):
         return pd.read_csv(caminho_csv)
     return pd.DataFrame()
 
 
+def carregar_metricas_v5():
+    p_csv = os.path.join(BASE_DIR, "modelos", "metricas_v5_nacional.csv")
+    return _load_metricas_por_mtime(os.path.getmtime(p_csv) if os.path.exists(p_csv) else 0.0)
+
+
 @st.cache_data(ttl=300)
-def carregar_top_cid3():
+def _load_cid3_por_mtime(_mtime: float):
     caminho_json = os.path.join(BASE_DIR, "modelos", "top_cid3_por_capitulo_v5.json")
     if os.path.exists(caminho_json):
         with open(caminho_json, "r", encoding="utf-8") as f:
             return json.load(f)
     return {}
+
+
+def carregar_top_cid3():
+    p_json = os.path.join(BASE_DIR, "modelos", "top_cid3_por_capitulo_v5.json")
+    return _load_cid3_por_mtime(os.path.getmtime(p_json) if os.path.exists(p_json) else 0.0)
 
 
 UFS_POR_REGIAO_BR = {
@@ -767,18 +787,16 @@ with tab_ml:
     st.markdown("---")
     st.markdown(t["ml_evid"])
     col_img1, col_img2, col_img3 = st.columns(3)
-    with col_img1:
-        img_roc = os.path.join(BASE_DIR, "figuras", "fig_roc_pr_curvas_v5.png")
-        if os.path.exists(img_roc):
-            st.image(img_roc, caption=t["ml_img1"], use_container_width=True)
-    with col_img2:
-        img_cal = os.path.join(BASE_DIR, "figuras", "fig_calibracao_probabilidade_v5.png")
-        if os.path.exists(img_cal):
-            st.image(img_cal, caption=t["ml_img2"], use_container_width=True)
-    with col_img3:
-        img_imp = os.path.join(BASE_DIR, "figuras", "fig_importancias_admissao_v5.png")
-        if os.path.exists(img_imp):
-            st.image(img_imp, caption=t["ml_img3"], use_container_width=True)
+    for col_img, img_nome, cap_key in [
+        (col_img1, "fig_roc_pr_curvas_v5.png", "ml_img1"),
+        (col_img2, "fig_calibracao_probabilidade_v5.png", "ml_img2"),
+        (col_img3, "fig_importancias_admissao_v5.png", "ml_img3"),
+    ]:
+        with col_img:
+            img_path = os.path.join(BASE_DIR, "figuras", img_nome)
+            if os.path.exists(img_path):
+                with open(img_path, "rb") as _f_img:
+                    st.image(_f_img.read(), caption=t[cap_key], use_container_width=True)
 
     st.markdown("---")
     st.markdown(t["ml_ops_hdr"])

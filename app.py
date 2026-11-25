@@ -798,14 +798,17 @@ with tab_gestao:
         def _fmt_match(r_ob: bool, r_lg: bool, p_ob_al: bool, p_lg_al: bool) -> str:
             h_ob = p_ob_al == r_ob
             h_lg = p_lg_al == r_lg
-            real_txt = mt["obito"] if r_ob else (mt["alta_longa"] if r_lg else mt["alta_curta"])
             if h_ob and h_lg:
-                return f"✅ {mt['ok']} • {real_txt}"
-            lg_tag = "✓" if h_lg else (mt["prev_alarm"] if p_lg_al else mt["missed_det"])
-            ob_tag = "✓" if h_ob else (mt["prev_alarm"] if p_ob_al else mt["missed_det"])
-            prefix = f"⚠️ {mt['partial']}" if (h_ob or h_lg) else f"❌ {mt['miss']}"
-            return f"{prefix} ({mt['short_lg']} {lg_tag}, {mt['short_ob']} {ob_tag}) • {real_txt}"
+                return f"✅ {mt['vp']}" if (r_ob or r_lg) else f"✅ {mt['vn']}"
+            if h_ob ^ h_lg:
+                tgt = mt["short_ob"] if not h_ob else mt["short_lg"]
+                is_fp = p_ob_al if not h_ob else p_lg_al
+                return f"🔔 {tgt}: {mt['fp']}" if is_fp else f"🔕 {tgt}: {mt['fn']}"
+            lg_lbl = mt["fp_short"] if p_lg_al else mt["fn_short"]
+            ob_lbl = mt["fp_short"] if p_ob_al else mt["fn_short"]
+            return f"❌ {mt['short_lg']} {lg_lbl} | {mt['short_ob']} {ob_lbl}"
 
+        amostra["desfecho_real"] = [mt["obito"] if r_ob else mt["alta"] for r_ob in real_ob_s]
         amostra["desfecho_match"] = [
             _fmt_match(r_ob, r_lg, p_ob_al, p_lg_al)
             for r_ob, r_lg, p_ob_al, p_lg_al in zip(real_ob_s, real_lg_s, pred_ob_s, pred_lg_s)
@@ -821,7 +824,8 @@ with tab_gestao:
 
         colunas_visiveis = [
             "id_anonimo", "uf", "idade_anos", "sexo_desc", "esp_disp",
-            "motivo_cid", "qt_diarias", "uti_mes_to", "flag_longa", "flag_obito", "desfecho_match"
+            "motivo_cid", "qt_diarias", "uti_mes_to", "desfecho_real",
+            "flag_longa", "flag_obito", "desfecho_match"
         ]
         p_cols_map = t["p_cols"]
         df_tabela = amostra[colunas_visiveis].rename(columns={
@@ -833,6 +837,7 @@ with tab_gestao:
             "motivo_cid": p_cols_map["motivo_cid"],
             "qt_diarias": p_cols_map["qt_diarias"],
             "uti_mes_to": p_cols_map["uti_mes_to"],
+            "desfecho_real": p_cols_map["desfecho_real"],
             "flag_longa": p_cols_map["flag_longa"],
             "flag_obito": p_cols_map["flag_obito"],
             "desfecho_match": p_cols_map["desfecho_match"],

@@ -634,11 +634,6 @@ with tab_gestao:
     ob_med, ob_crit = corte_obito[0] / 100.0, corte_obito[1] / 100.0
     lg_med, lg_crit = corte_longa[0] / 100.0, corte_longa[1] / 100.0
 
-    lg_mid_end = max(corte_longa[1] - 0.1, corte_longa[0])
-    ob_mid_end = max(corte_obito[1] - 0.1, corte_obito[0])
-    st.markdown(t["leg_lg"].format(a=corte_longa[0], b=lg_mid_end, c=corte_longa[1]))
-    st.markdown(t["leg_ob"].format(a=corte_obito[0], b=ob_mid_end, c=corte_obito[1]))
-
     with st.expander(t["sim_exp"], expanded=False):
         c_sim1, c_sim2, c_sim3, c_sim4 = st.columns(4)
         with c_sim1:
@@ -737,6 +732,19 @@ with tab_gestao:
     with col_t5:
         busca_id = st.text_input(t["p_busca"], "")
 
+    lg_mid_end = max(corte_longa[1] - 0.1, corte_longa[0])
+    ob_mid_end = max(corte_obito[1] - 0.1, corte_obito[0])
+    with st.container(border=True):
+        mg1, mg2 = st.columns([1.05, 1.15])
+        with mg1:
+            st.markdown(t["cli_guide_hdr1"])
+            st.markdown(t["leg_lg"].format(a=corte_longa[0], b=lg_mid_end, c=corte_longa[1]))
+            st.markdown(t["leg_ob"].format(a=corte_obito[0], b=ob_mid_end, c=corte_obito[1]))
+            st.caption(t["cli_guide_txt1"])
+        with mg2:
+            st.markdown(t["cli_guide_hdr2"])
+            st.markdown(t["cli_guide_txt2"])
+
     amostra = get_amostra_cockpit(filtro_uf, filtro_esp, filtro_dias, busca_id)
 
     if amostra.empty:
@@ -781,23 +789,26 @@ with tab_gestao:
         mt = t["match_tokens"]
         real_ob_s = amostra["Obito"].fillna(0).astype(int) == 1 if "Obito" in amostra.columns else pd.Series(False, index=amostra.index)
         real_lg_s = amostra["qt_diarias"].fillna(0).astype(int) >= 15
-        hit_ob_s = (amostra["p_obito"] >= ob_med) == real_ob_s
-        hit_lg_s = (amostra["p_longa"] >= lg_med) == real_lg_s
+        pred_ob_s = amostra["p_obito"] >= ob_med
+        pred_lg_s = amostra["p_longa"] >= lg_med
+        hit_ob_s = pred_ob_s == real_ob_s
+        hit_lg_s = pred_lg_s == real_lg_s
         both_s = hit_ob_s & hit_lg_s
 
-        def _fmt_match(r_ob: bool, r_lg: bool, h_ob: bool, h_lg: bool) -> str:
+        def _fmt_match(r_ob: bool, r_lg: bool, p_ob_al: bool, p_lg_al: bool) -> str:
+            h_ob = p_ob_al == r_ob
+            h_lg = p_lg_al == r_lg
             real_txt = mt["obito"] if r_ob else (mt["alta_longa"] if r_lg else mt["alta_curta"])
             if h_ob and h_lg:
                 return f"✅ {mt['ok']} • {real_txt}"
-            if h_ob or h_lg:
-                lg_mark = "✓" if h_lg else "✗"
-                ob_mark = "✓" if h_ob else "✗"
-                return f"⚠️ {mt['partial']} ({mt['short_lg']} {lg_mark}, {mt['short_ob']} {ob_mark}) • {real_txt}"
-            return f"❌ {mt['miss']} • {real_txt}"
+            lg_tag = "✓" if h_lg else (mt["prev_alarm"] if p_lg_al else mt["missed_det"])
+            ob_tag = "✓" if h_ob else (mt["prev_alarm"] if p_ob_al else mt["missed_det"])
+            prefix = f"⚠️ {mt['partial']}" if (h_ob or h_lg) else f"❌ {mt['miss']}"
+            return f"{prefix} ({mt['short_lg']} {lg_tag}, {mt['short_ob']} {ob_tag}) • {real_txt}"
 
         amostra["desfecho_match"] = [
-            _fmt_match(r_ob, r_lg, h_ob, h_lg)
-            for r_ob, r_lg, h_ob, h_lg in zip(real_ob_s, real_lg_s, hit_ob_s, hit_lg_s)
+            _fmt_match(r_ob, r_lg, p_ob_al, p_lg_al)
+            for r_ob, r_lg, p_ob_al, p_lg_al in zip(real_ob_s, real_lg_s, pred_ob_s, pred_lg_s)
         ]
 
         if not amostra.empty:

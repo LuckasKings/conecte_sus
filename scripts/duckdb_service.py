@@ -539,39 +539,3 @@ def obter_qualidade_por_uf(regiao="Todas") -> pd.DataFrame:
         ORDER BY pct_raca_nd DESC, pct_esp_outras DESC, internacoes DESC
         """
     return con.execute(query, params).df()
-
-
-def obter_volume_mensal_qualidade(regiao="Todas", uf="Todas") -> pd.DataFrame:
-    """Estabilidade mensal de volume, UFs ativas e taxas de campos ignorados/outros."""
-    if not parquet_disponivel():
-        return pd.DataFrame()
-    where_sql, params = _build_where(regiao=regiao, uf=uf, mes_range=None)
-    con = _get_con()
-    if CUBO_PATH.exists():
-        cubo_str = str(CUBO_PATH).replace("\\", "/")
-        query = f"""
-        SELECT
-            mes_internacao,
-            COUNT(DISTINCT uf) AS ufs_ativas,
-            CAST(SUM(internacoes) AS BIGINT) AS internacoes,
-            ROUND(SUM(CASE WHEN raca_cor_desc = 'Nao_Declarada' THEN internacoes ELSE 0 END) * 100.0 / NULLIF(SUM(internacoes), 0), 3) AS pct_raca_nd,
-            ROUND(SUM(CASE WHEN especialidade_leito = 'Outras' THEN internacoes ELSE 0 END) * 100.0 / NULLIF(SUM(internacoes), 0), 2) AS pct_esp_outras
-        FROM read_parquet('{cubo_str}')
-        WHERE {where_sql}
-        GROUP BY mes_internacao
-        ORDER BY mes_internacao
-        """
-    else:
-        query = f"""
-        SELECT
-            mes_internacao,
-            COUNT(DISTINCT uf) AS ufs_ativas,
-            COUNT(*) AS internacoes,
-            ROUND(AVG(CASE WHEN raca_cor_desc = 'Nao_Declarada' THEN 100.0 ELSE 0.0 END), 3) AS pct_raca_nd,
-            ROUND(AVG(CASE WHEN especialidade_leito = 'Outras' THEN 100.0 ELSE 0.0 END), 2) AS pct_esp_outras
-        FROM read_parquet('{PARQUET_GLOB}', hive_partitioning=true)
-        WHERE {where_sql}
-        GROUP BY mes_internacao
-        ORDER BY mes_internacao
-        """
-    return con.execute(query, params).df()

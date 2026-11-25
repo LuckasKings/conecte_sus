@@ -233,11 +233,6 @@ def get_qualidade_uf(regiao):
     return ds.obter_qualidade_por_uf(regiao=regiao)
 
 
-@st.cache_data(ttl=300)
-def get_qualidade_mes(regiao, uf):
-    return ds.obter_volume_mensal_qualidade(regiao=regiao, uf=uf)
-
-
 if not ds.parquet_disponivel():
     st.error("Nenhuma partição Parquet encontrada em `dados/`. Execute `scripts/gerar_camada_deploy.py` primeiro.")
     st.stop()
@@ -540,73 +535,27 @@ with tab_qual:
     df_contrato, dq_status_keys = get_qualidade_variaveis_df(res_dq, esperado_ufs, idioma)
     render_wrapped_table(df_contrato, ["21%", "17%", "18%", "13%", "31%"], badge_col=t["dq_status_col"], status_keys=dq_status_keys)
 
-    dq_g1, dq_g2 = st.columns(2)
-    with dq_g1:
-        st.markdown(t["dq_c1_hdr"])
-        st.caption(t["dq_c1_cap"])
-        df_dq_mes = get_qualidade_mes(dq_reg, dq_uf)
-        if not df_dq_mes.empty:
-            fig_dq_mes = px.bar(
-                df_dq_mes,
-                x="mes_internacao",
-                y="internacoes",
-                text="ufs_ativas",
-                labels={"mes_internacao": t["dq_c1_x"], "internacoes": t["dq_c1_y"]},
-                template="plotly_white",
-            )
-            fig_dq_mes.update_traces(marker_color="#0f766e", texttemplate="%{text} UFs", textposition="outside")
-            fig_dq_mes.update_layout(height=340, xaxis=dict(dtick=1), margin=dict(l=20, r=20, t=30, b=20))
-            st.plotly_chart(fig_dq_mes, use_container_width=True)
-
-    with dq_g2:
-        st.markdown(t["dq_c2_hdr"])
-        st.caption(t["dq_c2_cap"])
+    if len(filtros["ufs"]) > 1:
         df_dq_uf = get_qualidade_uf(dq_reg)
         if not df_dq_uf.empty:
-            top_dq_uf = df_dq_uf.head(15).copy()
-            top_dq_uf_melt = top_dq_uf.melt(
-                id_vars=["uf"],
-                value_vars=["pct_esp_outras", "pct_raca_nd"],
-                var_name="indicador",
-                value_name="pct",
+            st.markdown(t["dq_uf_tbl_hdr"])
+            df_dq_uf_disp = df_dq_uf.copy()
+            df_dq_uf_disp["regiao"] = tr_series(df_dq_uf_disp["regiao"], idioma)
+            dq_cols_map = t["dq_uf_cols"]
+            st.dataframe(
+                df_dq_uf_disp,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "uf": dq_cols_map["uf"],
+                    "regiao": dq_cols_map["regiao"],
+                    "internacoes": st.column_config.NumberColumn(dq_cols_map["internacoes"], format="%d"),
+                    "meses_ativos": st.column_config.NumberColumn(dq_cols_map["meses_ativos"], format="%d / 12"),
+                    "pct_raca_nd": st.column_config.NumberColumn(dq_cols_map["pct_raca_nd"], format="%.3f%%"),
+                    "pct_cid_ign": st.column_config.NumberColumn(dq_cols_map["pct_cid_ign"], format="%.4f%%"),
+                    "pct_esp_outras": st.column_config.NumberColumn(dq_cols_map["pct_esp_outras"], format="%.2f%%"),
+                },
             )
-            top_dq_uf_melt["indicador_disp"] = top_dq_uf_melt["indicador"].map({
-                "pct_esp_outras": t["dq_c2_opt1"],
-                "pct_raca_nd": t["dq_c2_opt2"],
-            })
-            fig_dq_uf = px.bar(
-                top_dq_uf_melt,
-                x="pct",
-                y="uf",
-                color="indicador_disp",
-                barmode="group",
-                orientation="h",
-                color_discrete_map={t["dq_c2_opt1"]: "#f59e0b", t["dq_c2_opt2"]: "#6366f1"},
-                labels={"pct": t["dq_c2_x"], "uf": t["dq_c2_y"], "indicador_disp": t["dq_c2_leg"]},
-                template="plotly_white",
-            )
-            fig_dq_uf.update_layout(height=340, margin=dict(l=20, r=20, t=20, b=20), legend=dict(orientation="h", yanchor="bottom", y=1.02))
-            st.plotly_chart(fig_dq_uf, use_container_width=True)
-
-    if len(filtros["ufs"]) > 1 and not df_dq_uf.empty:
-        st.markdown(t["dq_uf_tbl_hdr"])
-        df_dq_uf_disp = df_dq_uf.copy()
-        df_dq_uf_disp["regiao"] = tr_series(df_dq_uf_disp["regiao"], idioma)
-        dq_cols_map = t["dq_uf_cols"]
-        st.dataframe(
-            df_dq_uf_disp,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "uf": dq_cols_map["uf"],
-                "regiao": dq_cols_map["regiao"],
-                "internacoes": st.column_config.NumberColumn(dq_cols_map["internacoes"], format="%d"),
-                "meses_ativos": st.column_config.NumberColumn(dq_cols_map["meses_ativos"], format="%d / 12"),
-                "pct_raca_nd": st.column_config.NumberColumn(dq_cols_map["pct_raca_nd"], format="%.3f%%"),
-                "pct_cid_ign": st.column_config.NumberColumn(dq_cols_map["pct_cid_ign"], format="%.4f%%"),
-                "pct_esp_outras": st.column_config.NumberColumn(dq_cols_map["pct_esp_outras"], format="%.2f%%"),
-            },
-        )
 
     st.warning(t["dq_other_note"])
 

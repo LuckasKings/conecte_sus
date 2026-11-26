@@ -1453,7 +1453,7 @@ def get_qualidade_variaveis_df(res_dq: dict, esperado_ufs: int, lang: str) -> tu
     esperado_parts = esperado_ufs * comp_esp
     cov_ok = res_dq["particoes_uf_mes"] >= esperado_parts and res_dq["particoes_uf_mes"] > 0
     idade_ok = n_am > 0 and res_dq["bad_idade"] == 0
-    sexo_ok = n_am > 0 and res_dq["bad_sexo"] == 0 and res_dq["pct_sexo_outro"] == 0.0
+    pct_sexo_inv = max(float(res_dq.get("pct_sexo_outro", 0.0)), (res_dq["bad_sexo"] * 100.0 / n_am) if n_am > 0 else 0.0)
     raca_ok = res_dq["pct_raca_nd"] < 1.0
     cid_ok = n_am > 0 and res_dq["bad_cid"] == 0 and res_dq["pct_cid_ign"] < 1.0
     esp_ok = res_dq["pct_esp_outras"] < 1.0
@@ -1470,12 +1470,37 @@ def get_qualidade_variaveis_df(res_dq: dict, esperado_ufs: int, lang: str) -> tu
     u_both = {"pt": "Perfil + Treino IA", "en": "Profile + AI Train", "es": "Perfil + Entreno IA"}[k]
     u_tgt = {"pt": "Perfil + Alvo IA", "en": "Profile + AI Target", "es": "Perfil + Objetivo IA"}[k]
 
-    lbl_sexo_ok = {"pt": "0% outro/inv.", "en": "0% other/inv.", "es": "0% otro/inv."}[k]
     lbl_ign = {"pt": "Ign.", "en": "Unk.", "es": "Ign."}[k]
     lbl_outras = {"pt": "Outras", "en": "Other", "es": "Otras"}[k]
     lbl_null_zero = {"pt": "0 nulos", "en": "0 nulls", "es": "0 nulos"}[k]
     lbl_comp = {"pt": "comp.", "en": "mo.", "es": "comp."}[k]
     lbl_alvos_row = {"pt": "qt_diarias & Obito (Alvos)", "en": "qt_diarias & Obito (Targets)", "es": "qt_diarias & Obito (Objetivos)"}[k]
+
+    bad_sexo_n = int(res_dq.get("bad_sexo", 0))
+    if n_am > 0 and bad_sexo_n == 0 and pct_sexo_inv == 0.0:
+        sexo_lbl, sexo_key = lbl_ok, "dq_ok"
+        sexo_med_str = f"{_fmt_pct_lang(100.0, 2, k)} ({ {'pt': '0 outro/inv.', 'en': '0 other/inv.', 'es': '0 otro/inv.'}[k] })"
+        sexo_diag = {"pt": "100% aderente aos códigos válidos 1 (Masculino) e 3 (Feminino) no cubo e no treino.", "en": "100% compliant with valid codes 1 (Male) and 3 (Female) across cube and training.", "es": "100% conforme a los códigos válidos 1 (Masculino) y 3 (Femenino) en cubo y entreno."}[k]
+    elif n_am > 0 and pct_sexo_inv < 1.0:
+        sexo_lbl, sexo_key = (lbl_ok, "dq_ok") if pct_sexo_inv < 0.05 else (lbl_warn, "dq_warn")
+        pct_val_sexo = max(0.0, 100.0 - pct_sexo_inv)
+        sexo_pct_str = _fmt_pct_lang(pct_val_sexo, 3 if pct_val_sexo >= 99.9 else 2, k)
+        bad_s_fmt = _fmt_int_lang(bad_sexo_n, k)
+        pct_inv_str = _fmt_pct_lang(pct_sexo_inv, 3, k)
+        sexo_det = {"pt": f"{bad_s_fmt} • {pct_inv_str} outro/inv.", "en": f"{bad_s_fmt} • {pct_inv_str} other/inv.", "es": f"{bad_s_fmt} • {pct_inv_str} otro/inv."}[k]
+        sexo_med_str = f"{sexo_pct_str} ({sexo_det})"
+        sexo_diag = {
+            "pt": f"{sexo_pct_str} válidos (1 Masc / 3 Fem); apenas {bad_s_fmt} registros raros ({pct_inv_str}) vieram fora do padrão no DataSUS.",
+            "en": f"{sexo_pct_str} valid (1 Male / 3 Female); only {bad_s_fmt} rare records ({pct_inv_str}) came out-of-spec from DataSUS.",
+            "es": f"{sexo_pct_str} válidos (1 Masc / 3 Fem); solo {bad_s_fmt} registros raros ({pct_inv_str}) llegaron fuera del estándar DATASUS.",
+        }[k]
+    else:
+        sexo_lbl, sexo_key = lbl_alert, "dq_alert"
+        pct_val_sexo = max(0.0, 100.0 - pct_sexo_inv) if n_am > 0 else 0.0
+        pct_inv_str = _fmt_pct_lang(pct_sexo_inv, 3, k)
+        bad_s_fmt = _fmt_int_lang(bad_sexo_n, k)
+        sexo_med_str = "-" if n_am <= 0 else f"{_fmt_pct_lang(pct_val_sexo, 2, k)} ({bad_s_fmt} • {pct_inv_str})"
+        sexo_diag = {"pt": f"Acima do limite: {pct_inv_str} fora dos códigos 1 e 3.", "en": f"Above threshold: {pct_inv_str} outside codes 1 and 3.", "es": f"Por encima del umbral: {pct_inv_str} fuera de códigos 1 y 3."}[k]
 
     def _pct_ok(erros: int) -> str:
         if n_am <= 0:
@@ -1519,10 +1544,10 @@ def get_qualidade_variaveis_df(res_dq: dict, esperado_ufs: int, lang: str) -> tu
         (
             "sexo",
             u_both,
-            f"{_pct_ok(res_dq['bad_sexo'])} ({lbl_sexo_ok})",
-            lbl_ok if sexo_ok else lbl_alert,
-            "dq_ok" if sexo_ok else "dq_alert",
-            {"pt": "100% aderente aos códigos válidos 1 (Masculino) e 3 (Feminino) no cubo e no treino.", "en": "100% compliant with valid codes 1 (Male) and 3 (Female) across cube and training.", "es": "100% conforme a los códigos válidos 1 (Masculino) y 3 (Femenino)."}[k],
+            sexo_med_str,
+            sexo_lbl,
+            sexo_key,
+            sexo_diag,
         ),
         (
             "capitulo_cid & cid3 (diag_princ)",

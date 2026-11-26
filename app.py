@@ -34,7 +34,7 @@ st.set_page_config(
     page_title="SUS Analytics & Clinical Intelligence",
     page_icon="🏥",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="auto"
 )
 
 st.markdown("""
@@ -56,6 +56,9 @@ st.markdown("""
         font-size: 1.02rem;
         color: #475569;
         margin-bottom: 1.4rem;
+    }
+    .mobile-hint {
+        display: none;
     }
     .metric-card {
         background-color: #f8fafc;
@@ -134,8 +137,68 @@ st.markdown("""
         color: #ffffff !important;
         font-weight: 700 !important;
     }
+    @media (max-width: 768px) {
+        .block-container {
+            padding-top: 2.5rem !important;
+            padding-left: 0.85rem !important;
+            padding-right: 0.85rem !important;
+            padding-bottom: 1.5rem !important;
+        }
+        .main-title {
+            font-size: 1.48rem !important;
+            line-height: 1.2 !important;
+        }
+        .sub-title {
+            font-size: 0.88rem !important;
+            margin-bottom: 0.6rem !important;
+        }
+        .mobile-hint {
+            display: inline-block;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1e3a8a;
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            margin-bottom: 0.85rem;
+        }
+        .metric-card {
+            min-height: auto !important;
+            padding: 10px 10px !important;
+            margin-bottom: 0.45rem !important;
+        }
+        .metric-card p {
+            font-size: 1.32rem !important;
+        }
+        [data-testid="stTabs"] [role="tablist"] {
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            gap: 6px !important;
+            padding: 4px 2px 8px 2px !important;
+            scrollbar-width: none !important;
+        }
+        [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar {
+            display: none !important;
+        }
+        [data-testid="stTabs"] [data-testid="stTab"] {
+            flex: 0 0 auto !important;
+            white-space: nowrap !important;
+            padding: 8px 12px !important;
+            font-size: 0.82rem !important;
+        }
+        .wrapped-table-box {
+            -webkit-overflow-scrolling: touch !important;
+        }
+        .wrapped-table {
+            min-width: 660px !important;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
+
+PLOTLY_CFG = {"displayModeBar": "hover", "responsive": True}
 
 # ==========================================
 # 2. Carregamento via DuckDB (Cacheado) e Modelos
@@ -317,8 +380,8 @@ def render_wrapped_table(df_in: pd.DataFrame, widths: list[str], badge_col: str 
             tds += f"<td style='padding:10px 12px; border-bottom:1px solid #e2e8f0; vertical-align:top; white-space:normal; word-wrap:break-word; line-height:1.45; font-size:0.86rem; color:#0f172a;'>{cell_content}</td>"
         rows_html += f"<tr>{tds}</tr>"
     table_html = (
-        "<div style='overflow-x:auto; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:1.2rem; background:#ffffff;'>"
-        f"<table style='width:100%; border-collapse:collapse; table-layout:fixed;'><thead><tr>{ths}</tr></thead><tbody>{rows_html}</tbody></table>"
+        "<div class='wrapped-table-box' style='overflow-x:auto; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:1.2rem; background:#ffffff;'>"
+        f"<table class='wrapped-table' style='width:100%; border-collapse:collapse; table-layout:fixed;'><thead><tr>{ths}</tr></thead><tbody>{rows_html}</tbody></table>"
         "</div>"
     )
     st.markdown(table_html, unsafe_allow_html=True)
@@ -355,6 +418,12 @@ with st.sidebar:
 # ==========================================
 st.markdown(f'<div class="main-title">{t["main_title"]}</div>', unsafe_allow_html=True)
 st.markdown(f'<div class="sub-title">{t["sub_title"]}</div>', unsafe_allow_html=True)
+mobile_msg = {
+    "pt": "☰ Menu no topo esquerdo para trocar idioma (PT/EN/ES) e ver resumo • ↔️ Deslize as abas e tabelas lateralmente",
+    "en": "☰ Open top-left menu for language (PT/EN/ES) & overview • ↔️ Swipe tabs and tables horizontally",
+    "es": "☰ Menú arriba a la izquierda para idioma (PT/EN/ES) y resumen • ↔️ Deslice pestañas y tablas horizontalmente",
+}[idioma]
+st.markdown(f'<div class="mobile-hint">{mobile_msg}</div>', unsafe_allow_html=True)
 
 kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
 with kpi1:
@@ -438,8 +507,12 @@ with tab_epi:
             color_discrete_map=cor_sexo,
             template="plotly_white"
         )
-        fig_faixa.update_layout(height=350, margin=dict(l=20, r=20, t=20, b=20))
-        st.plotly_chart(fig_faixa, use_container_width=True)
+        fig_faixa.update_layout(
+            height=350,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+            margin=dict(l=12, r=12, t=34, b=16),
+        )
+        st.plotly_chart(fig_faixa, use_container_width=True, config=PLOTLY_CFG)
 
     with g2:
         st.markdown(t["g2_hdr"])
@@ -452,8 +525,8 @@ with tab_epi:
             template="plotly_white", size_max=40
         )
         fig_raca.update_traces(textposition="top center")
-        fig_raca.update_layout(height=350, showlegend=False, margin=dict(l=20, r=20, t=20, b=20))
-        st.plotly_chart(fig_raca, use_container_width=True)
+        fig_raca.update_layout(height=350, showlegend=False, margin=dict(l=12, r=12, t=20, b=16))
+        st.plotly_chart(fig_raca, use_container_width=True, config=PLOTLY_CFG)
 
     # Linha 2 de Gráficos: Sazonalidade Mensal e Capítulos CID-10
     g3, g4 = st.columns(2)
@@ -472,10 +545,10 @@ with tab_epi:
             yaxis=dict(title=t["g3_y1"]),
             yaxis2=dict(title=t["g3_y2"], overlaying="y", side="right"),
             xaxis=xaxis_cfg,
-            legend=dict(x=0.01, y=0.99),
-            margin=dict(l=20, r=20, t=20, b=20)
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+            margin=dict(l=12, r=12, t=34, b=16)
         )
-        st.plotly_chart(fig_mes, use_container_width=True)
+        st.plotly_chart(fig_mes, use_container_width=True, config=PLOTLY_CFG)
 
     with g4:
         st.markdown(t["g4_hdr"])
@@ -490,8 +563,8 @@ with tab_epi:
             template="plotly_white"
         )
         fig_cid.update_traces(hovertemplate=t["g4_hover"])
-        fig_cid.update_layout(height=350, margin=dict(l=20, r=20, t=20, b=20))
-        st.plotly_chart(fig_cid, use_container_width=True)
+        fig_cid.update_layout(height=360, margin=dict(l=8, r=8, t=20, b=16))
+        st.plotly_chart(fig_cid, use_container_width=True, config=PLOTLY_CFG)
 
     if len(filtros.get("anos", [])) > 1:
         evol_ano = get_evolucao_anual(reg_sel, uf_sel, raca_sel, espec_sel, sexo_sel).copy()
@@ -507,13 +580,13 @@ with tab_epi:
                 fig_ano.add_trace(go.Bar(x=anos_str, y=evol_ano["internacoes"], name=t["g3_b"], marker_color="#3b82f6"))
                 fig_ano.add_trace(go.Scatter(x=anos_str, y=evol_ano["taxa_mortalidade"], name=t["g3_l"], yaxis="y2", mode="lines+markers", line=dict(color="#dc2626", width=3)))
                 fig_ano.update_layout(
-                    height=290, template="plotly_white",
+                    height=300, template="plotly_white",
                     yaxis=dict(title=t["g3_y1"]),
                     yaxis2=dict(title=t["g3_y2"], overlaying="y", side="right", range=[0, y2_top]),
-                    legend=dict(x=0.01, y=0.99),
-                    margin=dict(l=20, r=20, t=20, b=20),
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+                    margin=dict(l=12, r=12, t=34, b=16),
                 )
-                st.plotly_chart(fig_ano, use_container_width=True)
+                st.plotly_chart(fig_ano, use_container_width=True, config=PLOTLY_CFG)
             with ya2:
                 evol_ano_disp = evol_ano[["ano", "internacoes", "obitos", "taxa_mortalidade", "taxa_longa"]]
                 st.dataframe(

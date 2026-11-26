@@ -1,116 +1,118 @@
-# SUS Analytics & Clinical Intelligence (Brasil 2024–2026 • V6 Contínuo)
+# SUS Analytics & Clinical Intelligence (Brazil 2024–2026 • Continuous V6)
+
+> 🌐 **Language / Idioma:** [🇺🇸 English](README.md) · [🇧🇷 Português](README.pt.md) · [🇪🇸 Español](README.es.md)
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-App-FF4B4B.svg)](https://contecte-sus-lucasleodata.streamlit.app/)
 [![DuckDB](https://img.shields.io/badge/DuckDB-OLAP-FFF000.svg)](https://duckdb.org/)
-[![LightGBM](https://img.shields.io/badge/LightGBM-V6%20Cont%C3%ADnuo-2ea44f.svg)](https://lightgbm.readthedocs.io/)
-[![MLOps Cloud](https://img.shields.io/badge/GitHub%20Actions-Cron%20Quinzenal-2088FF.svg)](.github/workflows/pipeline_continuo_mlops.yml)
+[![LightGBM](https://img.shields.io/badge/LightGBM-Continuous%20V6-2ea44f.svg)](https://lightgbm.readthedocs.io/)
+[![MLOps Cloud](https://img.shields.io/badge/GitHub%20Actions-Biweekly%20Cron-2088FF.svg)](.github/workflows/pipeline_continuo_mlops.yml)
 
-**Aplicação Online (Live Demo):** [contecte-sus-lucasleodata.streamlit.app](https://contecte-sus-lucasleodata.streamlit.app/)
+**Live Demo:** [contecte-sus-lucasleodata.streamlit.app](https://contecte-sus-lucasleodata.streamlit.app/)
 
-Plataforma contínua ponta a ponta de **Engenharia de Dados, Epidemiologia e Inteligência Artificial Hospitalar** construída sobre os microdados públicos do **SIH/SUS (Sistema de Informações Hospitalares do SUS)** do Brasil de **2024 a 2026** (**38.306.556 internações deduplicadas / ~38,31M** em **888 partições** nas **27 Unidades da Federação**), com ingestão incremental automatizada em nuvem, interface multilíngue (**PT / EN / ES**) e governança **Champion vs. Challenger**.
-
----
-
-## Problema de Negócio e Impacto na Saúde Pública
-
-Hospitais públicos e operadoras enfrentam diariamente dois desafios críticos no momento da admissão hospitalar:
-
-1. **Superlotação e giro de leitos:** Identificar precocemente pacientes com alto risco de **Longa Permanência (15 dias ou mais)** para acionar Serviço Social, Fisioterapia e planejamento de desospitalização desde o primeiro dia.
-2. **Alocação de cuidado intensivo:** Estimar o risco real de **Óbito Intra-hospitalar** na admissão usando apenas informações disponíveis no acolhimento, priorizando monitoramento contínuo e leitos de UTI.
+End-to-end continuous **Data Engineering, Epidemiology, and Hospital Clinical AI** platform built on all official public microdata from Brazil's Unified Health System (**SIH/SUS — Hospital Information System**) covering **2024–2026** (**38,306,556 deduplicated hospitalizations / ~38.31M** across **888 partitions** and all **27 Brazilian States**), featuring automated incremental cloud ingestion, trilingual UI (**PT / EN / ES**), and **Champion vs. Challenger** MLOps governance.
 
 ---
 
-## Arquitetura Contínua em Nuvem (V6 Contínuo)
+## Business Problem & Public Health Impact
+
+Public hospitals and health networks face two critical operational challenges every day right at inpatient admission:
+
+1. **Bed overcrowding & discharge planning:** Flag patients at high risk of **Long Length of Stay (15+ days)** right at admission so Social Work, Physical Therapy, and bed management teams can act from day one.
+2. **Intensive care allocation:** Estimate true **In-Hospital Mortality** risk using only intake variables known at arrival to prioritize continuous monitoring and ICU beds.
+
+---
+
+## Continuous Cloud Architecture (Continuous V6)
 
 ```text
-[ DataSUS FTP Oficial (888+ partições • 2024/01–2026/09 • 27 UFs) ]
+[ Official DataSUS FTP (888+ partitions • 2024/01–2026/09 • 27 States) ]
                              │
                              ▼ (GitHub Actions cron 0 6 5,20 * * + GitHub Releases)
-[ Lakehouse Parquet Particionado Hive ZSTD (~38,31M / 38.306.556 linhas) ]
+[ Hive ZSTD Partitioned Parquet Lakehouse (~38.31M / 38,306,556 rows) ]
                              │
           ┌──────────────────┴──────────────────┐
           ▼                                     ▼
-[ Camada Analítica DuckDB ]           [ Modelos V6 Contínuo (Nuvem • Champion/Challenger) ]
- - Cubo Multi-Ano (11,81 MB exato)     - 4 Algoritmos + Bayes CID3 + Calibração Isotônica
- - Amostra Cockpit (30k casos)         - Retreino Temporal (2,4M) vs. Teste Cego (300k)
- - Histórico de Cargas (Aba 2)         - Monitor de Drift (60k) & Figuras 300 DPI Dinâmicas
+[ DuckDB Analytics Layer ]           [ Continuous V6 Models (Cloud • Champion/Challenger) ]
+ - Multi-Year Cube (11.81 MB exact)    - 4 Algorithms + Bayesian CID3 + Isotonic Cal.
+ - Ward Cockpit Sample (30k cases)     - Temporal Retrain (2.4M) vs. Blind Holdout (300k)
+ - Batch Load History (Tab 2)          - Drift Monitor (60k) & Auto 300-DPI Plots
           │                                     │
           └──────────────────┬──────────────────┘
                              ▼
-            [ Dashboard Interativo Streamlit (6 Abas • PT/EN/ES) ]
-             1. Perfil Epidemiológico & Equidade (Multi-Ano 2024–2026)
-             2. Qualidade dos Dados, Lotes Incrementais & Integridade
-             3. Como a IA Funciona (Modelos V6 Contínuo & Champion/Challenger)
-             4. Painel de Gestão Clínica & Leitos (Simulador CID3 + Flags)
-             5. Dicionário Completo SIH/SUS (113 Colunas + 14 Derivadas) & Glossário
-             6. Jornada, Decisões & Arquitetura (V1 → V6 Contínuo)
+            [ Interactive Streamlit Dashboard (6 Tabs • PT/EN/ES) ]
+             1. Epidemiology & Health Equity (Multi-Year 2024–2026)
+             2. Data Quality, Incremental Loads & Integrity Contract
+             3. How the AI Works (Continuous V6 & Champion/Challenger)
+             4. Clinical Management & Ward Cockpit (CID3 Simulator + Flags)
+             5. Complete SIH/SUS Dictionary (113 Columns + 14 Derived) & Glossary
+             6. Project Journey, Decisions & Architecture (V1 → Continuous V6)
 ```
 
 ---
 
-## Visão Geral das 6 Abas do Dashboard (`PT / EN / ES`)
+## Dashboard Overview — 6 Interactive Tabs (`PT / EN / ES`)
 
-1. **Perfil Epidemiológico & Equidade em Saúde:** Filtros dinâmicos por ano (`2024–2026`), região, UF, raça/cor, especialidade, sexo e mês; gráficos interativos (faixa etária × sexo, equidade racial, sazonalidade mensal, Top capítulos CID-10), comparativo interanual e tabela estadual via **DuckDB**.
-2. **Qualidade dos Dados, Lotes Incrementais & Contrato:** Resumo da última carga incremental, **histórico de cargas por lote** (`brutos`, `aceitos`, `filtrados`, `deduplicados` e indicadores de subnotificação), contrato coluna a coluna dos 10 blocos críticos (`Perfil + Treino IA`) e completude por UF.
-3. **Como a IA Funciona (Modelos & MLOps):** Benchmark temporal entre **Regressão Logística**, **Random Forest**, **XGBoost** e **LightGBM V6 Contínuo**, **3 figuras diagnósticas em 300 DPI** sempre sincronizadas com o Champion ativo (regeneração automática quando um Challenger vence e cache dinâmico por `mtime`), além de painel com cron, política automática de retreino, **monitor de drift clínico** e **histórico Champion vs. Challenger**.
-4. **Painel de Gestão Clínica & Leitos:** Sliders interativos partindo do **Limiar de Youden V6 Contínuo** (`3,9%` Óbito e `6,1%` Longa Permanência), **simulador em tempo real** com escolha de `cid3` específico + Matriz de Decisão 2×2 e **Cockpit hospitalar (`30k` casos estratificados)** com auditoria de acertos (`VP`, `VN`, `Alerta Preventivo` vs. `Falso Negativo`).
-5. **Dicionário Completo SIH/SUS (`127` Variáveis) & Glossário:** Auditoria pesquisável das **113 colunas oficiais** da AIH Reduzida + **14 derivadas**, destacando o papel exato (`IA + Epidemio`, `Apenas Epidemio`, `Alvo`, `Data Leakage` ou `Admin`), acompanhada de **15 verbetes** técnicos explicados em linguagem clínica.
-6. **Jornada, Decisões & Arquitetura (`V1 → V6 Contínuo`):** Registro completo de engenharia (`V1` a `V6 Contínuo`), tabela comparativa das 6 gerações e **stack de 10 tecnologias** utilizadas.
+1. **Epidemiology & Health Equity:** Dynamic filters across year (`2024–2026`), region, state, race/ethnicity, specialty, sex, and month; interactive Plotly visualizations (age × sex, racial equity, monthly seasonality, top ICD-10 chapters), year-over-year trends, and state breakdown powered by **DuckDB**.
+2. **Data Quality, Incremental Loads & Integrity Contract:** Latest incremental load summary, **per-batch ingestion history** (`raw`, `accepted`, `filtered`, `deduplicated`, and underreporting metrics), column-by-column audit across 10 core blocks (`Profile + AI Training`), and state completeness table.
+3. **How the AI Works (Models & MLOps):** Temporal benchmark comparing **Logistic Regression**, **Random Forest**, **XGBoost**, and **Continuous LightGBM V6**, **three 300-DPI diagnostic figures** synced automatically to the active Champion (re-rendered on winner promotion with `mtime`-based app cache invalidation), cloud schedule, retraining policy, **clinical drift monitor**, and **Champion vs. Challenger history**.
+4. **Clinical Management & Ward Cockpit:** Interactive threshold sliders anchored to the **Continuous V6 Youden Index** (`3.9%` Mortality and `6.1%` Long Stay), **real-time intake simulator** with specific 3-character ICD-10 (`cid3`) support + 2×2 Decision Matrix, and **hospital ward cockpit (`30k` stratified cases)** auditing True Positives/Negatives and Preventive Alerts vs. False Negatives.
+5. **Complete SIH/SUS Dictionary (`127` Fields) & Glossary:** Searchable audit of all **113 official columns** plus **14 derived features**, tagging every field's exact role (`AI + Epidemiology`, `Epidemiology Only`, `Target`, `Data Leakage`, or `Admin`), alongside a **15-term** plain-language clinical/AI glossary.
+6. **Project Journey, Decisions & Architecture (`V1 → Continuous V6`):** Full engineering log from single-state pilot (`V1`) to automated multi-year cloud (`Continuous V6`), version evolution table, and the **10-technology stack** table.
 
 ---
 
-## Resultados do Modelo Ativo — LightGBM V6 Contínuo (Teste Cego Temporal `2026/07–09`: `300.000` internações)
+## Active Production Results — Continuous LightGBM V6 (Blind Temporal Holdout `2026/07–09`: `300,000` admissions)
 
-Treinado temporalmente em **2.400.000** internações (`2024/01 → 2026/06`) com codificação híbrida de diagnóstico (`cid3` 3 dígitos Top-200 OHE + Target Encoding Bayesiano *Out-of-Fold* `m=50` com fallback no capítulo), calibrado via **Calibração Isotônica** em **300.000** casos e avaliado em **300.000** internações futuras inéditas (`2026/07 → 2026/09`):
+Trained temporally on **2,400,000** admissions (`2024/01 → 2026/06`) with hybrid diagnosis encoding (`cid3` 3-char Top-200 OHE + Out-of-Fold Bayesian Target Encoding `m=50` with chapter fallback), calibrated via **Isotonic Calibration** on **300,000** cases, and evaluated on **300,000** unseen future hospitalizations (`2026/07 → 2026/09`):
 
-| Desfecho | Modelo Ativo | ROC-AUC | PR-AUC | Brier Score (Calibrado) | Sensibilidade (Limiar Youden) | Especificidade |
+| Outcome | Active Model | ROC-AUC | PR-AUC | Brier Score (Calibrated) | Recall (Youden Cutoff) | Specificity |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Óbito Intra-hospitalar** | **LightGBM V6 Contínuo** | `0,9107` | `0,3089` | `0,0300` | `89,55%` (`3,87%`) | `77,49%` |
-| **Longa Permanência (>= 15d)** | **LightGBM V6 Contínuo** | `0,8447` | `0,3493` | `0,0469` | `83,74%` (`6,14%`) | `67,78%` |
+| **In-Hospital Mortality** | **Continuous LightGBM V6** | `0.9107` | `0.3089` | `0.0300` | `89.55%` (`3.87%`) | `77.49%` |
+| **Long Stay (>= 15d)** | **Continuous LightGBM V6** | `0.8447` | `0.3493` | `0.0469` | `83.74%` (`6.14%`) | `67.78%` |
 
-> **Evolução V5 → V6 Contínuo:** O Champion inaugural **V5 Nacional (Base 2024, 13,58M)** atingiu `ROC 0,9082 / 0,8481` (`PR 0,3035 / 0,3663`, `Brier 0,0306 / 0,0471`) e foi substituído em nuvem pelo **V6 Contínuo** após vitória sem regressões em 2/2 desfechos, com backup em `modelos/archive/` e trilha auditável em `modelos/registro_modelos_v5.json`.
+> **V5 → Continuous V6 Progression:** The inaugural **National V5 (2024 Base, 13.58M)** Champion achieved `ROC 0.9082 / 0.8481` (`PR 0.3035 / 0.3663`, `Brier 0.0306 / 0.0471`) and was replaced in production by **Continuous V6** after winning with zero regressions across 2/2 outcomes, with prior weights archived in `modelos/archive/` and audited in `modelos/registro_modelos_v5.json`.
 
-### Governança MLOps Automática, Monitor de Drift & Compromisso Ético
-- **Desacoplamento Ético & Zero Leakage:** `raca_cor` e `mes_internacao` permanecem na Aba 1 (equidade e sazonalidade), mas são **excluídos** da IA; apenas **9 variáveis disponíveis na admissão** entram na predição (`idade_anos`, `sexo`, `capitulo_cid`, `cid3`, `especialidade_leito`, `carater_internacao`, `complexidade`, `transferido_intermun`, `internacao_fim_de_semana`).
-- **Gatilho Híbrido em Nuvem (`modelos/politica_mlops.json`):** Dispara competição **Champion vs. Challenger** ao acumular **`>= 3` competências inéditas** (ou **`>= 3.000.000` registros**) após **`30` dias** de *cooldown*, ou imediatamente se o **monitor de drift** (`60.000` casos recentes) detectar desvio de prevalência (`>= 0,50` p.p. Óbito / `>= 0,80` p.p. Longa), queda de `ROC-AUC` (`< 0,8950` / `< 0,8300`) ou alta de `Brier` (`> 0,0330` / `> 0,0500`).
-- **Atualização Segura de Artefatos & Figuras:** Só promove o Challenger se superar o Champion sem regressões; grava backup em `modelos/archive/`, atualiza os `.joblib`, `metricas_v5_nacional.csv`, `config_limiares_v5.json`, `top_cid3_por_capitulo_v5.json` e regenera automaticamente as **3 figuras 300 DPI** (inclusive no modo `recalibrar`).
+### Automated MLOps Governance, Drift Monitoring & Ethics
+- **Ethical Decoupling & Zero Data Leakage:** `raca_cor` and `mes_internacao` remain in Tab 1 for equity and seasonality auditing, but are **excluded** from predictive modeling; only **9 intake features** known at admission enter inference (`idade_anos`, `sexo`, `capitulo_cid`, `cid3`, `especialidade_leito`, `carater_internacao`, `complexidade`, `transferido_intermun`, `internacao_fim_de_semana`).
+- **Cloud Hybrid Trigger (`modelos/politica_mlops.json`):** Fires **Champion vs. Challenger** once **`>= 3` unseen months** (or **`>= 3,000,000` rows**) accumulate after a **`30`-day cooldown**, or triggers early if the **drift monitor** (`60,000` recent cases) flags prevalence shift (`>= 0.50` pp Mortality / `>= 0.80` pp Long Stay), `ROC-AUC` drop (`< 0.8950` / `< 0.8300`), or `Brier` degradation (`> 0.0330` / `> 0.0500`).
+- **Safe Artifact & Plot Promotion:** Only replaces production upon non-regressive temporal gains; saves backups under `modelos/archive/`, updates `.joblib` bundles, `metricas_v5_nacional.csv`, `config_limiares_v5.json`, `top_cid3_por_capitulo_v5.json`, and regenerates all **three 300-DPI figures** (including in `recalibrar` mode).
 
 ---
 
-## Como Executar Localmente e Orquestrar o Pipeline
+## Local Setup & Continuous Orchestration
 
 ```bash
-# 1. Instalar dependências
+# 1. Install dependencies
 pip install -r requirements.txt
 
-# 2. Executar o Dashboard Streamlit
+# 2. Launch the Streamlit Dashboard
 streamlit run app.py
 ```
 
-Para executar o pipeline contínuo completo (busca lotes inéditos no DataSUS FTP, atualiza o cubo deploy, monitora drift e avalia Champion vs. Challenger se o gatilho híbrido disparar):
+To run the continuous pipeline locally (fetches unseen DataSUS FTP partitions, rebuilds deploy cubes, evaluates clinical drift, and triggers Champion vs. Challenger when conditions are met):
 ```bash
 python scripts/orquestrador_continuo.py --workers 6
 python scripts/orquestrador_continuo.py --forcar-retreino
 python scripts/retreinar_e_promover.py --regenerar-figuras-champion
 ```
 
-No GitHub, o workflow `.github/workflows/pipeline_continuo_mlops.yml` executa esse ciclo automaticamente nos dias **5 e 20** de cada mês (`06:00 UTC`), restaura/atualiza o Parquet particionado via `GitHub Releases (lakehouse-data)` com `scripts/sync_lakehouse_release.py` e publica atualizações no **Streamlit Cloud**.
+On GitHub, `.github/workflows/pipeline_continuo_mlops.yml` runs automatically on the **5th and 20th** of every month (`06:00 UTC`), syncs partitioned Parquet archives via `GitHub Releases (lakehouse-data)` using `scripts/sync_lakehouse_release.py`, and triggers auto-deploy to **Streamlit Cloud**.
 
 ---
 
-## Estrutura do Projeto
-- `app.py` — Aplicação web Streamlit (6 abas interativas em PT/EN/ES com cache dinâmico por `mtime`).
-- `.github/workflows/pipeline_continuo_mlops.yml` — Automação quinzenal em nuvem (ingestão FTP + MLOps + auto-deploy).
-- `requirements.txt` & `requirements-pipeline.txt` — Dependências do app Streamlit e dependências enxutas do runner MLOps.
-- `scripts/orquestrador_continuo.py` — Orquestrador incremental, monitor de drift clínico (`60k`) e gatilho híbrido Champion vs. Challenger.
-- `scripts/retreinar_e_promover.py` — Avaliação temporal justa entre Champion e Challenger, backup, promoção segura e geração das 3 figuras 300 DPI.
-- `scripts/sync_lakehouse_release.py` — Sincronização dos arquivos `parquet_*.tar` e `historico_cargas.json` via GitHub Releases (`lakehouse-data`).
-- `scripts/pipeline_nacional_sih.py` — Ingestão idempotente e paralela DataSUS para Parquet particionado Hive (`ano/uf/mes`) com deduplicação natural.
-- `scripts/gerar_camada_deploy.py` — Gerador do cubo multi-ano (`11,81 MB`) e amostra cockpit (`30k` casos).
-- `scripts/duckdb_service.py` — Motor SQL híbrido (Parquet bruto local ou cubo compacto na nuvem) + leitura dos manifestos de cargas e modelos.
-- `scripts/features_v5.py` & `scripts/treinar_modelos_v5_nacional.py` — Pré-processador clínico híbrido `cid3` (`AdmissionV5Preprocessor` compartilhado V5/V6 Contínuo) e treino baseline 2024.
-- `scripts/catalogo_sih.py` & `scripts/i18n.py` — Auditoria das 113 colunas SIH/SUS (+14 derivadas) e internacionalização PT/EN/ES (textos, filtros, tabelas e glossário).
-- `dados/deploy/` — Cubo epidemiológico (`11,81 MB`), amostra estratificada (`0,34 MB`) e manifesto `resumo_ultima_carga.json`.
-- `modelos/` — Artefatos LightGBM V6 Contínuo calibrados (`0,62 MB` cada), `metricas_v5_nacional.csv`, `config_limiares_v5.json`, `top_cid3_por_capitulo_v5.json`, `politica_mlops.json`, `registro_modelos_v5.json` e backups em `modelos/archive/`.
-- `figuras/` — Evidências visuais em alta resolução (300 DPI) geradas para o Champion ativo em produção.
+## Repository Structure
+- `app.py` — Interactive Streamlit web app (6 tabs in PT/EN/ES with `mtime`-based cache invalidation).
+- `.github/workflows/pipeline_continuo_mlops.yml` — Biweekly cloud MLOps workflow (FTP ingestion + training + auto-deploy).
+- `requirements.txt` & `requirements-pipeline.txt` — Streamlit runtime dependencies and lean cloud pipeline dependencies.
+- `scripts/orquestrador_continuo.py` — Incremental orchestrator, clinical drift monitor (`60k`), and hybrid retraining gate.
+- `scripts/retreinar_e_promover.py` — Temporal Champion vs. Challenger evaluation, archiving, promotion, and 300-DPI plot generation.
+- `scripts/sync_lakehouse_release.py` — `parquet_*.tar` and `historico_cargas.json` sync via GitHub Releases (`lakehouse-data`).
+- `scripts/pipeline_nacional_sih.py` — Parallel idempotent DataSUS FTP ingestion into Hive-partitioned Parquet (`ano/uf/mes`) with natural-key deduplication.
+- `scripts/gerar_camada_deploy.py` — Generates the compact multi-year cube (`11.81 MB`) and stratified ward sample (`30k` rows).
+- `scripts/duckdb_service.py` — Hybrid analytical SQL engine (local raw Parquet or cloud compact cube) + batch/model manifest readers.
+- `scripts/features_v5.py` & `scripts/treinar_modelos_v5_nacional.py` — Hybrid `cid3` clinical preprocessor (`AdmissionV5Preprocessor` shared by V5/Continuous V6) and 2024 baseline trainer.
+- `scripts/catalogo_sih.py` & `scripts/i18n.py` — Audited 113-column (+14 derived) catalog and full PT/EN/ES localization (UI, filters, tables, and glossary).
+- `dados/deploy/` — Multi-year epidemiological cube (`11.81 MB`), stratified sample (`0.34 MB`), and `resumo_ultima_carga.json`.
+- `modelos/` — Calibrated Continuous LightGBM V6 bundles (`0.62 MB` each), `metricas_v5_nacional.csv`, `config_limiares_v5.json`, `top_cid3_por_capitulo_v5.json`, `politica_mlops.json`, `registro_modelos_v5.json`, and `modelos/archive/`.
+- `figuras/` — High-resolution (300 DPI) model diagnostics synced with the active Champion.

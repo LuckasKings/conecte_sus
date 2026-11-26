@@ -860,10 +860,19 @@ with tab_ml:
             pc1, pc2, pc3, pc4 = st.columns(4)
             with pc1:
                 cron_txt = politica_cfg.get("agenda_cron_utc", "0 6 5,20 * *")
-                ag_sub = desc_ag.get(idioma, cron_txt) if isinstance(desc_ag, dict) else cron_txt
+                if cron_txt == "0 6 5,20 * *":
+                    ag_tit = {"pt": "Dias 5 e 20", "en": "5th & 20th", "es": "Días 5 y 20"}[idioma]
+                    ag_sub = {
+                        "pt": f"03:00 BRT • Quinzenal (cron {cron_txt})",
+                        "en": f"06:00 UTC • Biweekly (cron {cron_txt})",
+                        "es": f"03:00 BRT • Quincenal (cron {cron_txt})",
+                    }[idioma]
+                else:
+                    ag_tit = desc_ag.get(idioma, cron_txt) if isinstance(desc_ag, dict) else cron_txt
+                    ag_sub = f"cron {cron_txt}"
                 st.markdown(
                     f'<div class="metric-card"><h3>{t["ml_pol_k1"]}</h3>'
-                    f'<p style="color:#1e3a8a; font-size:1.25rem;">{cron_txt}</p>'
+                    f'<p style="color:#1e3a8a; font-size:1.35rem;">{ag_tit}</p>'
                     f'<small>{ag_sub}</small></div>',
                     unsafe_allow_html=True,
                 )
